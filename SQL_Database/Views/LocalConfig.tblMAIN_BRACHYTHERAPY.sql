@@ -1,0 +1,151 @@
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
+CREATE VIEW [LocalConfig].[tblMAIN_BRACHYTHERAPY] AS
+
+/******************************************************** © Copyright & Licensing ****************************************************************
+© 2019 Perspicacity Ltd & Brighton & Sussex University Hospitals
+
+This code / file is part of Perspicacity & BSUH's Cancer Data Warehouse & Reporting suite.
+
+This Cancer Data Warehouse & Reporting suite is free software: you can 
+redistribute it and/or modify it under the terms of the GNU Affero 
+General Public License as published by the Free Software Foundation, 
+either version 3 of the License, or (at your option) any later version.
+
+This Cancer Data Warehouse & Reporting suite is distributed in the hope 
+that it will be useful, but WITHOUT ANY WARRANTY; without even the 
+implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+A full copy of this code can be found at https://github.com/BrightonSussexUniHospitals/CancerReportingSuite
+
+You may also be interested in the other repositories at https://github.com/perspicacity-ltd or
+https://github.com/BrightonSussexUniHospitals
+
+Original Work Created Date:	30/07/2020
+Original Work Created By:	Perspicacity Ltd (Matthew Bishop) & BSUH (Lawrence Simpson)
+Original Work Contact:		07545 878906
+Original Work Contact:		matthew.bishop@perspicacityltd.co.uk / lawrencesimpson@nhs.net
+Description:				Create a local config view to point at the place where the SCR
+							replicated data is located so that the core procedures don't
+							need to be changed when they are copied to different environments 
+							(e.g. live vs test or from one trust to another)
+**************************************************************************************************************************************************/
+
+	-- Select a replica dataset from a V22.2 table
+	SELECT  CAST(1 AS tinyint) AS SrcSysID
+			,BRACHY_ID
+			,CARE_ID
+			,TEMP_ID = TEMP_ID COLLATE DATABASE_DEFAULT
+			,N11_1_SITE_CODE = N11_1_SITE_CODE COLLATE DATABASE_DEFAULT
+			,N_SITE_CODE_DTT = N_SITE_CODE_DTT COLLATE DATABASE_DEFAULT
+			,N11_2_CONSULTANT = N11_2_CONSULTANT COLLATE DATABASE_DEFAULT
+			,N11_3_DECISION_DATE
+			,N11_6_TREATMENT_INTENT
+			,N11_7_TYPE = N11_7_TYPE COLLATE DATABASE_DEFAULT
+			,N11_8_TREATMENT_SITE = N11_8_TREATMENT_SITE COLLATE DATABASE_DEFAULT
+			,N11_9_START_DATE
+			,N11_10_END_DATE
+			,N11_11_DOSE
+			,N11_12_DURATION
+			,N11_13_FRACTIONS
+			,N11_14_ACTUAL_DOSE
+			,N11_15_DOSE_RATE = N11_15_DOSE_RATE COLLATE DATABASE_DEFAULT
+			,N11_16_ACTUAL_DURATION
+			,L_TYPE_OF_DOSE
+			,N11_17_ISOTOPE_TYPE = N11_17_ISOTOPE_TYPE COLLATE DATABASE_DEFAULT
+			,N11_18_ANAESTHETIC = N11_18_ANAESTHETIC COLLATE DATABASE_DEFAULT
+			,N11_19_UNSEALED = N11_19_UNSEALED COLLATE DATABASE_DEFAULT
+			,N11_20_DELIVERY_TYPE = N11_20_DELIVERY_TYPE COLLATE DATABASE_DEFAULT
+			,N11_22_STATUS
+			,N_TREATMENT_EVENT = N_TREATMENT_EVENT COLLATE DATABASE_DEFAULT
+			,N_TREATMENT_SETTING = N_TREATMENT_SETTING COLLATE DATABASE_DEFAULT
+			,L_NAMED_COMP = L_NAMED_COMP COLLATE DATABASE_DEFAULT
+			,L_COMP_3MTH = L_COMP_3MTH COLLATE DATABASE_DEFAULT
+			,L_SHORT_LONG = L_SHORT_LONG COLLATE DATABASE_DEFAULT
+			,R_INSERTIONS
+			,R_DOSE_INSERTION
+			,R_TREAT_TO = R_TREAT_TO COLLATE DATABASE_DEFAULT
+			,L_TRIAL
+			,ENDOSCOPIC
+			,DEFINITIVE_TREATMENT
+			,CWT_PROFORMA
+			,L_COMMENTS = L_COMMENTS COLLATE DATABASE_DEFAULT
+			,PRE_TREAT_PSA
+			,ROOT_START_DATE_COMMENTS = ROOT_START_DATE_COMMENTS COLLATE DATABASE_DEFAULT
+			,ROOT_END_DATE_COMMENTS = ROOT_END_DATE_COMMENTS COLLATE DATABASE_DEFAULT
+			,ACTION_ID
+			,ROOT_DECISION_DATE_COMMENTS = ROOT_DECISION_DATE_COMMENTS COLLATE DATABASE_DEFAULT
+			,AdjunctiveTherapyID
+			,OtherTreatmentIntent = OtherTreatmentIntent COLLATE DATABASE_DEFAULT
+			,HCCEmbolisation
+			,HCCEmbolisationModality
+			,NotCompleteReasonID
+			,TreatmentCompletedAsPlanned
+			,TertiaryReferralKey
+			,ROOT_PRIM_ADJUSTMENT_COMMENTS = ROOT_PRIM_ADJUSTMENT_COMMENTS  COLLATE DATABASE_DEFAULT
+			,ROOT_SUBPRIM_ADJUSTMENT_COMMENTS = ROOT_SUBPRIM_ADJUSTMENT_COMMENTS COLLATE DATABASE_DEFAULT
+	FROM  [CancerRegister_WSHT]..tblMAIN_BRACHYTHERAPY
+
+		UNION ALL 
+
+	-- Select a replica dataset from a V22.2 table
+	SELECT  CAST(2 AS tinyint) AS SrcSysID
+			,BRACHY_ID
+			,CARE_ID
+			,TEMP_ID = TEMP_ID COLLATE DATABASE_DEFAULT
+			,N11_1_SITE_CODE = N11_1_SITE_CODE COLLATE DATABASE_DEFAULT
+			,N_SITE_CODE_DTT = N_SITE_CODE_DTT COLLATE DATABASE_DEFAULT
+			,N11_2_CONSULTANT = N11_2_CONSULTANT COLLATE DATABASE_DEFAULT
+			,N11_3_DECISION_DATE
+			,N11_6_TREATMENT_INTENT
+			,N11_7_TYPE = N11_7_TYPE COLLATE DATABASE_DEFAULT
+			,N11_8_TREATMENT_SITE = N11_8_TREATMENT_SITE COLLATE DATABASE_DEFAULT
+			,N11_9_START_DATE
+			,N11_10_END_DATE
+			,N11_11_DOSE
+			,N11_12_DURATION
+			,N11_13_FRACTIONS
+			,N11_14_ACTUAL_DOSE
+			,N11_15_DOSE_RATE = N11_15_DOSE_RATE COLLATE DATABASE_DEFAULT
+			,N11_16_ACTUAL_DURATION
+			,L_TYPE_OF_DOSE
+			,N11_17_ISOTOPE_TYPE = N11_17_ISOTOPE_TYPE COLLATE DATABASE_DEFAULT
+			,N11_18_ANAESTHETIC = N11_18_ANAESTHETIC COLLATE DATABASE_DEFAULT
+			,N11_19_UNSEALED = N11_19_UNSEALED COLLATE DATABASE_DEFAULT
+			,N11_20_DELIVERY_TYPE = N11_20_DELIVERY_TYPE COLLATE DATABASE_DEFAULT
+			,N11_22_STATUS
+			,N_TREATMENT_EVENT = N_TREATMENT_EVENT COLLATE DATABASE_DEFAULT
+			,N_TREATMENT_SETTING = N_TREATMENT_SETTING COLLATE DATABASE_DEFAULT
+			,L_NAMED_COMP = L_NAMED_COMP COLLATE DATABASE_DEFAULT
+			,L_COMP_3MTH = L_COMP_3MTH COLLATE DATABASE_DEFAULT
+			,L_SHORT_LONG = L_SHORT_LONG COLLATE DATABASE_DEFAULT
+			,R_INSERTIONS
+			,R_DOSE_INSERTION
+			,R_TREAT_TO = R_TREAT_TO COLLATE DATABASE_DEFAULT
+			,L_TRIAL
+			,ENDOSCOPIC
+			,DEFINITIVE_TREATMENT
+			,CWT_PROFORMA
+			,L_COMMENTS = L_COMMENTS COLLATE DATABASE_DEFAULT
+			,PRE_TREAT_PSA
+			,ROOT_START_DATE_COMMENTS = ROOT_START_DATE_COMMENTS COLLATE DATABASE_DEFAULT
+			,ROOT_END_DATE_COMMENTS = ROOT_END_DATE_COMMENTS COLLATE DATABASE_DEFAULT
+			,ACTION_ID
+			,ROOT_DECISION_DATE_COMMENTS = ROOT_DECISION_DATE_COMMENTS COLLATE DATABASE_DEFAULT
+			,AdjunctiveTherapyID
+			,OtherTreatmentIntent = OtherTreatmentIntent COLLATE DATABASE_DEFAULT
+			,HCCEmbolisation
+			,HCCEmbolisationModality
+			,NotCompleteReasonID
+			,TreatmentCompletedAsPlanned
+			,TertiaryReferralKey
+			,ROOT_PRIM_ADJUSTMENT_COMMENTS = ROOT_PRIM_ADJUSTMENT_COMMENTS  COLLATE DATABASE_DEFAULT
+			,ROOT_SUBPRIM_ADJUSTMENT_COMMENTS = ROOT_SUBPRIM_ADJUSTMENT_COMMENTS COLLATE DATABASE_DEFAULT
+	FROM  [CancerRegister_BSUH]..tblMAIN_BRACHYTHERAPY
+GO

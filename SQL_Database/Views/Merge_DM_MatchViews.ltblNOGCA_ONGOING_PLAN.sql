@@ -1,0 +1,13 @@
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
+-- Create a view to union the data for the ltblNOGCA_ONGOING_PLAN SCR table 
+CREATE VIEW [Merge_DM_MatchViews].[ltblNOGCA_ONGOING_PLAN] AS 
+ 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblNOGCA_ONGOING_PLAN 
+ 
+UNION ALL 
+ 
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblNOGCA_ONGOING_PLAN
+GO

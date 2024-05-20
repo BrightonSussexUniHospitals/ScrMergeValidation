@@ -1,0 +1,3 @@
+CREATE SCHEMA [SCR_Warehouse]
+AUTHORIZATION [BSUH\Lawrence.Simpson]
+GO

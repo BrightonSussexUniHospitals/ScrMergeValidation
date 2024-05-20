@@ -1,0 +1,3 @@
+CREATE SCHEMA [Lookup]
+AUTHORIZATION [BSUH\Lawrence.Simpson]
+GO

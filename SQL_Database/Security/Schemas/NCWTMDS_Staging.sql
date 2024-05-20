@@ -1,0 +1,3 @@
+CREATE SCHEMA [NCWTMDS_Staging]
+AUTHORIZATION [BSUH\Lawrence.Simpson]
+GO

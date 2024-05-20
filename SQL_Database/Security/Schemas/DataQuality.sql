@@ -1,0 +1,3 @@
+CREATE SCHEMA [DataQuality]
+AUTHORIZATION [BSUH\Lawrence.Simpson]
+GO

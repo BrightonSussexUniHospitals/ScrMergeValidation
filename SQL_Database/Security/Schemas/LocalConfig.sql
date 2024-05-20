@@ -1,0 +1,3 @@
+CREATE SCHEMA [LocalConfig]
+AUTHORIZATION [BSUH\Lawrence.Simpson]
+GO

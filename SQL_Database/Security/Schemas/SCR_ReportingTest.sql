@@ -1,0 +1,3 @@
+CREATE SCHEMA [SCR_ReportingTest]
+AUTHORIZATION [BSUH\Lawrence.Simpson]
+GO

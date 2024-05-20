@@ -1,0 +1,45 @@
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
+
+
+
+CREATE VIEW [Merge_DM_MatchViews].[tblMDT_DISCUSSIONS_vw_UH] AS 
+
+SELECT ML.SrcSysID
+    , MDTs.MEETING_ID
+    , MDTs.CA_SITE
+    , MDTs.SUB_DESC
+	, MDTS.LOCATION
+    , ML.MDT_DATE
+    , ML.OTHER_SITE
+    , ML.PATIENT_ID
+    , ML.CARE_ID
+	, CASE WHEN  MDTs.SUB_DESC LIKE '%SPEC%' THEN 1 ELSE 0 END AS SPEC
+FROM LocalConfig.tblMDT_LIST ML
+		
+LEFT JOIN (SELECT ML2.SrcSysID
+				, ML2.MDT_ID  
+				, ML2.Meeting_ID	
+				, SubType.CA_SITE
+				, SubType.SUB_DESC
+				, SubType.LOCATION
+			FROM LocalConfig.tblMDT_LIST AS ML2
+
+			LEFT JOIN (SELECT M.MEETING_ID
+							, M.MEETING_TYPE_ID
+							, CS.CA_SITE	
+							, M.SUB_SITE
+							, SS.SUB_DESC
+							, M.LOCATION
+					   FROM Merge_DM_MatchViews.tblMDT_MEETINGS	M				
+					   JOIN Merge_DM_MatchViews.ltblCANCER_SITES CS ON M.MEETING_TYPE_ID = CS.CA_ID AND M.SrcSysID = CS.SrcSysID
+					   JOIN Merge_DM_MatchViews.ltblCANCER_SUB_SITE SS ON M.SUB_SITE = SS.SUB_ID AND M.SrcSysID = SS.SrcSysID
+
+					   )		AS SubType	ON ML2.MEETING_ID = Subtype.MEETING_ID
+			) AS MDTS	ON ML.Meeting_ID = MDTS.MDT_ID AND ML.SrcSysID = MDTS.SrcSysID
+		
+
+		
+GO

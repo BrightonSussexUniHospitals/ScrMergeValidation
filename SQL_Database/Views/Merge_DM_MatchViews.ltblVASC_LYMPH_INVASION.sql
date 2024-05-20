@@ -1,0 +1,13 @@
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
+-- Create a view to union the data for the ltblVASC_LYMPH_INVASION SCR table 
+CREATE VIEW [Merge_DM_MatchViews].[ltblVASC_LYMPH_INVASION] AS 
+ 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblVASC_LYMPH_INVASION 
+ 
+UNION ALL 
+ 
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblVASC_LYMPH_INVASION
+GO

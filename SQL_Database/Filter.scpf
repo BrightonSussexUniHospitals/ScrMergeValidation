@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <!---->
 <NamedFilter version="1" type="SQLCompareFilter">
   <!--This filter can be loaded using the SQL Compare UI or used with a SQL Compare command line session using the /filter switch-->
@@ -12,7 +12,7 @@
       </None>
       <Assembly version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </Assembly>
       <AsymmetricKey version="1">
         <Include>True</Include>
@@ -24,7 +24,7 @@
       </Certificate>
       <Contract version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </Contract>
       <DdlTrigger version="1">
         <Include>True</Include>
@@ -32,31 +32,31 @@
       </DdlTrigger>
       <Default version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </Default>
       <ExtendedProperty version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </ExtendedProperty>
       <EventNotification version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </EventNotification>
       <FullTextCatalog version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </FullTextCatalog>
       <FullTextStoplist version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </FullTextStoplist>
       <Function version="1">
         <Include>True</Include>
-        <Expression>(@SCHEMA = 'map')</Expression>
+        <Expression>(@SCHEMA LIKE 'dbo%') OR (@SCHEMA LIKE 'merge%') OR (@SCHEMA LIKE 'map%')</Expression>
       </Function>
       <MessageType version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </MessageType>
       <PartitionFunction version="1">
         <Include>True</Include>
@@ -68,7 +68,7 @@
       </PartitionScheme>
       <Queue version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </Queue>
       <Role version="1">
         <Include>True</Include>
@@ -76,39 +76,39 @@
       </Role>
       <Route version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </Route>
       <Rule version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </Rule>
       <Schema version="1">
         <Include>True</Include>
-        <Expression>(@NAME = 'map')</Expression>
+        <Expression>TRUE</Expression>
       </Schema>
       <SearchPropertyList version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </SearchPropertyList>
       <SecurityPolicy version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </SecurityPolicy>
       <Sequence version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </Sequence>
       <Service version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </Service>
       <ServiceBinding version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </ServiceBinding>
       <StoredProcedure version="1">
         <Include>True</Include>
-        <Expression>(@SCHEMA = 'map')</Expression>
+        <Expression>(@SCHEMA LIKE 'merge%') OR (@SCHEMA LIKE 'map%')</Expression>
       </StoredProcedure>
       <SymmetricKey version="1">
         <Include>True</Include>
@@ -116,11 +116,11 @@
       </SymmetricKey>
       <Synonym version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </Synonym>
       <Table version="1">
         <Include>True</Include>
-        <Expression>(@SCHEMA = 'map')</Expression>
+        <Expression>(@SCHEMA LIKE 'Merge%') OR (@SCHEMA LIKE 'map%')</Expression>
       </Table>
       <User version="1">
         <Include>True</Include>
@@ -128,27 +128,27 @@
       </User>
       <UserDefinedType version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </UserDefinedType>
       <View version="1">
         <Include>True</Include>
-        <Expression>(@SCHEMA = 'map')</Expression>
+        <Expression>(@SCHEMA LIKE 'Merge%') OR (@SCHEMA LIKE 'map%') OR (@SCHEMA = 'localconfig')</Expression>
       </View>
       <XmlSchemaCollection version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </XmlSchemaCollection>
       <ExternalFileFormat version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </ExternalFileFormat>
       <ExternalDataSource version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </ExternalDataSource>
       <ExternalTable version="1">
         <Include>True</Include>
-        <Expression />
+        <Expression>TRUE</Expression>
       </ExternalTable>
     </Filters>
   </Filter>

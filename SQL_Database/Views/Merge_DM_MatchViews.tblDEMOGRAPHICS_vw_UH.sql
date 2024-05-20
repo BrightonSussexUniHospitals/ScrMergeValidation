@@ -1,0 +1,23 @@
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
+
+
+
+
+
+
+CREATE VIEW	[Merge_DM_MatchViews].[tblDEMOGRAPHICS_vw_UH] AS
+
+		SELECT		*
+		FROM		Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_H_SCR
+
+		UNION ALL
+
+		SELECT		*
+		FROM		Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_H_Careflow
+
+
+
+GO

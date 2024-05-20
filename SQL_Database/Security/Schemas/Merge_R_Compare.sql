@@ -1,0 +1,3 @@
+CREATE SCHEMA [Merge_R_Compare]
+AUTHORIZATION [dbo]
+GO

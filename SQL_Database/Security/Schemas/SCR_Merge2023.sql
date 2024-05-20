@@ -1,0 +1,3 @@
+CREATE SCHEMA [SCR_Merge2023]
+AUTHORIZATION [BSUH\Lawrence.Simpson]
+GO

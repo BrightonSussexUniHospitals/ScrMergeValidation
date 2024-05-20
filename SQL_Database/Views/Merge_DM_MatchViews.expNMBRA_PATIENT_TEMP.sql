@@ -1,0 +1,13 @@
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
+-- Create a view to union the data for the expNMBRA_PATIENT_TEMP SCR table 
+CREATE VIEW [Merge_DM_MatchViews].[expNMBRA_PATIENT_TEMP] AS 
+ 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.expNMBRA_PATIENT_TEMP 
+ 
+UNION ALL 
+ 
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.expNMBRA_PATIENT_TEMP
+GO
