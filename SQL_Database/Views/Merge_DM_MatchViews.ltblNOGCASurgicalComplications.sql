@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblNOGCASurgicalComplications SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblNOGCASurgicalComplications] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblNOGCASurgicalComplications 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblNOGCASurgicalComplications 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblNOGCASurgicalComplications
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblNOGCASurgicalComplications
 GO

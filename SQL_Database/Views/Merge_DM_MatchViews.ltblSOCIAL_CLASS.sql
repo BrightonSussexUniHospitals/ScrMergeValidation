@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblSOCIAL_CLASS SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblSOCIAL_CLASS] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblSOCIAL_CLASS 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblSOCIAL_CLASS 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblSOCIAL_CLASS
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblSOCIAL_CLASS
 GO

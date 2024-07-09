@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the versionUpdateLog SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[versionUpdateLog] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.versionUpdateLog 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.versionUpdateLog 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.versionUpdateLog
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.versionUpdateLog
 GO

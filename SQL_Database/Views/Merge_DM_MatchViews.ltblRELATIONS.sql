@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblRELATIONS SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblRELATIONS] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblRELATIONS 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblRELATIONS 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblRELATIONS
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblRELATIONS
 GO

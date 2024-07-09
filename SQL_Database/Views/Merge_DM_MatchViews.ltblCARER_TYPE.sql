@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblCARER_TYPE SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblCARER_TYPE] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblCARER_TYPE 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblCARER_TYPE 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblCARER_TYPE
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblCARER_TYPE
 GO

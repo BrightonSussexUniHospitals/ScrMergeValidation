@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblELNGeneticRisk SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblELNGeneticRisk] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblELNGeneticRisk 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblELNGeneticRisk 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblELNGeneticRisk
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblELNGeneticRisk
 GO

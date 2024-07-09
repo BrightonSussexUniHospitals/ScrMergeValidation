@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the tblPALLIATIVE_EPISODE SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[tblPALLIATIVE_EPISODE] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.tblPALLIATIVE_EPISODE 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.tblPALLIATIVE_EPISODE 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.tblPALLIATIVE_EPISODE
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.tblPALLIATIVE_EPISODE
 GO

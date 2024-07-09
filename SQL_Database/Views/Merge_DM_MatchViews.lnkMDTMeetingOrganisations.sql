@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the lnkMDTMeetingOrganisations SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[lnkMDTMeetingOrganisations] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.lnkMDTMeetingOrganisations 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.lnkMDTMeetingOrganisations 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.lnkMDTMeetingOrganisations
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.lnkMDTMeetingOrganisations
 GO

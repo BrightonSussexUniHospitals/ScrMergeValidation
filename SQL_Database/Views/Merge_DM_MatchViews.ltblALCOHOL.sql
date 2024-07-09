@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblALCOHOL SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblALCOHOL] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblALCOHOL 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblALCOHOL 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblALCOHOL
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblALCOHOL
 GO

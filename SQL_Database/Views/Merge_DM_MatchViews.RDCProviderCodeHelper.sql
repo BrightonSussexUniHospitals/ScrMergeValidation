@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the RDCProviderCodeHelper SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[RDCProviderCodeHelper] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.RDCProviderCodeHelper 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.RDCProviderCodeHelper 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.RDCProviderCodeHelper
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.RDCProviderCodeHelper
 GO

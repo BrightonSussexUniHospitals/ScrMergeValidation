@@ -110,22 +110,31 @@ Description:				A stored procedure to override a column value for a major entity
 		-- Determine the views we will retrieve the donor column values from
 		IF OBJECT_ID('tempdb..#donorViews') IS NOT NULL DROP TABLE #donorViews
 		SELECT		donorViews.ViewName
-					,ROW_NUMBER() OVER (PARTITION BY donorViews.ViewStemName ORDER BY donorViews.ViewName) AS ViewNameIx
+					,donorViews.SchemaName
+					,ROW_NUMBER() OVER (PARTITION BY donorViews.ViewStemName ORDER BY CASE WHEN donorViews.ViewName LIKE '%mvw%' THEN 1 ELSE 2 END, donorViews.ViewName) AS ViewNameIx
 		INTO		#donorViews
-		FROM		(SELECT		v.name AS ViewName
-								,LEFT(v.name, CHARINDEX('_vw',v.name)) AS ViewStemName
-								,CASE WHEN v.name LIKE '%_UH' THEN 1 ELSE 0 END AS Is_UH_view
-								,CASE WHEN v.name LIKE '%¿_H¿_%' ESCAPE '¿' THEN 1 ELSE 0 END AS Is_H_view
-								,MAX(CASE WHEN v.name LIKE '%¿_H¿_%' ESCAPE '¿' THEN 1 ELSE 0 END) OVER (PARTITION BY LEFT(v.name, CHARINDEX('_vw',v.name))) AS Has_H_view
-					FROM		sys.views v
+		FROM		(SELECT		tv.name AS ViewName
+								,s.name AS SchemaName
+								,LEFT(tv.name, dbo.fnHighestIntFromArray(1, CHARINDEX('_vw',tv.name),CHARINDEX('_mvw',tv.name),0,0,0,0,0,0,0,0)) AS ViewStemName
+								,CASE WHEN tv.name LIKE '%¿_mvw¿_%' ESCAPE '¿' THEN 1 ELSE 0 END AS Is_M_view
+								,CASE WHEN tv.name LIKE '%¿_vw¿_UH' ESCAPE '¿' THEN 1 ELSE 0 END AS Is_UH_view
+								,CASE WHEN tv.name LIKE '%¿_H¿_%' ESCAPE '¿' THEN 1 ELSE 0 END AS Is_H_view
+								,MAX(CASE WHEN tv.name LIKE '%¿_mvw¿_%' ESCAPE '¿' THEN 1 ELSE 0 END) OVER (PARTITION BY LEFT(tv.name, dbo.fnHighestIntFromArray(1, CHARINDEX('_vw',tv.name),CHARINDEX('_mvw',tv.name),0,0,0,0,0,0,0,0))) AS Has_M_view
+								,MAX(CASE WHEN tv.name LIKE '%¿_H¿_%' ESCAPE '¿' THEN 1 ELSE 0 END) OVER (PARTITION BY LEFT(tv.name, dbo.fnHighestIntFromArray(1, CHARINDEX('_vw',tv.name),CHARINDEX('_mvw',tv.name),0,0,0,0,0,0,0,0))) AS Has_H_view
+					FROM		(SELECT schema_id, name, 't' AS TableSource FROM sys.tables UNION ALL SELECT schema_id, name, 'v' AS TableSource FROM sys.views) tv
 					INNER JOIN	sys.schemas s
-											ON	v.schema_id = s.schema_id
-											AND	s.name = 'Merge_DM_MatchViews'
-					WHERE		(v.name LIKE '%_UH'
-					OR			v.name LIKE '%¿_H¿_%' ESCAPE '¿')
-					AND			v.name LIKE @tableName + '%'
+											ON	tv.schema_id = s.schema_id
+											AND	s.name IN ('Merge_DM_Match','Merge_DM_MatchViews')
+					WHERE		(tv.name LIKE '%¿_UH' ESCAPE '¿'
+					OR			tv.name LIKE '%¿_H¿_%' ESCAPE '¿')
+					AND			tv.name LIKE @tableName + '%'
 								) donorViews
-		WHERE		donorViews.Is_UH_view != donorViews.Has_H_view
+		WHERE		CASE	WHEN donorViews.Has_M_view = 1
+							THEN donorViews.Is_M_view
+							WHEN donorViews.Has_H_view = 1
+							THEN donorViews.Is_H_view
+							ELSE 1
+							END = 1
 
 		-- Drop the #ColumnOverride table if it exists
 		IF OBJECT_ID('tempdb..#ColumnOverride') IS NOT NULL DROP TABLE #ColumnOverride
@@ -143,7 +152,7 @@ Description:				A stored procedure to override a column value for a major entity
 							@SQL_ColumnOverrides +
 							'INSERT INTO #ColumnOverride (' + @ColumnName + ') ' + CHAR(13) +
 							'SELECT		' + @ColumnName + ' ' + CHAR(13) +
-							'FROM		Merge_DM_MatchViews.' + dv.ViewName + ' uh ' + CHAR(13) +
+							'FROM		' + dv.SchemaName + '.' + dv.ViewName + ' uh ' + CHAR(13) +
 							'WHERE		uh.SrcSys = ' + CAST(@SrcSys_Donor AS VARCHAR(255)) + ' ' + CHAR(13) +
 							'AND		uh.Src_UID = ''' + @Src_UID_Donor + ''' ' + CHAR(13) + CHAR(13)
 				FROM		#donorViews dv

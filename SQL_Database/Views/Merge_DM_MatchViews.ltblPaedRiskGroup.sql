@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblPaedRiskGroup SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblPaedRiskGroup] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblPaedRiskGroup 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblPaedRiskGroup 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblPaedRiskGroup
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblPaedRiskGroup
 GO

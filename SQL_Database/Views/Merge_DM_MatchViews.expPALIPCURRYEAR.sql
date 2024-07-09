@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the expPALIPCURRYEAR SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[expPALIPCURRYEAR] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.expPALIPCURRYEAR 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.expPALIPCURRYEAR 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.expPALIPCURRYEAR
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.expPALIPCURRYEAR
 GO

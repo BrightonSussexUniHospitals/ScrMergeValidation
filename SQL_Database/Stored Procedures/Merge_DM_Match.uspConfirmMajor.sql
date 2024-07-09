@@ -156,6 +156,8 @@ Description:				A stored procedure to confirm a major entity as being the correc
 							'											ON	cm.SrcSys_Major = mmv.SrcSys_Major ' + CHAR(13) +
 							'											AND	cm.Src_UID_Major = mmv.Src_UID_Major ' + CHAR(13) +
 							'WHERE		mmv.SrcSys_Major IS NULL ' + CHAR(13) +
+							'AND		cm.SrcSys_Major IS NOT NULL ' + CHAR(13) +
+							'AND		cm.Src_UID_Major IS NOT NULL ' + CHAR(13) +
 							' ' + CHAR(13) +
 							'UPDATE		mmv ' + CHAR(13) +
 							'SET		LastValidatedDttm = @GetDate ' + CHAR(13) +

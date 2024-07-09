@@ -10,6 +10,7 @@ GO
 
 
 
+
 CREATE VIEW	[Merge_DM_MatchViews].[tblDEMOGRAPHICS_vw_H_Careflow] AS
 
 		SELECT		IsSCR			= CAST(0 AS BIT)
@@ -62,7 +63,7 @@ CREATE VIEW	[Merge_DM_MatchViews].[tblDEMOGRAPHICS_vw_H_Careflow] AS
 
 					,PATIENT_ID								= CAST(NULL AS INT)
 					,N1_1_NHS_NUMBER						= LTRIM(RTRIM(REPLACE(dimpat.NHS_NUMBER, ' ', '')))
-					,NHS_NUMBER_STATUS						= CAST(NULL AS VARCHAR(3))
+					,NHS_NUMBER_STATUS						= CASE dimpat.NNNST_NHSCODE WHEN '' THEN NULL WHEN 'Unknown' THEN NULL ELSE dimpat.NNNST_NHSCODE END
 					,L_RA3_RID								= CAST(NULL AS VARCHAR(50))
 					,L_RA7_RID								= CAST(NULL AS VARCHAR(50))
 					,L_RVJ01_RID							= CAST(NULL AS VARCHAR(50))

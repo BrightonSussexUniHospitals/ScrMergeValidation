@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblNonPrimaryPathwayType SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblNonPrimaryPathwayType] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblNonPrimaryPathwayType 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblNonPrimaryPathwayType 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblNonPrimaryPathwayType
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblNonPrimaryPathwayType
 GO

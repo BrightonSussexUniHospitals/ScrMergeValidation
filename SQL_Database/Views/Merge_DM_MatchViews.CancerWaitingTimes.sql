@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the CancerWaitingTimes SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[CancerWaitingTimes] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.CancerWaitingTimes 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.CancerWaitingTimes 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.CancerWaitingTimes
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.CancerWaitingTimes
 GO

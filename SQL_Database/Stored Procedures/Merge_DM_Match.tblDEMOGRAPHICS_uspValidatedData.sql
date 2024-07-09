@@ -70,9 +70,10 @@ Description:				A stored procedure to return the validated DM matching data for 
 					,h.LastUpdated
 		INTO		#mcIx
 		FROM		Merge_DM_Match.tblDEMOGRAPHICS_Match_Control mc
-		INNER JOIN	Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_H_SCR h
-																ON	mc.SrcSys = h.SrcSys
-																AND	mc.Src_UID = h.Src_UID
+		INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH h
+															ON	mc.SrcSys = h.SrcSys
+															AND	mc.Src_UID = h.Src_UID
+															AND	h.SrcSys IN (1,2)
 		LEFT JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_MajorValidation mmv_Confirmed
 																			ON	mc.SrcSys_Major = mmv_Confirmed.SrcSys_Major
 																			AND	mc.Src_UID_Major = mmv_Confirmed.Src_UID_Major
@@ -88,7 +89,10 @@ Description:				A stored procedure to return the validated DM matching data for 
 		DECLARE @SQL_mc VARCHAR(MAX)
 		SELECT @NewID = CAST(NEWID() AS VARCHAR(255))
 		SET @SQL_mc = 'CREATE UNIQUE CLUSTERED INDEX [PK_mcIx_' + @NewID + '] ON #mcIx (SrcSys ASC, Src_UID ASC)'; PRINT @SQL_mc; EXEC (@SQL_mc)
+		SET @SQL_mc = 'CREATE NONCLUSTERED INDEX [Ix_mcIx_Minors_' + @NewID + '] ON #mcIx (mcIx, IsMajorSCR, SrcSys_Major ASC, Src_UID_Major)'; PRINT @SQL_mc; EXEC (@SQL_mc)
 		SET @SQL_mc = 'CREATE NONCLUSTERED INDEX [Ix_mcIx_Major_' + @NewID + '] ON #mcIx (SrcSys_Major ASC, Src_UID_Major)'; PRINT @SQL_mc; EXEC (@SQL_mc)
+		SET @SQL_mc = 'CREATE NONCLUSTERED INDEX [Ix_mcIx_IsMajorSCR_' + @NewID + '] ON #mcIx (IsMajorSCR)'; PRINT @SQL_mc; EXEC (@SQL_mc)
+		SET @SQL_mc = 'CREATE NONCLUSTERED INDEX [Ix_mcIx_mcIx_' + @NewID + '] ON #mcIx (mcIx)'; PRINT @SQL_mc; EXEC (@SQL_mc)
 
 		-- SELECT * FROM #mcIx WHERE #mcIx.IsMajorSCR = 0
 
@@ -227,7 +231,7 @@ Description:				A stored procedure to return the validated DM matching data for 
 					,uh.RegisteredGP
 					,uh.PersonSexualOrientation
 		INTO		#ValidatedData
-		FROM		Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_UH uh
+		FROM		Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH uh
 		WHERE		0 = 1 -- only return an empty dataset with the desired table structure
 
 		-- internal majors
@@ -361,9 +365,10 @@ Description:				A stored procedure to return the validated DM matching data for 
 					,RegisteredGP							= CASE WHEN (h.LastUpdated <= mmv.LastValidatedDttm OR h.LastUpdated IS NULL OR mmv.LastValidatedDttm IS NULL) AND mmvc.RegisteredGP = 1 THEN mmv.RegisteredGP ELSE h.RegisteredGP END
 					,PersonSexualOrientation				= CASE WHEN (h.LastUpdated <= mmv.LastValidatedDttm OR h.LastUpdated IS NULL OR mmv.LastValidatedDttm IS NULL) AND mmvc.PersonSexualOrientation = 1 THEN mmv.PersonSexualOrientation ELSE h.PersonSexualOrientation END
 		FROM		#mcIx mc
-		INNER JOIN	Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_H_SCR h
-																ON	mc.SrcSys_Major = h.SrcSys
-																AND	mc.Src_UID_Major = h.Src_UID
+		INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH h
+															ON	mc.SrcSys_Major = h.SrcSys
+															AND	mc.Src_UID_Major = h.Src_UID
+															AND	h.SrcSys IN (1,2)
 		LEFT JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_MajorValidation mmv
 																			ON	mc.SrcSys_Major = mmv.SrcSys_Major
 																			AND	mc.Src_UID_Major = mmv.Src_UID_Major
@@ -505,12 +510,14 @@ Description:				A stored procedure to return the validated DM matching data for 
 					,RegisteredGP							= CASE WHEN (h_CF.LastUpdated <= mmv.LastValidatedDttm OR h_CF.LastUpdated IS NULL OR mmv.LastValidatedDttm IS NULL) AND mmvc.RegisteredGP = 1 THEN mmv.RegisteredGP ELSE ISNULL(h_CF.RegisteredGP, h_SCR.RegisteredGP) END
 					,PersonSexualOrientation				= CASE WHEN (h_CF.LastUpdated <= mmv.LastValidatedDttm OR h_CF.LastUpdated IS NULL OR mmv.LastValidatedDttm IS NULL) AND mmvc.PersonSexualOrientation = 1 THEN mmv.PersonSexualOrientation ELSE ISNULL(h_CF.PersonSexualOrientation, h_SCR.PersonSexualOrientation) END
 		FROM		#mcIx mc
-		INNER JOIN	Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_H_Careflow h_CF
+		INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH h_CF
 																ON	mc.SrcSys_Major = h_CF.SrcSys
 																AND	mc.Src_UID_Major = h_CF.Src_UID
-		LEFT JOIN	Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_H_SCR h_SCR
+																AND	h_CF.SrcSys = 3
+		LEFT JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH h_SCR
 																ON	mc.SrcSys = h_SCR.SrcSys
 																AND	mc.Src_UID = h_SCR.Src_UID
+																AND	h_SCR.SrcSys IN (1,2)
 		LEFT JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_MajorValidation mmv
 																			ON	mc.SrcSys_Major = mmv.SrcSys_Major
 																			AND	mc.Src_UID_Major = mmv.Src_UID_Major
@@ -652,15 +659,23 @@ Description:				A stored procedure to return the validated DM matching data for 
 					,RegisteredGP							= h.RegisteredGP						
 					,PersonSexualOrientation				= h.PersonSexualOrientation			
 		FROM		#mcIx mc
-		INNER JOIN	Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_H_SCR h
-																ON	mc.SrcSys = h.SrcSys
-																AND	mc.Src_UID = h.Src_UID
+		INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH h
+															ON	mc.SrcSys = h.SrcSys
+															AND	mc.Src_UID = h.Src_UID
+															AND	h.SrcSys IN (1,2)
 		LEFT JOIN	#ValidatedData vd
 									ON	mc.SrcSys = vd.SrcSys
 									AND	mc.Src_UID = vd.Src_UID
 		WHERE		mc.IsConfirmed = 0
 		AND			vd.SrcSys IS NULL
 		
+		-- Create an index on the temporary match control table		--	DECLARE @NewID VARCHAR(255) SELECT @NewID = CAST(NEWID() AS VARCHAR(255))
+		DECLARE @SQL_vd VARCHAR(MAX)
+		SET @SQL_vd = 'CREATE UNIQUE CLUSTERED INDEX [PK_vdIx_' + @NewID + '] ON #ValidatedData (SrcSys ASC, Src_UID ASC)'; PRINT @SQL_vd; EXEC (@SQL_vd)
+		SET @SQL_vd = 'CREATE NONCLUSTERED INDEX [Ix_vdIx_Major_' + @NewID + '] ON #ValidatedData (SrcSys_Major ASC, Src_UID_Major)'; PRINT @SQL_vd; EXEC (@SQL_vd)
+		SET @SQL_vd = 'CREATE NONCLUSTERED INDEX [Ix_vdIx_MajorExt_' + @NewID + '] ON #ValidatedData (SrcSys_MajorExt ASC, Src_UID_MajorExt)'; PRINT @SQL_vd; EXEC (@SQL_vd)
+
+
 		-- minors that are left
 		INSERT INTO	#ValidatedData
 					(SrcSys_MajorExt
@@ -683,14 +698,14 @@ Description:				A stored procedure to return the validated DM matching data for 
 					,SrcSys									= mc.SrcSys
 					,Src_UID								= mc.Src_UID
 		FROM		#mcIx mc
+		LEFT JOIN	#ValidatedData vd
+									ON	mc.SrcSys = vd.SrcSys
+									AND	mc.Src_UID = vd.Src_UID
 		LEFT JOIN	#mcIx mc_1st
 								ON	mc.SrcSys_Major = mc_1st.SrcSys_Major
 								AND	mc.Src_UID_Major = mc_1st.Src_UID_Major
 								AND	mc_1st.IsMajorSCR = 0
 								AND	mc_1st.mcIx = 1
-		LEFT JOIN	#ValidatedData vd
-									ON	mc.SrcSys = vd.SrcSys
-									AND	mc.Src_UID = vd.Src_UID
 		WHERE		vd.SrcSys IS NULL
 
 		-- SCR records that aren't in the match control table (if we are creating a bulk dataset)
@@ -825,11 +840,86 @@ Description:				A stored procedure to return the validated DM matching data for 
 					,RegisteredPractice						= h.RegisteredPractice
 					,RegisteredGP							= h.RegisteredGP
 					,PersonSexualOrientation				= h.PersonSexualOrientation
-		FROM		Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_H_SCR h
+		FROM		Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH h
 		LEFT JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_Control mc
 																ON	h.SrcSys = mc.SrcSys
 																AND	h.Src_UID = mc.Src_UID
-		WHERE		mc.SrcSys IS NULL
+		LEFT JOIN	#ValidatedData vd
+									ON	mc.SrcSys = vd.SrcSys
+									AND	mc.Src_UID = vd.Src_UID
+		WHERE		(mc.SrcSys IS NULL
+		OR			vd.SrcSys IS NULL)
+		AND			h.SrcSys IN (1,2)
+
+
+
+/*********************************************************************************************************************************************************************************************************************************************************************************/
+-- Make post-merge corrections
+/*********************************************************************************************************************************************************************************************************************************************************************************/
+
+		-- Only run the NHS number status correction if there are records to correct
+		IF	(SELECT		COUNT(*)
+			FROM		#ValidatedData vd  -- Merge_DM_Match.tblDEMOGRAPHICS_tblValidatedData vd
+			LEFT JOIN	#RelatedEntities re
+											ON	vd.SrcSys = re.SrcSys
+											AND	vd.Src_UID = re.Src_UID
+			WHERE		vd.N1_1_NHS_NUMBER IS NOT NULL
+			AND			vd.NHS_NUMBER_STATUS IS NULL
+			AND			(re.SrcSys IS NOT NULL
+			OR			@HasRelatedEntities = 0)
+			) > 0
+
+		BEGIN
+		
+				-- Create the table of NHS number status values to update back into #ValidatedData where the NHS number status is missing
+				IF OBJECT_ID('tempdb..#ReplacementNhsNoStatus') IS NOT NULL DROP TABLE #ReplacementNhsNoStatus
+				SELECT		vd.SrcSys
+							,vd.Src_UID
+							,UH.NHS_NUMBER_STATUS
+							,ROW_NUMBER() OVER	(PARTITION BY	vd.SrcSys
+																,vd.Src_UID
+												ORDER BY		CASE UH.NHS_NUMBER_STATUS
+																WHEN '01' THEN 1
+																WHEN '07' THEN 2
+																WHEN '06' THEN 3
+																WHEN '08' THEN 4
+																WHEN '04' THEN 5
+																WHEN '05' THEN 6
+																WHEN '02' THEN 7
+																WHEN '03' THEN 8
+																END
+																) AS NhsNoStatusIx
+				INTO		#ReplacementNhsNoStatus
+				FROM		#ValidatedData vd -- Merge_DM_Match.tblDEMOGRAPHICS_tblValidatedData vd
+				INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_Control mc
+																			ON	vd.SrcSys_MajorExt = mc.SrcSys_Major
+																			AND	vd.Src_UID_MajorExt = mc.Src_UID_Major
+				INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH UH
+																	ON	mc.SrcSys = UH.SrcSys
+																	AND	mc.Src_UID = UH.Src_UID
+																	AND	UH.NHS_NUMBER_STATUS IS NOT NULL
+				LEFT JOIN	#RelatedEntities re
+												ON	vd.SrcSys = re.SrcSys
+												AND	vd.Src_UID = re.Src_UID
+				WHERE		vd.N1_1_NHS_NUMBER IS NOT NULL
+				AND			vd.NHS_NUMBER_STATUS IS NULL
+				AND			(re.SrcSys IS NOT NULL
+				OR			@HasRelatedEntities = 0)
+				GROUP BY	vd.SrcSys
+							,vd.Src_UID
+							,UH.NHS_NUMBER_STATUS
+				ORDER BY	vd.SrcSys
+							,vd.Src_UID
+
+				-- Update #ValidatedData where the NHS number status is missing with the "best" NHS number status value from other minor records
+				UPDATE		vd
+				SET			vd.NHS_NUMBER_STATUS = NhsNoStatus.NHS_NUMBER_STATUS
+				FROM		#ValidatedData vd
+				INNER JOIN	#ReplacementNhsNoStatus	NhsNoStatus
+																ON	vd.SrcSys = NhsNoStatus.SrcSys
+																AND	vd.Src_UID = NhsNoStatus.Src_UID
+
+		END
 
 
 /*********************************************************************************************************************************************************************************************************************************************************************************/
@@ -861,7 +951,7 @@ Description:				A stored procedure to return the validated DM matching data for 
 		IF	@PivotForSSRS = 1
 		BEGIN
 
-		--SELECT * FROM #ValidatedData
+		--	SELECT * FROM #ValidatedData
 
 				-- Create the table of data we wish to present to SSRS
 				IF OBJECT_ID ('tempdb..#DataForValidation') IS NOT NULL DROP TABLE #DataForValidation
@@ -1001,7 +1091,7 @@ Description:				A stored procedure to return the validated DM matching data for 
 							,RegisteredPractice						= h.RegisteredPractice
 							,RegisteredGP							= h.RegisteredGP
 							,PersonSexualOrientation				= h.PersonSexualOrientation
-				FROM		Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_H_SCR h
+				FROM		Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH h
 				INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_Control mc
 																			ON	h.SrcSys = mc.SrcSys
 																			AND	h.Src_UID = mc.Src_UID
@@ -1013,6 +1103,7 @@ Description:				A stored procedure to return the validated DM matching data for 
 										AND	mc.Src_UID_Major = mc_1st.Src_UID_Major
 										AND	mc_1st.IsMajorSCR = 0
 										AND	mc_1st.mcIx = 1
+				WHERE		h.SrcSys IN (1,2)
 
 				-- Add in all other external related rows to the data for validation
 				INSERT INTO	#DataForValidation
@@ -1145,7 +1236,7 @@ Description:				A stored procedure to return the validated DM matching data for 
 							,RegisteredPractice						= h.RegisteredPractice
 							,RegisteredGP							= h.RegisteredGP
 							,PersonSexualOrientation				= h.PersonSexualOrientation
-				FROM		Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_H_Careflow h
+				FROM		Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH h
 				INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_Control mc
 																			ON	h.SrcSys = mc.SrcSys
 																			AND	h.Src_UID = mc.Src_UID
@@ -1157,10 +1248,19 @@ Description:				A stored procedure to return the validated DM matching data for 
 										AND	mc.Src_UID_Major = mc_1st.Src_UID_Major
 										AND	mc_1st.IsMajorSCR = 0
 										AND	mc_1st.mcIx = 1 
+				WHERE		h.SrcSys = 3
 
 				
 				-- Create and populate the list of colums we wish to present to SSRS
 				IF OBJECT_ID('tempdb..#ColumnDetails') IS NULL CREATE TABLE #ColumnDetails (ColumnName VARCHAR(255), ColumnDesc VARCHAR(255))
+				INSERT INTO #ColumnDetails (ColumnName,ColumnDesc) 
+				SELECT		ColumnName
+							,ColumnDesc
+				FROM		Merge_DM_Match.Config_ColumnsAndGroups
+				WHERE		TableName = 'tblDEMOGRAPHICS'
+				AND			ShowInReport = 1
+				
+				/*
 				TRUNCATE TABLE #ColumnDetails
 				--INSERT INTO #ColumnDetails (ColumnName,ColumnDesc) VALUES ('PATIENT_ID',				'Demographic Record ID')
 				INSERT INTO #ColumnDetails (ColumnName,ColumnDesc) VALUES ('N1_1_NHS_NUMBER',			'NHS Number')
@@ -1271,7 +1371,7 @@ Description:				A stored procedure to return the validated DM matching data for 
 				--INSERT INTO #ColumnDetails (ColumnName,ColumnDesc) VALUES ('OTHER_DEATH_CAUSE_UROLOGY',	'[Not in use]')
 				--INSERT INTO #ColumnDetails (ColumnName,ColumnDesc) VALUES ('ACTION_ID',					'Latest Audit ID for Demographic Data')
 				--INSERT INTO #ColumnDetails (ColumnName,ColumnDesc) VALUES ('STATED_GENDER_CODE',		'Person Stated Gender')
-		
+				*/
 
 				SELECT		'ValidatedData' AS ReportingCohort
 							,ISNULL(RowWise.SrcSys_MajorExt, mmvc.SrcSys_MajorExt) AS SrcSys_MajorExt
@@ -1420,16 +1520,16 @@ Description:				A stored procedure to return the validated DM matching data for 
 										,PersonSexualOrientation				= CAST(d4v.PersonSexualOrientation AS VARCHAR(8000))
 							FROM		#DataForValidation d4v
 							LEFT JOIN	Merge_DM_MatchViews.ltblETHNIC_CAT ec
-																			ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',ec.SrcSysID, 1) AS TINYINT)
+																			ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = ec.SrcSysID
 																			AND	d4v.N1_15_ETHNICITY COLLATE DATABASE_DEFAULT = ec.ETHNIC_CODE COLLATE DATABASE_DEFAULT
 							LEFT JOIN	Merge_DM_MatchViews.ltblTITLE ttl
-																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',ttl.SrcSysID, 1) AS TINYINT)
+																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = ttl.SrcSysID
 																		AND	d4v.L_TITLE = ttl.TITLE_CODE
 							LEFT JOIN	Merge_DM_MatchViews.ltblRELIGION relgn
-																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',relgn.SrcSysID, 1) AS TINYINT)
+																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = relgn.SrcSysID
 																		AND	d4v.RELIGION = relgn.RELIGION_ID
 							LEFT JOIN	Merge_DM_MatchViews.ltblGENDER sex
-																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',sex.SrcSysID, 1) AS TINYINT)
+																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = sex.SrcSysID
 																		AND	d4v.N1_9_SEX COLLATE DATABASE_DEFAULT = sex.GENDER_CODE COLLATE DATABASE_DEFAULT
 										) UnpivotPrepare
 							UNPIVOT		(FieldValue FOR FieldName IN

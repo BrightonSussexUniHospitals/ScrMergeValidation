@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblNonPrimaryWHOTumourGrade SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblNonPrimaryWHOTumourGrade] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblNonPrimaryWHOTumourGrade 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblNonPrimaryWHOTumourGrade 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblNonPrimaryWHOTumourGrade
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblNonPrimaryWHOTumourGrade
 GO

@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblGYNAE_HYSTERECTOMY SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblGYNAE_HYSTERECTOMY] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblGYNAE_HYSTERECTOMY 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblGYNAE_HYSTERECTOMY 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblGYNAE_HYSTERECTOMY
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblGYNAE_HYSTERECTOMY
 GO

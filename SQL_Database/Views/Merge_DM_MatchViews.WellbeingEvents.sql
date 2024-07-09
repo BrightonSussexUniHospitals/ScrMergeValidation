@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the WellbeingEvents SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[WellbeingEvents] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.WellbeingEvents 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.WellbeingEvents 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.WellbeingEvents
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.WellbeingEvents
 GO

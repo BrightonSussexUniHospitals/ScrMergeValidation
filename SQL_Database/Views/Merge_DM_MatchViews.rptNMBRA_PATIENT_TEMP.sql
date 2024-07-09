@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the rptNMBRA_PATIENT_TEMP SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[rptNMBRA_PATIENT_TEMP] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.rptNMBRA_PATIENT_TEMP 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.rptNMBRA_PATIENT_TEMP 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.rptNMBRA_PATIENT_TEMP
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.rptNMBRA_PATIENT_TEMP
 GO

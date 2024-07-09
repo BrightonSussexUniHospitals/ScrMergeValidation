@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the SomaticTestsPerformed SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[SomaticTestsPerformed] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.SomaticTestsPerformed 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.SomaticTestsPerformed 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.SomaticTestsPerformed
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.SomaticTestsPerformed
 GO

@@ -11,9 +11,13 @@ CREATE TABLE [Merge_DM_Match].[tblMAIN_REFERRALS_Match_Control]
 [DeletedDttm] [datetime2] NULL
 ) ON [PRIMARY]
 GO
+CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_Match_Control_ChangeLastDetected] ON [Merge_DM_Match].[tblMAIN_REFERRALS_Match_Control] ([ChangeLastDetected]) ON [PRIMARY]
+GO
 CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_Match_Control_HashBytesValue] ON [Merge_DM_Match].[tblMAIN_REFERRALS_Match_Control] ([HashBytesValue]) ON [PRIMARY]
 GO
-CREATE NONCLUSTERED INDEX [tblMAIN_REFERRALS_Match_Control_HashBytesValue] ON [Merge_DM_Match].[tblMAIN_REFERRALS_Match_Control] ([HashBytesValue]) ON [PRIMARY]
+CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_Match_Control_LastProcessed] ON [Merge_DM_Match].[tblMAIN_REFERRALS_Match_Control] ([LastProcessed]) ON [PRIMARY]
 GO
 CREATE UNIQUE CLUSTERED INDEX [PK_tblMAIN_REFERRALS_Match_Control] ON [Merge_DM_Match].[tblMAIN_REFERRALS_Match_Control] ([SrcSys], [Src_UID]) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_Match_Control_Major] ON [Merge_DM_Match].[tblMAIN_REFERRALS_Match_Control] ([SrcSys_Major], [Src_UID_Major]) ON [PRIMARY]
 GO

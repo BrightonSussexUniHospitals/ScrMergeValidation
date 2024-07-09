@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the HNAStatus SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[HNAStatus] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.HNAStatus 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.HNAStatus 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.HNAStatus
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.HNAStatus
 GO

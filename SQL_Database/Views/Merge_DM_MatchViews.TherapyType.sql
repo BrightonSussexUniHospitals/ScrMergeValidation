@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the TherapyType SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[TherapyType] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.TherapyType 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.TherapyType 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.TherapyType
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.TherapyType
 GO

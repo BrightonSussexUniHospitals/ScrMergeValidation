@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblDeathCauseLaterDate SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblDeathCauseLaterDate] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblDeathCauseLaterDate 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblDeathCauseLaterDate 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblDeathCauseLaterDate
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblDeathCauseLaterDate
 GO

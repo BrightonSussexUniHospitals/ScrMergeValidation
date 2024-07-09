@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the tblCancerSiteTotals SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[tblCancerSiteTotals] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.tblCancerSiteTotals 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.tblCancerSiteTotals 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.tblCancerSiteTotals
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.tblCancerSiteTotals
 GO

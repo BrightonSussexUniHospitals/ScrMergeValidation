@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the expCWT_TERTIARY_DATES SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[expCWT_TERTIARY_DATES] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.expCWT_TERTIARY_DATES 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.expCWT_TERTIARY_DATES 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.expCWT_TERTIARY_DATES
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.expCWT_TERTIARY_DATES
 GO

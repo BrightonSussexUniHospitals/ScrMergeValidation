@@ -63,7 +63,7 @@ Description:				A template stored procedure to update the data used in the match
 					,uh.Src_UID
 					,uh.HashBytesValue
 					,GETDATE()
-		FROM		Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_UH uh
+		FROM		Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
 		LEFT JOIN	Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc
 													ON	uh.SrcSys = mc.SrcSys
 													AND	uh.Src_UID = mc.Src_UID
@@ -78,7 +78,7 @@ Description:				A template stored procedure to update the data used in the match
 		SET			mc.HashBytesValue = uh.HashBytesValue
 					,mc.ChangeLastDetected = GETDATE()
 		FROM		Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc
-		INNER JOIN	Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_UH uh
+		INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
 											ON	mc.SrcSys = uh.SrcSys
 											AND	mc.Src_UID = uh.Src_UID
 		WHERE		mc.HashBytesValue != uh.HashBytesValue
@@ -91,7 +91,7 @@ Description:				A template stored procedure to update the data used in the match
 		SET			mc.DeletedDttm = GETDATE()
 					,mc.ChangeLastDetected = GETDATE()
 		FROM		Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc
-		LEFT JOIN	Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_UH uh
+		LEFT JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
 											ON	mc.SrcSys = uh.SrcSys
 											AND	mc.Src_UID = uh.Src_UID
 		WHERE		uh.SrcSys IS NULL

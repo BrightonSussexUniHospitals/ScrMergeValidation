@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the CNSCarePlanSections SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[CNSCarePlanSections] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.CNSCarePlanSections 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.CNSCarePlanSections 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.CNSCarePlanSections
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.CNSCarePlanSections
 GO

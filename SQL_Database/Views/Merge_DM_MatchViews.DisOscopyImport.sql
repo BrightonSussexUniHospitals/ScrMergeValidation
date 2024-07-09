@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the DisOscopyImport SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[DisOscopyImport] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.DisOscopyImport 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.DisOscopyImport 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.DisOscopyImport
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.DisOscopyImport
 GO

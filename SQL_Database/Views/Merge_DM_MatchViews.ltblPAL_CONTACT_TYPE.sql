@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblPAL_CONTACT_TYPE SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblPAL_CONTACT_TYPE] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblPAL_CONTACT_TYPE 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblPAL_CONTACT_TYPE 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblPAL_CONTACT_TYPE
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblPAL_CONTACT_TYPE
 GO

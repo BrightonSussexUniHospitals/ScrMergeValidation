@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblUNRESECTABLE_REASON SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblUNRESECTABLE_REASON] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblUNRESECTABLE_REASON 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblUNRESECTABLE_REASON 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblUNRESECTABLE_REASON
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblUNRESECTABLE_REASON
 GO

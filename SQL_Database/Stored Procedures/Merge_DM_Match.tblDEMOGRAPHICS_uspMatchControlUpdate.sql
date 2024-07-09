@@ -63,7 +63,7 @@ Description:				A stored procedure to update the tblDEMOGRAPHICS data used in th
 					,uh.Src_UID
 					,uh.HashBytesValue
 					,GETDATE()
-		FROM		Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_UH uh
+		FROM		Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH uh
 		LEFT JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_Control mc
 													ON	uh.SrcSys = mc.SrcSys
 													AND	uh.Src_UID = mc.Src_UID
@@ -78,7 +78,7 @@ Description:				A stored procedure to update the tblDEMOGRAPHICS data used in th
 		SET			mc.HashBytesValue = uh.HashBytesValue
 					,mc.ChangeLastDetected = GETDATE()
 		FROM		Merge_DM_Match.tblDEMOGRAPHICS_Match_Control mc
-		INNER JOIN	Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_UH uh
+		INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH uh
 											ON	mc.SrcSys = uh.SrcSys
 											AND	mc.Src_UID = uh.Src_UID
 		WHERE		mc.HashBytesValue != uh.HashBytesValue
@@ -91,7 +91,7 @@ Description:				A stored procedure to update the tblDEMOGRAPHICS data used in th
 		SET			mc.DeletedDttm = GETDATE()
 					,mc.ChangeLastDetected = GETDATE()
 		FROM		Merge_DM_Match.tblDEMOGRAPHICS_Match_Control mc
-		LEFT JOIN	Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_UH uh
+		LEFT JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH uh
 											ON	mc.SrcSys = uh.SrcSys
 											AND	mc.Src_UID = uh.Src_UID
 		WHERE		uh.SrcSys IS NULL

@@ -1,0 +1,33 @@
+CREATE TABLE [Merge_R_Compare].[dbo_tblPathwayUpdateEvents]
+(
+[DW_tblPathwayUpdateEvents_ID] [bigint] NOT NULL IDENTITY(1, 1),
+[DW_LOAD_ID] [int] NULL,
+[DW_CREATION_DATE_TIME] [datetime] NULL,
+[DW_MODIFIED_DATE_TIME] [datetime] NULL,
+[DW_SOURCE_ID] [nvarchar] (200) COLLATE Latin1_General_CI_AS NULL,
+[DW_SOURCE_SYSTEM_ID] [int] NULL,
+[DW_SOURCE_PATIENT_ID] [nvarchar] (200) COLLATE Latin1_General_CI_AS NULL,
+[DW_SOURCE_SYSTEM_CREATED_DATE_TIME] [datetime] NULL,
+[DW_SOURCE_SYSTEM_MODIFIED_DATE_TIME] [datetime] NULL,
+[PathwayUpdateEventID] [int] NULL,
+[CareID] [int] NULL,
+[NextActionID] [int] NULL,
+[NextActionSpecificID] [int] NULL,
+[AdditionalDetails] [varchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[OwnerID] [int] NULL,
+[OwnerRole] [varchar] (55) COLLATE Latin1_General_CI_AS NULL,
+[OwnerName] [varchar] (55) COLLATE Latin1_General_CI_AS NULL,
+[TargetDate] [date] NULL,
+[Escalate] [int] NULL,
+[OrganisationID] [int] NULL,
+[ActionComplete] [bit] NULL,
+[ACTION_ID] [int] NULL,
+[DateLastTracked] [date] NULL,
+[OwnerUpdate] [varchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[DelayReason] [varchar] (255) COLLATE Latin1_General_CI_AS NULL,
+[DateOfEscalation] [date] NULL,
+[EscalatedTo] [varchar] (55) COLLATE Latin1_General_CI_AS NULL,
+[ForPTLDiscuss] [bit] NULL,
+[DateActionCompleted] [date] NULL
+) ON [PRIMARY]
+GO

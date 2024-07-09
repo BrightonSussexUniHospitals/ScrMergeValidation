@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblSTAGE_GROUP_MAPPING SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblSTAGE_GROUP_MAPPING] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblSTAGE_GROUP_MAPPING 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblSTAGE_GROUP_MAPPING 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblSTAGE_GROUP_MAPPING
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblSTAGE_GROUP_MAPPING
 GO

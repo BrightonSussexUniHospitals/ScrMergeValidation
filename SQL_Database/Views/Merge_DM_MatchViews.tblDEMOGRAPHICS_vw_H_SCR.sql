@@ -177,8 +177,8 @@ CREATE VIEW	[Merge_DM_MatchViews].[tblDEMOGRAPHICS_vw_H_SCR] AS
 					,RegisteredPractice						= dem.RegisteredPractice
 					,RegisteredGP							= dem.RegisteredGP
 					,PersonSexualOrientation				= dem.PersonSexualOrientation
-		FROM		LocalConfig.tblDEMOGRAPHICS dem
-		LEFT JOIN	(SELECT * FROM LocalConfig.tblAUDIT WHERE TABLE_NAME = 'tblDEMOGRAPHICS') aud
+		FROM		Merge_DM_MatchViews.tblDEMOGRAPHICS dem
+		LEFT JOIN	(SELECT * FROM Merge_DM_MatchViews.tblAUDIT WHERE TABLE_NAME = 'tblDEMOGRAPHICS') aud
 											ON	dem.SrcSysID = aud.SrcSysID
 											AND	dem.ACTION_ID = aud.ACTION_ID
 		LEFT JOIN	Merge_DM_MatchViews.ltblTITLE ttl

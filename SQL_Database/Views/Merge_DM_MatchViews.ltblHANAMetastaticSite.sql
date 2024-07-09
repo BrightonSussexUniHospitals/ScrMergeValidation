@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblHANAMetastaticSite SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblHANAMetastaticSite] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblHANAMetastaticSite 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblHANAMetastaticSite 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblHANAMetastaticSite
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblHANAMetastaticSite
 GO

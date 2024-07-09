@@ -54,6 +54,8 @@ Description:				A template stored procedure to match records from different sour
 -- EXEC Merge_DM_Match.tblMAIN_REFERRALS_uspMatchEntityPairs @MajorID_SrcSys = 1, @MajorID_Src_UID = 32
 -- EXEC Merge_DM_Match.tblMAIN_REFERRALS_uspMatchEntityPairs @MajorID_SrcSys = 1, @MajorID_Src_UID = 31, @UseExistingMatches = 1
 
+-- DECLARE	@CurrentUser VARCHAR(255),@ProcIdName VARCHAR(255),@CurrentSection VARCHAR(255),@CurrentDttm DATETIME2,@LoopCounter SMALLINT = 1,@SQL VARCHAR(MAX),@Guid VARCHAR(255),@UseExistingMatches BIT = 0	SELECT	@CurrentUser = CURRENT_USER, @ProcIdName = ISNULL(OBJECT_NAME(@@PROCID), 'ad hoc'), @Guid = CAST(NEWID() AS VARCHAR(255))
+
 		-- Set up the variables for process auditing
 		DECLARE	@CurrentUser VARCHAR(255)
 				,@ProcIdName VARCHAR(255)
@@ -100,19 +102,43 @@ Description:				A template stored procedure to match records from different sour
 							(IsSCR
 							,SrcSys
 							,Src_UID)
-				SELECT		ISNULL(mc_minor.IsSCR, mc_major.IsSCR) AS IsSCR
-							,ISNULL(mc_minor.SrcSys, mc_major.SrcSys) AS SrcSys
-							,ISNULL(mc_minor.Src_UID, mc_major.Src_UID) AS Src_UID
-				FROM		Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc_major
-				LEFT JOIN	Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc_minor
+				SELECT		mc.IsSCR AS IsSCR
+							,mc.SrcSys AS SrcSys
+							,mc.Src_UID AS Src_UID
+				FROM		Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc
+				WHERE		mc.LastProcessed IS NULL
+				OR			mc.LastProcessed < mc.ChangeLastDetected
+				GROUP BY	mc.IsSCR
+							,mc.SrcSys
+							,mc.Src_UID
+							
+				-- Insert minors associated with the majors that have new / changed records since the last refresh
+				INSERT INTO	#Incremental
+							(IsSCR
+							,SrcSys
+							,Src_UID)
+				SELECT		mc_minor.IsSCR AS IsSCR
+							,mc_minor.SrcSys AS SrcSys
+							,mc_minor.Src_UID AS Src_UID
+				FROM		(SELECT		mc_inner.SrcSys_Major
+										,mc_inner.Src_UID_Major
+							FROM		#Incremental inc_inner
+							INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc_inner
+																							ON	inc_inner.SrcSys = mc_inner.SrcSys
+																							AND	inc_inner.Src_UID = mc_inner.Src_UID
+							GROUP BY	mc_inner.SrcSys_Major
+										,mc_inner.Src_UID_Major
+										) mc_major
+				INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc_minor
 																	ON	mc_major.SrcSys_Major = mc_minor.SrcSys_Major
 																	AND	mc_Major.Src_UID_Major = mc_minor.Src_UID_Major
-				WHERE		mc_major.LastProcessed IS NULL
-				OR			mc_major.LastProcessed < mc_major.ChangeLastDetected
-				GROUP BY	ISNULL(mc_minor.IsSCR, mc_major.IsSCR)
-							,ISNULL(mc_minor.SrcSys, mc_major.SrcSys)
-							,ISNULL(mc_minor.Src_UID, mc_major.Src_UID)
-
+				LEFT JOIN	#Incremental inc
+											ON	mc_minor.SrcSys = inc.SrcSys
+											AND	mc_minor.Src_UID = inc.Src_UID
+				WHERE		inc.SrcSys IS NULL
+				GROUP BY	mc_minor.IsSCR
+							,mc_minor.SrcSys
+							,mc_minor.Src_UID
 		END
 		ELSE
 		BEGIN
@@ -324,6 +350,7 @@ Description:				A template stored procedure to match records from different sour
 				-- Iterate through the matching process to peform a match on the desired combinations of columns for every record in #Incremental and every child match therein
 				/*****************************************************************************************************************************************************************************************************************************************************************************************/
 
+				-- DECLARE	@CurrentUser VARCHAR(255),@ProcIdName VARCHAR(255),@CurrentSection VARCHAR(255),@CurrentDttm DATETIME2,@LoopCounter SMALLINT = 1,@SQL VARCHAR(MAX),@Guid VARCHAR(255),@UseExistingMatches BIT = 0	SELECT	@CurrentUser = CURRENT_USER, @ProcIdName = ISNULL(OBJECT_NAME(@@PROCID), 'ad hoc'), @Guid = CAST(NEWID() AS VARCHAR(255))
 				-- Set up the match variables that will tell us what columns to match and how
 				DECLARE	@MatchType TINYINT
 						,@MatchIntention VARCHAR(255)
@@ -358,74 +385,6 @@ Description:				A template stored procedure to match records from different sour
 						,@FasterDiagnosisOrganisationCode TINYINT
 						,@FasterDiagnosisExclusionReasonCode TINYINT
 						,@NotRecurrence TINYINT
-
-				-- Create a temp table of the full dataset of tblMAIN_REFERRALS_vw_UH that can be indexed for matching to the #tblMAIN_REFERRALS_Incremental subset
-				IF OBJECT_ID('tempdb..#tblMAIN_REFERRALS') IS NOT NULL DROP TABLE #tblMAIN_REFERRALS 
-				SELECT		uh.IsSCR
-							,uh.SrcSys
-							,uh.Src_UID
-							,uh.linkedCareID
-							,uh.PatientPathwayID
-							,uh.HospitalNumber
-							,uh.NHSNumber
-							,uh.L_CANCER_SITE
-							,uh.N2_4_PRIORITY_TYPE
-							,uh.N2_6_RECEIPT_DATE
-							,uh.N2_5_DECISION_DATE
-							,uh.ADT_REF_ID_SameSys
-							,uh.ADT_PLACER_ID_SameSys
-							,uh.N2_1_REFERRAL_SOURCE
-							,uh.N2_12_CANCER_TYPE
-							,uh.N2_13_CANCER_STATUS
-							,uh.N2_9_FIRST_SEEN_DATE
-							,uh.N1_3_ORG_CODE_SEEN
-							,uh.L_OTHER_DIAG_DATE
-							,uh.N_UPGRADE_DATE
-							,uh.N_UPGRADE_ORG_CODE
-							,uh.N4_1_DIAGNOSIS_DATE
-							,uh.L_DIAGNOSIS
-							,uh.L_ORG_CODE_DIAGNOSIS
-							,uh.N4_2_DIAGNOSIS_CODE
-							,uh.N4_3_LATERALITY
-							,uh.L_PT_INFORMED_DATE
-							,uh.FasterDiagnosisOrganisationCode
-							,uh.FasterDiagnosisExclusionReasonCode
-							,uh.NotRecurrence
-				INTO		#tblMAIN_REFERRALS
-				FROM		Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_UH uh
-
-				-- Index the #tblMAIN_REFERRALS table	
-				SET @SQL =	'CREATE UNIQUE CLUSTERED INDEX [PK_tblMAIN_REFERRALS_' + @Guid + '] ON #tblMAIN_REFERRALS (SrcSys ASC, Src_UID ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_IsSCR_' + @Guid + '] ON #tblMAIN_REFERRALS (IsSCR ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_linkedcareID_' + @Guid + '] ON #tblMAIN_REFERRALS (linkedcareID ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_PatientPathwayID_' + @Guid + '] ON #tblMAIN_REFERRALS (PatientPathwayID ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_HospitalNumber_' + @Guid + '] ON #tblMAIN_REFERRALS (HospitalNumber ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_NHSNumber_' + @Guid + '] ON #tblMAIN_REFERRALS (NHSNumber ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_L_CANCER_SITE_' + @Guid + '] ON #tblMAIN_REFERRALS (L_CANCER_SITE ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_N2_4_PRIORITY_TYPE_' + @Guid + '] ON #tblMAIN_REFERRALS (N2_4_PRIORITY_TYPE ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_N2_6_RECEIPT_DATE_' + @Guid + '] ON #tblMAIN_REFERRALS (N2_6_RECEIPT_DATE ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_N2_5_DECISION_DATE_' + @Guid + '] ON #tblMAIN_REFERRALS (N2_5_DECISION_DATE ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_ADT_REF_ID_SameSys_' + @Guid + '] ON #tblMAIN_REFERRALS (ADT_REF_ID_SameSys ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_ADT_PLACER_ID_SameSys_' + @Guid + '] ON #tblMAIN_REFERRALS (ADT_PLACER_ID_SameSys ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_N2_1_REFERRAL_SOURCE_' + @Guid + '] ON #tblMAIN_REFERRALS (N2_1_REFERRAL_SOURCE ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_N2_12_CANCER_TYPE_' + @Guid + '] ON #tblMAIN_REFERRALS (N2_12_CANCER_TYPE ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_N2_13_CANCER_STATUS_' + @Guid + '] ON #tblMAIN_REFERRALS (N2_13_CANCER_STATUS ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_N2_9_FIRST_SEEN_DATE_' + @Guid + '] ON #tblMAIN_REFERRALS (N2_9_FIRST_SEEN_DATE ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_N1_3_ORG_CODE_SEEN_' + @Guid + '] ON #tblMAIN_REFERRALS (N1_3_ORG_CODE_SEEN ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_L_OTHER_DIAG_DATE_' + @Guid + '] ON #tblMAIN_REFERRALS (L_OTHER_DIAG_DATE ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_N_UPGRADE_DATE_' + @Guid + '] ON #tblMAIN_REFERRALS (N_UPGRADE_DATE ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_N_UPGRADE_ORG_CODE_' + @Guid + '] ON #tblMAIN_REFERRALS (N_UPGRADE_ORG_CODE ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_N4_1_DIAGNOSIS_DATE_' + @Guid + '] ON #tblMAIN_REFERRALS (N4_1_DIAGNOSIS_DATE ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_L_DIAGNOSIS_' + @Guid + '] ON #tblMAIN_REFERRALS (L_DIAGNOSIS ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_L_ORG_CODE_DIAGNOSIS_' + @Guid + '] ON #tblMAIN_REFERRALS (L_ORG_CODE_DIAGNOSIS ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_N4_2_DIAGNOSIS_CODE_' + @Guid + '] ON #tblMAIN_REFERRALS (N4_2_DIAGNOSIS_CODE ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_N4_3_LATERALITY_' + @Guid + '] ON #tblMAIN_REFERRALS (N4_3_LATERALITY ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_L_PT_INFORMED_DATE_' + @Guid + '] ON #tblMAIN_REFERRALS (L_PT_INFORMED_DATE ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_FasterDiagnosisOrganisationCode_' + @Guid + '] ON #tblMAIN_REFERRALS (FasterDiagnosisOrganisationCode ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_FasterDiagnosisExclusionReasonCode_' + @Guid + '] ON #tblMAIN_REFERRALS (FasterDiagnosisExclusionReasonCode ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_tblMAIN_REFERRALS_NotRecurrence_' + @Guid + '] ON #tblMAIN_REFERRALS (NotRecurrence ASC) '
-
-				EXEC (@SQL)
 				
 				WHILE @NoFurtherMatchesFound = 0
 				BEGIN
@@ -466,7 +425,7 @@ Description:				A template stored procedure to match records from different sour
 									,uh.FasterDiagnosisExclusionReasonCode
 									,uh.NotRecurrence 
 						INTO		#tblMAIN_REFERRALS_Incremental
-						FROM		Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_UH uh
+						FROM		Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
 						INNER JOIN	#Incremental inc 
 													ON	uh.SrcSys = inc.SrcSys 
 													AND	uh.Src_UID = inc.Src_UID 
@@ -534,7 +493,7 @@ Description:				A template stored procedure to match records from different sour
 																				'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																				'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																				'FROM		#tblMAIN_REFERRALS_Incremental A ' + CHAR(13) +
-																				'INNER JOIN	#tblMAIN_REFERRALS B ' + CHAR(13) +
+																				'INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH B ' + CHAR(13) +
 																				'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + -- Don't self join
 						CASE WHEN @LoopCounter > 1 THEN							'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @Not_Srcsys = 1 THEN							'                                   AND	A.Srcsys != B.Srcsys ' + CHAR(13) ELSE '' END +  
@@ -636,7 +595,7 @@ Description:				A template stored procedure to match records from different sour
 																				'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																				'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																				'FROM		#tblMAIN_REFERRALS_Incremental A ' + CHAR(13) +
-																				'INNER JOIN	#tblMAIN_REFERRALS B ' + CHAR(13) +
+																				'INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH B ' + CHAR(13) +
 																				'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + -- Don't self join
 						CASE WHEN @LoopCounter > 1 THEN							'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @Not_Srcsys = 1 THEN							'                                   AND	A.Srcsys != B.Srcsys ' + CHAR(13) ELSE '' END +  
@@ -740,7 +699,7 @@ Description:				A template stored procedure to match records from different sour
 																				'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																				'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																				'FROM		#tblMAIN_REFERRALS_Incremental A ' + CHAR(13) +
-																				'INNER JOIN	#tblMAIN_REFERRALS B ' + CHAR(13) +
+																				'INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH B ' + CHAR(13) +
 																				'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + -- Don't self join
 						CASE WHEN @LoopCounter > 1 THEN							'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @Not_Srcsys = 1 THEN							'                                   AND	A.Srcsys != B.Srcsys ' + CHAR(13) ELSE '' END +  
@@ -843,7 +802,7 @@ Description:				A template stored procedure to match records from different sour
 																				'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																				'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																				'FROM		#tblMAIN_REFERRALS_Incremental A ' + CHAR(13) +
-																				'INNER JOIN	#tblMAIN_REFERRALS B ' + CHAR(13) +
+																				'INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH B ' + CHAR(13) +
 																				'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + -- Don't self join
 						CASE WHEN @LoopCounter > 1 THEN							'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @Not_Srcsys = 1 THEN							'                                   AND	A.Srcsys != B.Srcsys ' + CHAR(13) ELSE '' END +  
@@ -943,7 +902,7 @@ Description:				A template stored procedure to match records from different sour
 																				'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																				'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																				'FROM		#tblMAIN_REFERRALS_Incremental A ' + CHAR(13) +
-																				'INNER JOIN	#tblMAIN_REFERRALS B ' + CHAR(13) +
+																				'INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH B ' + CHAR(13) +
 																				'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + -- Don't self join
 						CASE WHEN @LoopCounter > 1 THEN							'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @Not_Srcsys = 1 THEN							'                                   AND	A.Srcsys != B.Srcsys ' + CHAR(13) ELSE '' END +  
@@ -1042,7 +1001,7 @@ Description:				A template stored procedure to match records from different sour
 																				'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																				'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																				'FROM		#tblMAIN_REFERRALS_Incremental A ' + CHAR(13) +
-																				'INNER JOIN	#tblMAIN_REFERRALS B ' + CHAR(13) +
+																				'INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH B ' + CHAR(13) +
 																				'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + -- Don't self join
 						CASE WHEN @LoopCounter > 1 THEN							'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @Not_Srcsys = 1 THEN							'                                   AND	A.Srcsys != B.Srcsys ' + CHAR(13) ELSE '' END +  
@@ -1146,7 +1105,7 @@ Description:				A template stored procedure to match records from different sour
 																				'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																				'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																				'FROM		#tblMAIN_REFERRALS_Incremental A ' + CHAR(13) +
-																				'INNER JOIN	#tblMAIN_REFERRALS B ' + CHAR(13) +
+																				'INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH B ' + CHAR(13) +
 																				'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + -- Don't self join
 						CASE WHEN @LoopCounter > 1 THEN							'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @Not_Srcsys = 1 THEN							'                                   AND	A.Srcsys != B.Srcsys ' + CHAR(13) ELSE '' END +  
@@ -1250,7 +1209,7 @@ Description:				A template stored procedure to match records from different sour
 																				'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																				'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																				'FROM		#tblMAIN_REFERRALS_Incremental A ' + CHAR(13) +
-																				'INNER JOIN	#tblMAIN_REFERRALS B ' + CHAR(13) +
+																				'INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH B ' + CHAR(13) +
 																				'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + -- Don't self join
 						CASE WHEN @LoopCounter > 1 THEN							'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @Not_Srcsys = 1 THEN							'                                   AND	A.Srcsys != B.Srcsys ' + CHAR(13) ELSE '' END +  
@@ -1353,7 +1312,7 @@ Description:				A template stored procedure to match records from different sour
 																				'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																				'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																				'FROM		#tblMAIN_REFERRALS_Incremental A ' + CHAR(13) +
-																				'INNER JOIN	#tblMAIN_REFERRALS B ' + CHAR(13) +
+																				'INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH B ' + CHAR(13) +
 																				'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + -- Don't self join
 						CASE WHEN @LoopCounter > 1 THEN							'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @Not_Srcsys = 1 THEN							'                                   AND	A.Srcsys != B.Srcsys ' + CHAR(13) ELSE '' END +  
@@ -1456,7 +1415,7 @@ Description:				A template stored procedure to match records from different sour
 																				'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																				'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																				'FROM		#tblMAIN_REFERRALS_Incremental A ' + CHAR(13) +
-																				'INNER JOIN	#tblMAIN_REFERRALS B ' + CHAR(13) +
+																				'INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH B ' + CHAR(13) +
 																				'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + -- Don't self join
 						CASE WHEN @LoopCounter > 1 THEN							'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @Not_Srcsys = 1 THEN							'                                   AND	A.Srcsys != B.Srcsys ' + CHAR(13) ELSE '' END +  
@@ -1559,7 +1518,7 @@ Description:				A template stored procedure to match records from different sour
 																				'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																				'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																				'FROM		#tblMAIN_REFERRALS_Incremental A ' + CHAR(13) +
-																				'INNER JOIN	#tblMAIN_REFERRALS B ' + CHAR(13) +
+																				'INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH B ' + CHAR(13) +
 																				'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + -- Don't self join
 						CASE WHEN @LoopCounter > 1 THEN							'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @Not_Srcsys = 1 THEN							'                                   AND	A.Srcsys != B.Srcsys ' + CHAR(13) ELSE '' END +  
@@ -1662,7 +1621,7 @@ Description:				A template stored procedure to match records from different sour
 																				'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																				'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																				'FROM		#tblMAIN_REFERRALS_Incremental A ' + CHAR(13) +
-																				'INNER JOIN	#tblMAIN_REFERRALS B ' + CHAR(13) +
+																				'INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH B ' + CHAR(13) +
 																				'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + -- Don't self join
 						CASE WHEN @LoopCounter > 1 THEN							'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @Not_Srcsys = 1 THEN							'                                   AND	A.Srcsys != B.Srcsys ' + CHAR(13) ELSE '' END +  
@@ -1765,7 +1724,7 @@ Description:				A template stored procedure to match records from different sour
 																				'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																				'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																				'FROM		#tblMAIN_REFERRALS_Incremental A ' + CHAR(13) +
-																				'INNER JOIN	#tblMAIN_REFERRALS B ' + CHAR(13) +
+																				'INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH B ' + CHAR(13) +
 																				'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + -- Don't self join
 						CASE WHEN @LoopCounter > 1 THEN							'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @Not_Srcsys = 1 THEN							'                                   AND	A.Srcsys != B.Srcsys ' + CHAR(13) ELSE '' END +  
@@ -1868,7 +1827,7 @@ Description:				A template stored procedure to match records from different sour
 																				'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																				'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																				'FROM		#tblMAIN_REFERRALS_Incremental A ' + CHAR(13) +
-																				'INNER JOIN	#tblMAIN_REFERRALS B ' + CHAR(13) +
+																				'INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH B ' + CHAR(13) +
 																				'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + -- Don't self join
 						CASE WHEN @LoopCounter > 1 THEN							'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @Not_Srcsys = 1 THEN							'                                   AND	A.Srcsys != B.Srcsys ' + CHAR(13) ELSE '' END +  
@@ -1973,7 +1932,7 @@ Description:				A template stored procedure to match records from different sour
 						--														'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 						--														'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 						--														'FROM		#tblMAIN_REFERRALS_Incremental A ' + CHAR(13) +
-						--														'INNER JOIN	#tblMAIN_REFERRALS B ' + CHAR(13) +
+						--														'INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH B ' + CHAR(13) +
 						--														'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + -- Don't self join
 						--CASE WHEN @LoopCounter > 1 THEN							'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						--CASE WHEN @Not_Srcsys = 1 THEN							'                                   AND	A.Srcsys != B.Srcsys ' + CHAR(13) ELSE '' END +  
@@ -2078,7 +2037,7 @@ Description:				A template stored procedure to match records from different sour
 						--														'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 						--														'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 						--														'FROM		#tblMAIN_REFERRALS_Incremental A ' + CHAR(13) +
-						--														'INNER JOIN	#tblMAIN_REFERRALS B ' + CHAR(13) +
+						--														'INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH B ' + CHAR(13) +
 						--														'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + -- Don't self join
 						--CASE WHEN @LoopCounter > 1 THEN							'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						--CASE WHEN @Not_Srcsys = 1 THEN							'                                   AND	A.Srcsys != B.Srcsys ' + CHAR(13) ELSE '' END +  
@@ -2184,7 +2143,7 @@ Description:				A template stored procedure to match records from different sour
 						--														'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 						--														'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 						--														'FROM		#tblMAIN_REFERRALS_Incremental A ' + CHAR(13) +
-						--														'INNER JOIN	#tblMAIN_REFERRALS B ' + CHAR(13) +
+						--														'INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH B ' + CHAR(13) +
 						--														'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + -- Don't self join
 						--CASE WHEN @LoopCounter > 1 THEN							'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						--CASE WHEN @Not_Srcsys = 1 THEN							'                                   AND	A.Srcsys != B.Srcsys ' + CHAR(13) ELSE '' END +  
@@ -2290,7 +2249,7 @@ Description:				A template stored procedure to match records from different sour
 						--														'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 						--														'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 						--														'FROM		#tblMAIN_REFERRALS_Incremental A ' + CHAR(13) +
-						--														'INNER JOIN	#tblMAIN_REFERRALS B ' + CHAR(13) +
+						--														'INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH B ' + CHAR(13) +
 						--														'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + -- Don't self join
 						--CASE WHEN @LoopCounter > 1 THEN							'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						--CASE WHEN @Not_Srcsys = 1 THEN							'                                   AND	A.Srcsys != B.Srcsys ' + CHAR(13) ELSE '' END +  
@@ -2469,7 +2428,8 @@ Description:				A template stored procedure to match records from different sour
 
 		-- Create the #FindMajor_Match_Control table to replace in the persistent tables
 		IF OBJECT_ID('tempdb..#FindMajor_Match_Control') IS NOT NULL DROP TABLE #FindMajor_Match_Control
-		SELECT		mc.SrcSys_Major AS SrcSys_Major_Pre
+		SELECT		IDENTITY(INT,1,1) AS fmmcID
+					,mc.SrcSys_Major AS SrcSys_Major_Pre
 					,mc.Src_UID_Major AS Src_UID_Major_Pre
 					,CAST(NULL AS TINYINT) AS SrcSys_Major_Post
 					,CAST(NULL AS VARCHAR(255)) AS Src_UID_Major_Post
@@ -2523,7 +2483,7 @@ Description:				A template stored procedure to match records from different sour
 					,mmv.LastValidatedDttm
 					,CAST(NULL AS DATETIME2) AS DeletedDttm
 		FROM		#Incremental inc
-		INNER JOIN	Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_UH uh
+		INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
 												ON	inc.SrcSys = uh.SrcSys
 												AND	inc.Src_UID = uh.Src_UID
 		LEFT JOIN	Merge_DM_Match.tblMAIN_REFERRALS_Match_MajorValidation mmv
@@ -2545,7 +2505,10 @@ Description:				A template stored procedure to match records from different sour
 
 		-- Create the #FindMajor_Match_EntityPairs_Unique table to replace in the persistent tables (from #FindMajor_Match_EntityPairs_All)
 		IF OBJECT_ID('tempdb..#FindMajor_Match_EntityPairs_Unique') IS NOT NULL DROP TABLE #FindMajor_Match_EntityPairs_Unique
-		SELECT		ep_all_temp.IsScr_A
+		SELECT		IDENTITY(INT, 1,1) AS fmm_epuID
+					,CAST(NULL AS INT) AS fmmcID_A
+					,CAST(NULL AS INT) AS fmmcID_B
+					,ep_all_temp.IsScr_A
 					,ep_all_temp.SrcSys_A
 					,ep_all_temp.Src_UID_A
 					,ep_all_temp.IsScr_B
@@ -2606,9 +2569,30 @@ Description:				A template stored procedure to match records from different sour
 		AND			ISNULL(ep_u.BestIntention_Pre, '') != 'Scripted'
 		AND			((ep_u.ChangeLastDetected_A > ep_u.LastProcessed_A)
 		OR			(ep_u.ChangeLastDetected_B > ep_u.LastProcessed_B))
+
+		-- Update the "A" ID's from #FindMajor_Match_Control that represent each SrcSys / Src_UID combination
+		UPDATE		ep_u
+		SET			ep_u.fmmcID_A = mc_a.fmmcID
+		FROM		#FindMajor_Match_EntityPairs_Unique ep_u
+		INNER JOIN	#FindMajor_Match_Control mc_a
+													ON	ep_u.SrcSys_A = mc_a.SrcSys
+													AND	ep_u.Src_UID_A = mc_a.Src_UID
+
+		-- Update the "B" ID's from #FindMajor_Match_Control that represent each SrcSys / Src_UID combination
+		UPDATE		ep_u
+		SET			ep_u.fmmcID_B = mc_b.fmmcID
+		FROM		#FindMajor_Match_EntityPairs_Unique ep_u
+		INNER JOIN	#FindMajor_Match_Control mc_b
+													ON	ep_u.SrcSys_B = mc_b.SrcSys
+													AND	ep_u.Src_UID_B = mc_b.Src_UID
+
 		
 		-- Create indexes on #FindMajor_Match_EntityPairs_Unique to improve performance	--		DECLARE	@SQL VARCHAR(MAX) ,@Guid VARCHAR(255), @CurrentUser VARCHAR(255), @ProcIdName VARCHAR(255), @CurrentSection VARCHAR(255), @CurrentDttm DATETIME2, @LoopCounter SMALLINT = 1 SELECT @Guid = CAST(NEWID() AS VARCHAR(255)), @CurrentUser = CURRENT_USER, @ProcIdName = ISNULL(OBJECT_NAME(@@PROCID), 'ad hoc')
-		SET @SQL =	'CREATE UNIQUE CLUSTERED INDEX [PK_FindMajor_Match_EntityPairs_Unique_' + @Guid + '] ON #FindMajor_Match_EntityPairs_Unique (SrcSys_A ASC, Src_UID_A ASC, SrcSys_B ASC, Src_UID_B ASC) ' + CHAR(13) +
+		SET @SQL =	'CREATE UNIQUE CLUSTERED INDEX [PK_FindMajor_Match_EntityPairs_Unique_' + @Guid + '] ON #FindMajor_Match_EntityPairs_Unique (SrcSys_A ASC, Src_UID_A ASC, SrcSys_B ASC, Src_UID_B ASC) ' + CHAR(13) + 
+					'CREATE NONCLUSTERED INDEX [Ix_FindMajor_Match_EntityPairs_Unique_fmm_epuID_' + @Guid + '] ON #FindMajor_Match_EntityPairs_Unique (fmm_epuID ASC) ' + CHAR(13) +
+					'CREATE NONCLUSTERED INDEX [Ix_FindMajor_Match_EntityPairs_Unique_fmmcID_' + @Guid + '] ON #FindMajor_Match_EntityPairs_Unique (fmmcID_A ASC, fmmcID_B ASC) ' + CHAR(13) +
+					'CREATE NONCLUSTERED INDEX [Ix_FindMajor_Match_EntityPairs_Unique_fmmcID_A_' + @Guid + '] ON #FindMajor_Match_EntityPairs_Unique (fmmcID_A ASC) ' + CHAR(13) +
+					'CREATE NONCLUSTERED INDEX [Ix_FindMajor_Match_EntityPairs_Unique_fmmcID_B_' + @Guid + '] ON #FindMajor_Match_EntityPairs_Unique (fmmcID_B ASC) ' + CHAR(13) +
 					'CREATE NONCLUSTERED INDEX [Ix_FindMajor_Match_EntityPairs_Unique_Src_UID_A_' + @Guid + '] ON #FindMajor_Match_EntityPairs_Unique (SrcSys_A ASC, Src_UID_A ASC) ' + CHAR(13) +
 					'CREATE NONCLUSTERED INDEX [Ix_FindMajor_Match_EntityPairs_Unique_Src_UID_B_' + @Guid + '] ON #FindMajor_Match_EntityPairs_Unique (SrcSys_B ASC, Src_UID_B ASC) ' + CHAR(13) +
 					'CREATE NONCLUSTERED INDEX [Ix_FindMajor_Match_EntityPairs_Unique_UnlinkDttm_Post_' + @Guid + '] ON #FindMajor_Match_EntityPairs_Unique (UnlinkDttm_Post ASC) '
@@ -2620,10 +2604,12 @@ Description:				A template stored procedure to match records from different sour
 						(RelatedPairsIx INT IDENTITY(1,1)
 						,SrcSys TINYINT NOT NULL
 						,Src_UID VARCHAR(255) NOT NULL
+						,fmmcID INT NOT NULL
 						,PotentialMajorIx INT
 						,IsSCR_PotentialMajor BIT NOT NULL
 						,SrcSys_PotentialMajor TINYINT NOT NULL
 						,Src_UID_PotentialMajor VARCHAR(255) NOT NULL
+						,fmmcID_PotentialMajor INT NOT NULL
 						,ChangeLastDetected_PotentialMajor DATETIME2
 						,LastValidatedDttm_PotentialMajor DATETIME2
 						,BestIntention VARCHAR(255)
@@ -2635,8 +2621,6 @@ Description:				A template stored procedure to match records from different sour
 		-- Find the Major entity (@tableName VARCHAR(255), @MajorID_SrcSys TINYINT = NULL, @MajorID_Src_UID VARCHAR(255) = NULL)
 		/************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
 
-		--		DECLARE	@SQL VARCHAR(MAX) ,@Guid VARCHAR(255), @CurrentUser VARCHAR(255), @ProcIdName VARCHAR(255), @CurrentSection VARCHAR(255), @CurrentDttm DATETIME2, @LoopCounter SMALLINT = 1 SELECT @Guid = CAST(NEWID() AS VARCHAR(255)), @CurrentUser = CURRENT_USER, @ProcIdName = ISNULL(OBJECT_NAME(@@PROCID), 'ad hoc'), @CurrentSection = 'Adhoc start'
-
 		SELECT @CurrentDttm = GETDATE(); EXEC Merge_DM_MatchAudit.uspProcessAudit @IsUpdate = 1, @SessionID = @@SPID, @UserID = @CurrentUser, @ProcName = @ProcIdName, @Section = @CurrentSection, @StartDttm = NULL, @EndDttm = @CurrentDttm, @Success = 1, @ErrorMessage = NULL
 		SELECT @CurrentDttm = GETDATE(), @CurrentSection = 'Find major'; EXEC Merge_DM_MatchAudit.uspProcessAudit @IsUpdate = 0, @SessionID = @@SPID, @UserID = @CurrentUser, @ProcName = @ProcIdName, @Section = @CurrentSection, @StartDttm = @CurrentDttm, @EndDttm = NULL, @Success = NULL, @ErrorMessage = NULL
 
@@ -2644,13 +2628,17 @@ Description:				A template stored procedure to match records from different sour
 		-- Find all Nth nearest neighbours (match of a match... ...of a match x n...), ensuring we consider all permutations of each UID pair matches we have found (i.e. A = major and B = major)
 		/*#########################################################################################################################################################################################################################*/
 		
+		--		DECLARE	@SQL VARCHAR(MAX) ,@Guid VARCHAR(255), @CurrentUser VARCHAR(255), @ProcIdName VARCHAR(255), @CurrentSection VARCHAR(255), @CurrentDttm DATETIME2, @LoopCounter SMALLINT = 1 SELECT @Guid = CAST(NEWID() AS VARCHAR(255)), @CurrentUser = CURRENT_USER, @ProcIdName = ISNULL(OBJECT_NAME(@@PROCID), 'ad hoc'), @CurrentSection = 'Adhoc start'
+
 		-- Initialise the table of all related entity pairs with self-pairs
 		INSERT INTO	#RelatedPairs
 					(SrcSys
 					,Src_UID
+					,fmmcID
 					,IsSCR_PotentialMajor
 					,SrcSys_PotentialMajor
 					,Src_UID_PotentialMajor
+					,fmmcID_PotentialMajor
 					,ChangeLastDetected_PotentialMajor
 					,LastValidatedDttm_PotentialMajor
 					,BestIntention
@@ -2658,9 +2646,11 @@ Description:				A template stored procedure to match records from different sour
 					)
 		SELECT		SrcSys								= SrcSys
 					,Src_UID							= Src_UID
+					,fmmcID								= fmmcID
 					,IsSCR_PotentialMajor				= IsSCR
 					,SrcSys_PotentialMajor				= SrcSys
 					,Src_UID_PotentialMajor				= Src_UID
+					,fmmcID_PotentialMajor				= fmmcID
 					,ChangeLastDetected_PotentialMajor	= ChangeLastDetected
 					,LastValidatedDttm_PotentialMajor	= LastValidatedDttm
 					,BestIntention						= CAST('Scripted' AS VARCHAR(255)) -- self-pairs are a 100% certain match
@@ -2672,65 +2662,61 @@ Description:				A template stored procedure to match records from different sour
 		INSERT INTO	#RelatedPairs
 					(SrcSys
 					,Src_UID
+					,fmmcID
 					,IsSCR_PotentialMajor
 					,SrcSys_PotentialMajor
 					,Src_UID_PotentialMajor
+					,fmmcID_PotentialMajor
 					,ChangeLastDetected_PotentialMajor
 					,LastValidatedDttm_PotentialMajor
 					,BestIntention
 					)
 		SELECT		SrcSys								= ep_u.SrcSys_B
 					,Src_UID							= ep_u.Src_UID_B
+					,fmmcID								= ep_u.fmmcID_B
 					,IsSCR_PotentialMajor				= ep_u.IsSCR_A
 					,SrcSys_PotentialMajor				= ep_u.SrcSys_A
 					,Src_UID_PotentialMajor				= ep_u.Src_UID_A
+					,fmmcID_PotentialMajor				= ep_u.fmmcID_A
 					,ChangeLastDetected_PotentialMajor	= ep_u.ChangeLastDetected_A
 					,LastValidatedDttm_PotentialMajor	= ep_u.LastValidatedDttm_A
 					,BestIntention						= ep_u.BestIntention_Post
 		FROM		#FindMajor_Match_EntityPairs_Unique ep_u
+		LEFT JOIN	#RelatedPairs rp
+									ON	ep_u.fmmcID_B = rp.fmmcID
+									AND	ep_u.fmmcID_A = rp.fmmcID_PotentialMajor
 		WHERE		ep_u.UnlinkDttm_Pre IS NULL					-- Exclude entity pairs with an UnlinkDttm from the process
-		EXCEPT		-- Don't add matches that we already have
-		SELECT		SrcSys
-					,Src_UID
-					,IsSCR_PotentialMajor
-					,SrcSys_PotentialMajor
-					,Src_UID_PotentialMajor
-					,ChangeLastDetected_PotentialMajor
-					,LastValidatedDttm_PotentialMajor
-					,BestIntention
-		FROM		#RelatedPairs
+		AND			rp.SrcSys IS NULL							-- Don't add matches that we already have
 
 		-- Add all UID pair matches from entity pairs unique table (with B as the potential major)
 		INSERT INTO	#RelatedPairs
 					(SrcSys
 					,Src_UID
+					,fmmcID
 					,IsSCR_PotentialMajor
 					,SrcSys_PotentialMajor
 					,Src_UID_PotentialMajor
+					,fmmcID_PotentialMajor
 					,ChangeLastDetected_PotentialMajor
 					,LastValidatedDttm_PotentialMajor
 					,BestIntention
 					)
 		SELECT		SrcSys								= ep_u.SrcSys_A
 					,Src_UID							= ep_u.Src_UID_A
+					,fmmcID								= ep_u.fmmcID_A
 					,IsSCR_PotentialMajor				= ep_u.IsSCR_B
 					,SrcSys_PotentialMajor				= ep_u.SrcSys_B
 					,Src_UID_PotentialMajor				= ep_u.Src_UID_B
+					,fmmcID_PotentialMajor				= ep_u.fmmcID_B
 					,ChangeLastDetected_PotentialMajor	= ep_u.ChangeLastDetected_B
 					,LastValidatedDttm_PotentialMajor	= ep_u.LastValidatedDttm_B
 					,BestIntention						= ep_u.BestIntention_Post
 		FROM		#FindMajor_Match_EntityPairs_Unique ep_u
+		LEFT JOIN	#RelatedPairs rp
+									ON	ep_u.fmmcID_A = rp.fmmcID
+									AND	ep_u.fmmcID_B = rp.fmmcID_PotentialMajor
 		WHERE		ep_u.UnlinkDttm_Pre IS NULL					-- Exclude entity pairs with an UnlinkDttm from the process
-		EXCEPT		-- Don't add matches that we already have
-		SELECT		SrcSys
-					,Src_UID
-					,IsSCR_PotentialMajor
-					,SrcSys_PotentialMajor
-					,Src_UID_PotentialMajor
-					,ChangeLastDetected_PotentialMajor
-					,LastValidatedDttm_PotentialMajor
-					,BestIntention
-		FROM		#RelatedPairs
+		AND			rp.SrcSys IS NULL							-- Don't add matches that we already have
 
 		-- Mark relations searched on this iteration
 		UPDATE #RelatedPairs SET RelationsSearched = 1 WHERE RelationsSearched = 0
@@ -2749,162 +2735,194 @@ Description:				A template stored procedure to match records from different sour
 
 				-- Reset the connections found counter
 				SET @ConnectionsFound = 0
-				
+
 				-- Find the next nth nearest neighbour permutations (with RP UID as major and A as the minor)
+				IF OBJECT_ID('tempdb..#nthNearestPair_A') IS NOT NULL DROP TABLE #nthNearestPair_A
+				SELECT		rp.RelatedPairsIx
+							,ep_u.fmm_epuID
+				INTO		#nthNearestPair_A
+				FROM		#RelatedPairs rp
+				INNER JOIN	#FindMajor_Match_EntityPairs_Unique ep_u
+																	ON	rp.fmmcID_PotentialMajor = ep_u.fmmcID_B
+																	AND	ep_u.UnlinkDttm_Pre IS NULL				-- Exclude entity pairs with an UnlinkDttm from the process
+				LEFT JOIN	#RelatedPairs rp_alreadythere
+											ON	rp.fmmcID = rp_alreadythere.fmmcID
+											AND	ep_u.fmmcID_A = rp_alreadythere.fmmcID_PotentialMajor
+				WHERE		rp.RelationsSearched = 0	-- relations that were found on the previous iteration
+				AND			rp_alreadythere.fmmcID IS NULL
+
+				-- Collate the full details into #RelatedPairs for nth nearest neighbour permutations that don't already exist (with RP UID as major and A as the minor) 
 				INSERT INTO	#RelatedPairs
 							(SrcSys
 							,Src_UID
+							,fmmcID
 							,IsSCR_PotentialMajor
 							,SrcSys_PotentialMajor
 							,Src_UID_PotentialMajor
+							,fmmcID_PotentialMajor
 							,ChangeLastDetected_PotentialMajor
 							,LastValidatedDttm_PotentialMajor
 							,BestIntention
 							)
 				SELECT		SrcSys								= rp.SrcSys
 							,Src_UID							= rp.Src_UID
+							,fmmcID								= rp.fmmcID
 							,IsSCR_PotentialMajor				= ep_u.IsSCR_A
 							,SrcSys_PotentialMajor				= ep_u.SrcSys_A
 							,Src_UID_PotentialMajor				= ep_u.Src_UID_A
+							,fmmcID_PotentialMajor				= ep_u.fmmcID_A
 							,ChangeLastDetected_PotentialMajor	= ep_u.ChangeLastDetected_A
 							,LastValidatedDttm_PotentialMajor	= ep_u.LastValidatedDttm_A
 							,BestIntention						= CASE WHEN rp.BestIntention = 'Scripted' AND ep_u.BestIntention_Post = 'Scripted' THEN 'Scripted' ELSE 'Manual' END
 				FROM		#RelatedPairs rp
+				INNER JOIN	#nthNearestPair_A nthNearestPair
+														ON	rp.RelatedPairsIx = nthNearestPair.RelatedPairsIx
 				INNER JOIN	#FindMajor_Match_EntityPairs_Unique ep_u
-																	ON	rp.SrcSys_PotentialMajor = ep_u.SrcSys_B
-																	AND	rp.Src_UID_PotentialMajor = ep_u.Src_UID_B
-																	AND	ep_u.UnlinkDttm_Pre IS NULL				-- Exclude entity pairs with an UnlinkDttm from the process
-				WHERE		rp.RelationsSearched = 0	-- relations that were found on the previous iteration
-				EXCEPT		-- Don't add matches that we already have
-				SELECT		SrcSys
-							,Src_UID
-							,IsSCR_PotentialMajor
-							,SrcSys_PotentialMajor
-							,Src_UID_PotentialMajor
-							,ChangeLastDetected_PotentialMajor
-							,LastValidatedDttm_PotentialMajor
-							,BestIntention
-				FROM		#RelatedPairs
+																	ON	nthNearestPair.fmm_epuID = ep_u.fmm_epuID
 
 				-- Continue for another loop if there are more permutations found
 				IF @@ROWCOUNT > 0
 				SET @ConnectionsFound = ISNULL(@ConnectionsFound, 0) + 1
-				
+
 				-- Find the next nth nearest neighbour permutations (with RP UID as major and B as the minor)
+				IF OBJECT_ID('tempdb..#nthNearestPair_B') IS NOT NULL DROP TABLE #nthNearestPair_B
+				SELECT		rp.RelatedPairsIx
+							,ep_u.fmm_epuID
+				INTO		#nthNearestPair_B
+				FROM		#RelatedPairs rp
+				INNER JOIN	#FindMajor_Match_EntityPairs_Unique ep_u
+																	ON	rp.fmmcID_PotentialMajor = ep_u.fmmcID_A
+																	AND	ep_u.UnlinkDttm_Pre IS NULL				-- Exclude entity pairs with an UnlinkDttm from the process
+				LEFT JOIN	#RelatedPairs rp_alreadythere
+											ON	rp.fmmcID = rp_alreadythere.fmmcID
+											AND	ep_u.fmmcID_B = rp_alreadythere.fmmcID_PotentialMajor
+				WHERE		rp.RelationsSearched = 0	-- relations that were found on the previous iteration
+				AND			rp_alreadythere.fmmcID IS NULL
+
+				-- Collate the full details into #RelatedPairs for nth nearest neighbour permutations that don't already exist (with RP UID as major and B as the minor) 
 				INSERT INTO	#RelatedPairs
 							(SrcSys
 							,Src_UID
+							,fmmcID
 							,IsSCR_PotentialMajor
 							,SrcSys_PotentialMajor
 							,Src_UID_PotentialMajor
+							,fmmcID_PotentialMajor
 							,ChangeLastDetected_PotentialMajor
 							,LastValidatedDttm_PotentialMajor
 							,BestIntention
 							)
 				SELECT		SrcSys								= rp.SrcSys
 							,Src_UID							= rp.Src_UID
+							,fmmcID								= rp.fmmcID
 							,IsSCR_PotentialMajor				= ep_u.IsSCR_B
 							,SrcSys_PotentialMajor				= ep_u.SrcSys_B
 							,Src_UID_PotentialMajor				= ep_u.Src_UID_B
+							,fmmcID_PotentialMajor				= ep_u.fmmcID_B
 							,ChangeLastDetected_PotentialMajor	= ep_u.ChangeLastDetected_B
 							,LastValidatedDttm_PotentialMajor	= ep_u.LastValidatedDttm_B
 							,BestIntention						= CASE WHEN rp.BestIntention = 'Scripted' AND ep_u.BestIntention_Post = 'Scripted' THEN 'Scripted' ELSE 'Manual' END
 				FROM		#RelatedPairs rp
+				INNER JOIN	#nthNearestPair_B nthNearestPair
+														ON	rp.RelatedPairsIx = nthNearestPair.RelatedPairsIx
 				INNER JOIN	#FindMajor_Match_EntityPairs_Unique ep_u
-																	ON	rp.SrcSys_PotentialMajor = ep_u.SrcSys_A
-																	AND	rp.Src_UID_PotentialMajor = ep_u.Src_UID_A
-																	AND	ep_u.UnlinkDttm_Pre IS NULL				-- Exclude entity pairs with an UnlinkDttm from the process
-				WHERE		rp.RelationsSearched = 0	-- relations that were found on the previous iteration
-				EXCEPT		-- Don't add matches that we already have
-				SELECT		SrcSys
-							,Src_UID
-							,IsSCR_PotentialMajor
-							,SrcSys_PotentialMajor
-							,Src_UID_PotentialMajor
-							,ChangeLastDetected_PotentialMajor
-							,LastValidatedDttm_PotentialMajor
-							,BestIntention
-				FROM		#RelatedPairs
+																	ON	nthNearestPair.fmm_epuID = ep_u.fmm_epuID
 
 				-- Continue for another loop if there are more permutations found
 				IF @@ROWCOUNT > 0
 				SET @ConnectionsFound = ISNULL(@ConnectionsFound, 0) + 1
 				
 				-- Find the next nth nearest neighbour permutations (with RP UID potential major as major and A as the minor)
+				IF OBJECT_ID('tempdb..#nthNearestPair_AP') IS NOT NULL DROP TABLE #nthNearestPair_AP
+				SELECT		rp.RelatedPairsIx
+							,ep_u.fmm_epuID
+				INTO		#nthNearestPair_AP
+				FROM		#RelatedPairs rp
+				INNER JOIN	#FindMajor_Match_EntityPairs_Unique ep_u
+																	ON	rp.fmmcID_PotentialMajor = ep_u.fmmcID_B
+																	AND	ep_u.UnlinkDttm_Pre IS NULL				-- Exclude entity pairs with an UnlinkDttm from the process
+				LEFT JOIN	#RelatedPairs rp_alreadythere
+											ON	rp.fmmcID_PotentialMajor = rp_alreadythere.fmmcID
+											AND	ep_u.fmmcID_A = rp_alreadythere.fmmcID_PotentialMajor
+				WHERE		rp.RelationsSearched = 0	-- relations that were found on the previous iteration
+				AND			rp_alreadythere.fmmcID IS NULL
+
+				-- Collate the full details into #RelatedPairs for nth nearest neighbour permutations that don't already exist (with RP UID as major and A as the minor) 
 				INSERT INTO	#RelatedPairs
 							(SrcSys
 							,Src_UID
+							,fmmcID
 							,IsSCR_PotentialMajor
 							,SrcSys_PotentialMajor
 							,Src_UID_PotentialMajor
+							,fmmcID_PotentialMajor
 							,ChangeLastDetected_PotentialMajor
 							,LastValidatedDttm_PotentialMajor
 							,BestIntention
 							)
 				SELECT		SrcSys								= rp.SrcSys_PotentialMajor
 							,Src_UID							= rp.Src_UID_PotentialMajor
+							,fmmcID								= rp.fmmcID
 							,IsSCR_PotentialMajor				= ep_u.IsSCR_A
 							,SrcSys_PotentialMajor				= ep_u.SrcSys_A
 							,Src_UID_PotentialMajor				= ep_u.Src_UID_A
+							,fmmcID_PotentialMajor				= ep_u.fmmcID_A
 							,ChangeLastDetected_PotentialMajor	= ep_u.ChangeLastDetected_A
 							,LastValidatedDttm_PotentialMajor	= ep_u.LastValidatedDttm_A
 							,BestIntention						= CASE WHEN rp.BestIntention = 'Scripted' AND ep_u.BestIntention_Post = 'Scripted' THEN 'Scripted' ELSE 'Manual' END
 				FROM		#RelatedPairs rp
+				INNER JOIN	#nthNearestPair_AP nthNearestPair
+														ON	rp.RelatedPairsIx = nthNearestPair.RelatedPairsIx
 				INNER JOIN	#FindMajor_Match_EntityPairs_Unique ep_u
-																	ON	rp.SrcSys = ep_u.SrcSys_B
-																	AND	rp.Src_UID = ep_u.Src_UID_B
-																	AND	ep_u.UnlinkDttm_Pre IS NULL				-- Exclude entity pairs with an UnlinkDttm from the process
-				WHERE		rp.RelationsSearched = 0	-- relations that were found on the previous iteration
-				EXCEPT		-- Don't add matches that we already have
-				SELECT		SrcSys
-							,Src_UID
-							,IsSCR_PotentialMajor
-							,SrcSys_PotentialMajor
-							,Src_UID_PotentialMajor
-							,ChangeLastDetected_PotentialMajor
-							,LastValidatedDttm_PotentialMajor
-							,BestIntention
-				FROM		#RelatedPairs
+																	ON	nthNearestPair.fmm_epuID = ep_u.fmm_epuID
 
 				-- Continue for another loop if there are more permutations found
 				IF @@ROWCOUNT > 0
 				SET @ConnectionsFound = ISNULL(@ConnectionsFound, 0) + 1
 				
 				-- Find the next nth nearest neighbour permutations (with RP UID potential major as major and B as the minor)
+				IF OBJECT_ID('tempdb..#nthNearestPair_BP') IS NOT NULL DROP TABLE #nthNearestPair_BP
+				SELECT		rp.RelatedPairsIx
+							,ep_u.fmm_epuID
+				INTO		#nthNearestPair_BP
+				FROM		#RelatedPairs rp
+				INNER JOIN	#FindMajor_Match_EntityPairs_Unique ep_u
+																	ON	rp.fmmcID_PotentialMajor = ep_u.fmmcID_A
+																	AND	ep_u.UnlinkDttm_Pre IS NULL				-- Exclude entity pairs with an UnlinkDttm from the process
+				LEFT JOIN	#RelatedPairs rp_alreadythere
+											ON	rp.fmmcID_PotentialMajor = rp_alreadythere.fmmcID
+											AND	ep_u.fmmcID_B = rp_alreadythere.fmmcID_PotentialMajor
+				WHERE		rp.RelationsSearched = 0	-- relations that were found on the previous iteration
+				AND			rp_alreadythere.fmmcID IS NULL
+
+				-- Collate the full details into #RelatedPairs for nth nearest neighbour permutations that don't already exist (with RP UID as major and B as the minor) 
 				INSERT INTO	#RelatedPairs
 							(SrcSys
 							,Src_UID
+							,fmmcID
 							,IsSCR_PotentialMajor
 							,SrcSys_PotentialMajor
 							,Src_UID_PotentialMajor
+							,fmmcID_PotentialMajor
 							,ChangeLastDetected_PotentialMajor
 							,LastValidatedDttm_PotentialMajor
 							,BestIntention
 							)
 				SELECT		SrcSys								= rp.SrcSys_PotentialMajor
 							,Src_UID							= rp.Src_UID_PotentialMajor
+							,fmmcID								= rp.fmmcID
 							,IsSCR_PotentialMajor				= ep_u.IsSCR_B
 							,SrcSys_PotentialMajor				= ep_u.SrcSys_B
 							,Src_UID_PotentialMajor				= ep_u.Src_UID_B
+							,fmmcID_PotentialMajor				= ep_u.fmmcID_B
 							,ChangeLastDetected_PotentialMajor	= ep_u.ChangeLastDetected_B
 							,LastValidatedDttm_PotentialMajor	= ep_u.LastValidatedDttm_B
 							,BestIntention						= CASE WHEN rp.BestIntention = 'Scripted' AND ep_u.BestIntention_Post = 'Scripted' THEN 'Scripted' ELSE 'Manual' END
 				FROM		#RelatedPairs rp
+				INNER JOIN	#nthNearestPair_BP nthNearestPair
+														ON	rp.RelatedPairsIx = nthNearestPair.RelatedPairsIx
 				INNER JOIN	#FindMajor_Match_EntityPairs_Unique ep_u
-																	ON	rp.SrcSys = ep_u.SrcSys_A
-																	AND	rp.Src_UID = ep_u.Src_UID_A
-																	AND	ep_u.UnlinkDttm_Pre IS NULL				-- Exclude entity pairs with an UnlinkDttm from the process
-				WHERE		rp.RelationsSearched = 0	-- relations that were found on the previous iteration
-				EXCEPT		-- Don't add matches that we already have
-				SELECT		SrcSys
-							,Src_UID
-							,IsSCR_PotentialMajor
-							,SrcSys_PotentialMajor
-							,Src_UID_PotentialMajor
-							,ChangeLastDetected_PotentialMajor
-							,LastValidatedDttm_PotentialMajor
-							,BestIntention
-				FROM		#RelatedPairs
+																	ON	nthNearestPair.fmm_epuID = ep_u.fmm_epuID
 
 				-- Continue for another loop if there are more permutations found
 				IF @@ROWCOUNT > 0
@@ -2925,6 +2943,9 @@ Description:				A template stored procedure to match records from different sour
 
 		-- Create indexes on #RelatedPairs to improve performance	--		DECLARE	@SQL VARCHAR(MAX) ,@Guid VARCHAR(255), @CurrentUser VARCHAR(255), @ProcIdName VARCHAR(255), @CurrentSection VARCHAR(255), @CurrentDttm DATETIME2, @LoopCounter SMALLINT = 1 SELECT @Guid = CAST(NEWID() AS VARCHAR(255)), @CurrentUser = CURRENT_USER, @ProcIdName = ISNULL(OBJECT_NAME(@@PROCID), 'ad hoc')
 		SET @SQL =	'CREATE UNIQUE CLUSTERED INDEX [PK_RelatedPairs_' + @Guid + '] ON #RelatedPairs (RelatedPairsIx ASC) ' + CHAR(13) +
+					'CREATE NONCLUSTERED INDEX [Ix_RelatedPairs_fmmcIDs_' + @Guid + '] ON #RelatedPairs (fmmcID ASC, fmmcID_PotentialMajor ASC) ' + CHAR(13) +
+					'CREATE NONCLUSTERED INDEX [Ix_RelatedPairs_fmmcID_' + @Guid + '] ON #RelatedPairs (fmmcID ASC) ' + CHAR(13) +
+					'CREATE NONCLUSTERED INDEX [Ix_RelatedPairs_fmmcID_PotentialMajor_' + @Guid + '] ON #RelatedPairs (fmmcID_PotentialMajor ASC) ' + CHAR(13) +
 					'CREATE NONCLUSTERED INDEX [Ix_RelatedPairs_' + @Guid + '] ON #RelatedPairs (SrcSys ASC, Src_UID ASC, SrcSys_PotentialMajor ASC, Src_UID_PotentialMajor ASC) ' + CHAR(13) +
 					'CREATE NONCLUSTERED INDEX [Ix_RelatedPairs_Src_UID_PotentialMajor_' + @Guid + '] ON #RelatedPairs (SrcSys_PotentialMajor ASC, Src_UID_PotentialMajor ASC) ' + CHAR(13) +
 					'CREATE NONCLUSTERED INDEX [Ix_RelatedPairs_Src_UID_' + @Guid + '] ON #RelatedPairs (SrcSys ASC, Src_UID ASC) ' + CHAR(13) +
@@ -2969,13 +2990,11 @@ Description:				A template stored procedure to match records from different sour
 																						ON	rp.SrcSys_PotentialMajor = mmv.SrcSys_Major
 																						AND	rp.Src_UID_PotentialMajor = mmv.Src_UID_Major
 																						AND	mmv.LastValidatedDttm IS NOT NULL
-					LEFT JOIN	Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_UH uh
+					LEFT JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
 																				ON	rp.SrcSys = uh.SrcSys
 																				AND	rp.Src_UID = uh.Src_UID
 								) PotentialMajorIx
 														ON	rp.RelatedPairsIx = PotentialMajorIx.RelatedPairsIx
-
-														SELECT N1_3_ORG_CODE_SEEN, COUNT(*) FROM Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_UH GROUP BY N1_3_ORG_CODE_SEEN ORDER BY COUNT(*) DESC
 
 
 		/*#########################################################################################################################################################################################################################*/
@@ -3810,31 +3829,59 @@ Description:				A template stored procedure to match records from different sour
 
 		-- Find all persistent entity pairs all records that relate to the initial incremental dataset (these will be for deletion)
 		IF OBJECT_ID('tempdb..#tblMAIN_REFERRALS_Match_EntityPairs_All_ToDelete') IS NOT NULL DROP TABLE #tblMAIN_REFERRALS_Match_EntityPairs_All_ToDelete
-		SELECT		ep_a.SrcSys_A
-					,ep_a.Src_UID_A
-					,ep_a.SrcSys_B
-					,ep_a.Src_UID_B
+		SELECT		UnionAandB.SrcSys_A
+					,UnionAandB.Src_UID_A
+					,UnionAandB.SrcSys_B
+					,UnionAandB.Src_UID_B
 		INTO		#tblMAIN_REFERRALS_Match_EntityPairs_All_ToDelete
-		FROM		#tblMAIN_REFERRALS_Match_Control_ToDelete mc
-		INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_Match_EntityPairs_All ep_a
-															ON	(mc.SrcSys = ep_a.SrcSys_A
-															AND	mc.Src_UID = ep_a.Src_UID_A)
-															OR	(mc.SrcSys = ep_a.SrcSys_B
-															AND	mc.Src_UID = ep_a.Src_UID_B)
+		FROM		(SELECT		ep_a.SrcSys_A
+								,ep_a.Src_UID_A
+								,ep_a.SrcSys_B
+								,ep_a.Src_UID_B
+					FROM		#tblMAIN_REFERRALS_Match_Control_ToDelete mc
+					INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_Match_EntityPairs_All ep_a
+																		ON	mc.SrcSys = ep_a.SrcSys_A
+																		AND	mc.Src_UID = ep_a.Src_UID_A
+					
+					UNION
+					
+					SELECT		ep_a.SrcSys_A
+								,ep_a.Src_UID_A
+								,ep_a.SrcSys_B
+								,ep_a.Src_UID_B
+					FROM		#tblMAIN_REFERRALS_Match_Control_ToDelete mc
+					INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_Match_EntityPairs_All ep_a
+																		ON	mc.SrcSys = ep_a.SrcSys_B
+																		AND	mc.Src_UID = ep_a.Src_UID_B
+								) UnionAandB
 
 		-- Find all persistent entity pairs unique records that relate to the initial incremental dataset (these will be for deletion)
 		IF OBJECT_ID('tempdb..#tblMAIN_REFERRALS_Match_EntityPairs_Unique_ToDelete') IS NOT NULL DROP TABLE #tblMAIN_REFERRALS_Match_EntityPairs_Unique_ToDelete
-		SELECT		ep_u.SrcSys_A
-					,ep_u.Src_UID_A
-					,ep_u.SrcSys_B
-					,ep_u.Src_UID_B
+		SELECT		UnionAandB.SrcSys_A
+					,UnionAandB.Src_UID_A
+					,UnionAandB.SrcSys_B
+					,UnionAandB.Src_UID_B
 		INTO		#tblMAIN_REFERRALS_Match_EntityPairs_Unique_ToDelete
-		FROM		#tblMAIN_REFERRALS_Match_Control_ToDelete mc
-		INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_Match_EntityPairs_Unique ep_u
-															ON	(mc.SrcSys = ep_u.SrcSys_A
-															AND	mc.Src_UID = ep_u.Src_UID_A)
-															OR	(mc.SrcSys = ep_u.SrcSys_B
-															AND	mc.Src_UID = ep_u.Src_UID_B)
+		FROM		(SELECT		ep_u.SrcSys_A
+								,ep_u.Src_UID_A
+								,ep_u.SrcSys_B
+								,ep_u.Src_UID_B
+					FROM		#tblMAIN_REFERRALS_Match_Control_ToDelete mc
+					INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_Match_EntityPairs_Unique ep_u
+																		ON	mc.SrcSys = ep_u.SrcSys_A
+																		AND	mc.Src_UID = ep_u.Src_UID_A
+					
+					UNION
+					
+					SELECT		ep_u.SrcSys_A
+								,ep_u.Src_UID_A
+								,ep_u.SrcSys_B
+								,ep_u.Src_UID_B
+					FROM		#tblMAIN_REFERRALS_Match_Control_ToDelete mc
+					INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_Match_EntityPairs_Unique ep_u
+																		ON	mc.SrcSys = ep_u.SrcSys_B
+																		AND	mc.Src_UID = ep_u.Src_UID_B
+								) UnionAandB
 
 		-- Find all persistent major validation records that relate to the initial incremental dataset (these will be for deletion)
 		IF OBJECT_ID('tempdb..#tblMAIN_REFERRALS_Match_MajorValidation_ToDelete') IS NOT NULL DROP TABLE #tblMAIN_REFERRALS_Match_MajorValidation_ToDelete
@@ -4467,6 +4514,8 @@ Description:				A template stored procedure to match records from different sour
 		OR	@MajorID_Src_UID IS NULL
 		BEGIN
 
+				PRINT 'Starting Auto-Validation' + CHAR(13) + CHAR(13)
+				
 				-- Create the #MakeMajor table
 				IF OBJECT_ID('tempdb..#MakeMajor') IS NOT NULL DROP TABLE #MakeMajor
 				CREATE TABLE #MakeMajor
@@ -4517,11 +4566,12 @@ Description:				A template stored procedure to match records from different sour
 																									ON	mc_inner.SrcSys = ep_allB.SrcSys_B
 																									AND	mc_inner.Src_UID = ep_allB.Src_UID_B
 																									AND	ep_allB.MatchType = 5 -- ADT_Ref_ID match
-							LEFT JOIN	Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_UH uh
+							LEFT JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
 																						ON	mc_inner.SrcSys = uh.SrcSys
 																						AND	mc_inner.Src_UID = uh.Src_UID
-							WHERE		ep_allA.SrcSys_A IS NOT NULL
-							OR			ep_allB.SrcSys_B IS NOT NULL
+							WHERE		(ep_allA.SrcSys_A IS NOT NULL
+							OR			ep_allB.SrcSys_B IS NOT NULL)
+							AND			mc_inner.DeletedDttm IS NULL
 							GROUP BY	mc_inner.SrcSys_Major
 										,mc_inner.Src_UID_Major
 										) mc
@@ -4562,7 +4612,7 @@ Description:				A template stored procedure to match records from different sour
 							INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc
 																						ON	mm_inner.SrcSys_Major_Curr = mc.SrcSys_Major
 																						AND	mm_inner.Src_UID_Major_Curr = mc.Src_UID_Major
-							INNER JOIN	Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_UH uh
+							INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
 																					ON	mc.SrcSys = uh.SrcSys
 																					AND	mc.Src_UID = uh.Src_UID
 										) mostRecentMinor

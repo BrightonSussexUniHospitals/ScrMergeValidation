@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the tblTimelineRAG SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[tblTimelineRAG] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.tblTimelineRAG 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.tblTimelineRAG 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.tblTimelineRAG
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.tblTimelineRAG
 GO

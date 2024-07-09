@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblProstateTreatmentType SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblProstateTreatmentType] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblProstateTreatmentType 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblProstateTreatmentType 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblProstateTreatmentType
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblProstateTreatmentType
 GO

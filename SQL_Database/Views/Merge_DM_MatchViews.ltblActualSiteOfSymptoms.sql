@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblActualSiteOfSymptoms SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblActualSiteOfSymptoms] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblActualSiteOfSymptoms 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblActualSiteOfSymptoms 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblActualSiteOfSymptoms
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblActualSiteOfSymptoms
 GO

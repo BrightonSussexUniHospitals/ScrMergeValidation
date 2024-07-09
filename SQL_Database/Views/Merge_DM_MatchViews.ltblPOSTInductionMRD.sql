@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblPOSTInductionMRD SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblPOSTInductionMRD] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblPOSTInductionMRD 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblPOSTInductionMRD 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblPOSTInductionMRD
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblPOSTInductionMRD
 GO

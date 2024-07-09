@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblAO_TEAM_ADMITTED_CARE SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblAO_TEAM_ADMITTED_CARE] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblAO_TEAM_ADMITTED_CARE 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblAO_TEAM_ADMITTED_CARE 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblAO_TEAM_ADMITTED_CARE
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblAO_TEAM_ADMITTED_CARE
 GO

@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the Morbidity$ SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[Morbidity$] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.Morbidity$ 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.Morbidity$ 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.Morbidity$
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.Morbidity$
 GO

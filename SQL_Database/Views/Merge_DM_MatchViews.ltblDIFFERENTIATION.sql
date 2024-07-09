@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblDIFFERENTIATION SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblDIFFERENTIATION] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblDIFFERENTIATION 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblDIFFERENTIATION 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblDIFFERENTIATION
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblDIFFERENTIATION
 GO

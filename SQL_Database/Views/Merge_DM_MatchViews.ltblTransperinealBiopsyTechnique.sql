@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblTransperinealBiopsyTechnique SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblTransperinealBiopsyTechnique] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblTransperinealBiopsyTechnique 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblTransperinealBiopsyTechnique 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblTransperinealBiopsyTechnique
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblTransperinealBiopsyTechnique
 GO

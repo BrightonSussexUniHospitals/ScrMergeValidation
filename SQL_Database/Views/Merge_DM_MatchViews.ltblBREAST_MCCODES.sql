@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblBREAST_MCCODES SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblBREAST_MCCODES] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblBREAST_MCCODES 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblBREAST_MCCODES 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblBREAST_MCCODES
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblBREAST_MCCODES
 GO

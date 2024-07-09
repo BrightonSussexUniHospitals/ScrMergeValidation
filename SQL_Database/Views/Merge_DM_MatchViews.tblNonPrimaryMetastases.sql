@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the tblNonPrimaryMetastases SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[tblNonPrimaryMetastases] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.tblNonPrimaryMetastases 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.tblNonPrimaryMetastases 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.tblNonPrimaryMetastases
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.tblNonPrimaryMetastases
 GO

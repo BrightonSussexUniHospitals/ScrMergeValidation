@@ -1,0 +1,797 @@
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
+
+CREATE FUNCTION [Merge_DM_MatchViews].[Treatments_vw_UH]
+				(@Ref_SrcSys_Major TINYINT = NULL
+				,@Ref_Src_UID_Major VARCHAR(255) = NULL
+				)
+RETURNS @Treatments TABLE
+			(
+			Ref_SrcSys_Major TINYINT NOT NULL
+			,Ref_Src_UID_Major VARCHAR(255) NOT NULL
+			,Ref_SrcSys_Minor TINYINT NOT NULL
+			,Ref_Src_UID_Minor VARCHAR(255) NOT NULL
+			,TreatmentDate SMALLDATETIME NULL
+			,Treatment VARCHAR(255) NULL
+			,TreatmentSite VARCHAR(255) NULL
+			,TreatmentID INT NULL
+			,LastUpdated DATETIME2 NULL
+			,HashBytesValue VARBINARY(8000) NULL
+			,NonNullColumnCount SMALLINT NULL
+			)
+AS
+
+BEGIN
+
+-- Run me
+-- SELECT * FROM Merge_DM_MatchViews.Treatments_vw_UH (DEFAULT, DEFAULT)
+
+-- Create a table to hold the cohort of referrals we want to deduplicate the treatments for
+DECLARE @MajorIDs_SCOPE TABLE (SrcSys_Major TINYINT, Src_UID_Major VARCHAR(255))
+
+-- Find the cohort of referrals we want to deduplicate the treatments for
+INSERT INTO	@MajorIDs_SCOPE
+			(SrcSys_Major
+			,Src_UID_Major
+			)
+SELECT		mc.SrcSys_Major
+			,mc.Src_UID_Major
+FROM		Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_SCOPE(@Ref_SrcSys_Major, @Ref_Src_UID_Major) mc
+
+-- SELECT COUNT(*) FROM #MajorIDs_SCOPE
+ 
+
+--insert records from tblMAIN_CHEMOTHERAPY
+INSERT INTO		@Treatments(
+				Ref_SrcSys_Major 
+ 				,Ref_Src_UID_Major
+				,Ref_SrcSys_Minor 
+				,Ref_Src_UID_Minor
+				,TreatmentDate
+				,Treatment 
+				,TreatmentSite
+				,TreatmentID
+				,LastUpdated
+				,HashBytesValue
+				,NonNullColumnCount
+				)
+
+SELECT			Ref_SrcSys_Major 	= mc.SrcSys_Major
+ 				,Ref_Src_UID_Major	= mc.Src_UID_Major
+				,Ref_SrcSys_Minor 	= mc.SrcSys
+				,Ref_Src_UID_Minor	= mc.Src_UID
+				,TreatmentDate		= MC2.N9_10_START_DATE
+				,Treatment			= 'tblMAIN_CHEMOTHERAPY'
+				,TreatmentSite		= MC2.N9_1_SITE_CODE
+				,TreatmentID		= MC2.CHEMO_ID
+				,LastUpdated		= aud.ACTION_DATE
+				,HashBytesValue		= HASHBYTES('SHA2_512', CONCAT_WS	('|'
+																		--,mc.SrcSys_Major
+ 																		--,mc.Src_UID_Major
+																		,mc.LastProcessed
+																		,'tblMAIN_CHEMOTHERAPY'
+																		,MC2.CHEMO_ID
+																		,MC2.N9_1_SITE_CODE
+																		,MC2.N9_10_START_DATE
+																		))
+				,NonNullColumnCount	=	COUNT(MC2.PROG_NUMBER) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.REG_NUMBER) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.N9_1_SITE_CODE) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.N_SITE_CODE_DTT) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.N9_2_CONSULTANT) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.N9_3_SPECIALTY) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.N9_4_DECISION_DATE) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.N9_7_THERAPY_TYPE) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.N9_8_TREATMENT_INTENT) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.N9_9_DRUG_REGIMEN) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.N9_10_START_DATE) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.N9_16_CYCLE_NO) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.N9_20_DOSAGE) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.N9_21_DURATION) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.N9_22_RESPONSE) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.N9_24_CHEMO_HRG) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.N_B7_ENDOCRINE_TYPE) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.N_L27_CHEMO_GIVEN) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.N_TREATMENT_EVENT) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.N_TREATMENT_SETTING) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.N_CHEMORADIO) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.L_END_DATE) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.L_TRIAL) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.L_CYCLE_GIVEN) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.DEPRECATED_20_02_L_NAMED_COMP) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.L_AROMATASE) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.L_AROMATASE_DETAILS) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.L_ROUTE) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.DEFINITIVE_TREATMENT) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.CWT_PROFORMA) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.L_HEIGHT) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.L_WEIGHT) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.L_WHO_STATUS) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.L_CO_MORBIDITY) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.L_DOSE_REDUCTION) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.L_TIME_DELAY) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.L_STOPPED_EARLY) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.L_DATE_DEATH) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(CAST(MC2.L_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.CONSULTANT_AGE_SPECIALTY) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.TRANS_ARTERIAL_CHEMOEMBO) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(CAST(MC2.ROOT_START_DATE_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(CAST(MC2.ROOT_END_DATE_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.ACTION_ID) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.CHEMO_TIMING) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.DEPRECATED_20_02_DISCHARGE_DATE) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.DEPRECATED_20_02_DISCHARGE_DELAY_REASON) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.DEPRECATED_20_02_DISCHARGE_DESTINATION) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.DISCHARGE_SUMMARY_SENT) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.HANADrugRegimen) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.AcuteToxicity) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(CAST(MC2.ROOT_DECISION_DATE_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.PrimaryInductionFailureID) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.AdjunctiveTherapyID) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.OtherTreatmentIntent) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.HCCEmbolisation) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.HCCEmbolisationModality) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.TreatmentCompletedAsPlanned) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.NotCompleteReasonID) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.PalExtendLifeExpectancy) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.PalRelieveControlSymptoms) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.PalAchieveRemission) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.PalDelayTumourProgression) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.OtherReasonNotCompleted) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.RegOutcomeToxicity) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.RegOutcomeNonCurative) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(MC2.TertiaryReferralKey) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(CAST(MC2.ROOT_PRIM_ADJUSTMENT_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY CHEMO_ID) +
+										COUNT(CAST(MC2.ROOT_SUBPRIM_ADJUSTMENT_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY CHEMO_ID)
+
+
+FROM		Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc
+INNER JOIN	@MajorIDs_SCOPE Ref_Scope ON mc.Src_UID_Major = Ref_Scope.Src_UID_Major
+								AND mc.SrcSys_Major = Ref_Scope.SrcSys_Major
+
+INNER JOIN	Merge_DM_MatchViews.tblMAIN_CHEMOTHERAPY MC2
+											--ON	mc.SrcSys = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge', MC2.SrcSysID , 1) AS TINYINT)
+											ON	mc.SrcSys = MC2.SrcSysID
+											AND	mc.Src_UID = CAST(MC2.CARE_ID AS VARCHAR(255))
+LEFT JOIN	Merge_DM_MatchViews.tblAUDIT aud
+										ON	MC2.SrcSysID = aud.SrcSysID
+										AND	MC2.ACTION_ID = aud.ACTION_ID
+
+
+--insert records from tblMAIN_BRACHYTHERAPY
+INSERT INTO		@Treatments(
+				Ref_SrcSys_Major 
+ 				,Ref_Src_UID_Major
+				,Ref_SrcSys_Minor 
+				,Ref_Src_UID_Minor
+				,TreatmentDate
+				,Treatment 
+				,TreatmentSite
+				,TreatmentID
+				,LastUpdated
+				,HashBytesValue
+				,NonNullColumnCount
+				)
+
+SELECT			Ref_SrcSys_Major 	= mc.SrcSys_Major
+ 				,Ref_Src_UID_Major	= mc.Src_UID_Major
+				,Ref_SrcSys_Minor 	= mc.SrcSys
+				,Ref_Src_UID_Minor	= mc.Src_UID
+				,TreatmentDate		= MB.N11_9_START_DATE
+				,Treatment			= 'tblMAIN_BRACHYTHERAPY'
+				,TreatmentSite		= MB.N11_1_SITE_CODE
+				,TreatmentID		= MB.BRACHY_ID
+				,LastUpdated		= aud.ACTION_DATE
+				,HashBytesValue		= HASHBYTES('SHA2_512', CONCAT_WS	('|'
+																		--,mc.SrcSys_Major
+ 																		--,mc.Src_UID_Major
+																		,mc.LastProcessed
+																		,'tblMAIN_BRACHYTHERAPY'
+																		,MB.BRACHY_ID
+																		,MB.N11_1_SITE_CODE
+																		,MB.N11_9_START_DATE
+																		))
+				,NonNullColumnCount	=	COUNT(MB.N11_1_SITE_CODE) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.N_SITE_CODE_DTT) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.N11_2_CONSULTANT) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.N11_3_DECISION_DATE) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.N11_6_TREATMENT_INTENT) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.N11_7_TYPE) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.N11_8_TREATMENT_SITE) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.N11_9_START_DATE) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.N11_10_END_DATE) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.N11_11_DOSE) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.N11_12_DURATION) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.N11_13_FRACTIONS) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.N11_14_ACTUAL_DOSE) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.N11_15_DOSE_RATE) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.N11_16_ACTUAL_DURATION) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.L_TYPE_OF_DOSE) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.N11_17_ISOTOPE_TYPE) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.N11_18_ANAESTHETIC) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.N11_19_UNSEALED) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.N11_20_DELIVERY_TYPE) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.N11_22_STATUS) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.N_TREATMENT_EVENT) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.N_TREATMENT_SETTING) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.L_NAMED_COMP) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.L_COMP_3MTH) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.L_SHORT_LONG) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.R_INSERTIONS) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.R_DOSE_INSERTION) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.R_TREAT_TO) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.L_TRIAL) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.ENDOSCOPIC) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.DEFINITIVE_TREATMENT) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.CWT_PROFORMA) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(CAST(MB.L_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.PRE_TREAT_PSA) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(CAST(MB.ROOT_START_DATE_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(CAST(MB.ROOT_END_DATE_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.ACTION_ID) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(CAST(MB.ROOT_DECISION_DATE_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.AdjunctiveTherapyID) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.OtherTreatmentIntent) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.HCCEmbolisation) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.HCCEmbolisationModality) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.NotCompleteReasonID) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.TreatmentCompletedAsPlanned) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(MB.TertiaryReferralKey) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(CAST(MB.ROOT_PRIM_ADJUSTMENT_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY BRACHY_ID) +
+										COUNT(CAST(MB.ROOT_SUBPRIM_ADJUSTMENT_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY BRACHY_ID)
+
+
+FROM		Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc
+INNER JOIN	@MajorIDs_SCOPE Ref_Scope ON mc.Src_UID_Major = Ref_Scope.Src_UID_Major
+								AND mc.SrcSys_Major = Ref_Scope.SrcSys_Major
+
+INNER JOIN	Merge_DM_MatchViews.tblMAIN_BRACHYTHERAPY MB
+											--ON	mc.SrcSys = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge', MB.SrcSysID , 1) AS TINYINT)
+											ON	mc.SrcSys = MB.SrcSysID
+											AND	mc.Src_UID = CAST(MB.CARE_ID AS VARCHAR(255))
+LEFT JOIN	Merge_DM_MatchViews.tblAUDIT aud
+										ON	MB.SrcSysID = aud.SrcSysID
+										AND	MB.ACTION_ID = aud.ACTION_ID
+
+
+--insert records from tblMAIN_PALLIATIVE
+INSERT INTO		@Treatments(
+				Ref_SrcSys_Major 
+ 				,Ref_Src_UID_Major
+				,Ref_SrcSys_Minor 
+				,Ref_Src_UID_Minor
+				,TreatmentDate
+				,Treatment 
+				,TreatmentSite
+				,TreatmentID
+				,LastUpdated
+				,HashBytesValue
+				,NonNullColumnCount
+				)
+
+SELECT			Ref_SrcSys_Major 	= mc.SrcSys_Major
+ 				,Ref_Src_UID_Major	= mc.Src_UID_Major
+				,Ref_SrcSys_Minor 	= mc.SrcSys
+				,Ref_Src_UID_Minor	= mc.Src_UID
+				,TreatmentDate		= MP.N12_2_START_DATE
+				,Treatment			= 'tblMAIN_PALLIATIVE'
+				,TreatmentSite		= 'Palliative'
+				,TreatmentID		= MP.PALL_ID
+				,LastUpdated		= aud.ACTION_DATE
+				,HashBytesValue		= HASHBYTES('SHA2_512', CONCAT_WS	('|'
+																		--,mc.SrcSys_Major
+ 																		--,mc.Src_UID_Major
+																		,mc.LastProcessed
+																		,'tblMAIN_PALLIATIVE'
+																		,MP.PALL_ID
+																		,'Palliative'
+																		,MP.N12_2_START_DATE
+																		))
+				,NonNullColumnCount	=	COUNT(MP.N12_1_DECISION_DATE) OVER (PARTITION BY PALL_ID) +
+										COUNT(MP.N12_2_START_DATE) OVER (PARTITION BY PALL_ID) +
+										COUNT(MP.N1_3_ORG_CODE_TREATMENT) OVER (PARTITION BY PALL_ID) +
+										COUNT(MP.N_SITE_CODE_DTT) OVER (PARTITION BY PALL_ID) +
+										COUNT(MP.N_L39_PROVIDER) OVER (PARTITION BY PALL_ID) +
+										COUNT(MP.N_L40_COMMUNITY) OVER (PARTITION BY PALL_ID) +
+										COUNT(MP.N_L41_TREATMENT) OVER (PARTITION BY PALL_ID) +
+										COUNT(MP.N_L42_TREAT_DATE) OVER (PARTITION BY PALL_ID) +
+										COUNT(MP.N_TREATMENT_EVENT) OVER (PARTITION BY PALL_ID) +
+										COUNT(MP.N_TREATMENT_SETTING) OVER (PARTITION BY PALL_ID) +
+										COUNT(MP.N_SPECIALIST) OVER (PARTITION BY PALL_ID) +
+										COUNT(MP.L_TRIAL) OVER (PARTITION BY PALL_ID) +
+										COUNT(MP.DEFINITIVE_TREATMENT) OVER (PARTITION BY PALL_ID) +
+										COUNT(MP.CWT_PROFORMA) OVER (PARTITION BY PALL_ID) +
+										COUNT(CAST(MP.L_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY PALL_ID) +
+										COUNT(MP.N7_2_CONSULTANT) OVER (PARTITION BY PALL_ID) +
+										COUNT(MP.PRE_TREAT_PSA) OVER (PARTITION BY PALL_ID) +
+										COUNT(CAST(MP.ROOT_CAUSE_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY PALL_ID) +
+										COUNT(MP.ACTION_ID) OVER (PARTITION BY PALL_ID) +
+										COUNT(CAST(MP.ROOT_DECISION_DATE_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY PALL_ID) +
+										COUNT(MP.TreatmentIntent) OVER (PARTITION BY PALL_ID) +
+										COUNT(MP.OtherTreatmentIntent) OVER (PARTITION BY PALL_ID) +
+										COUNT(MP.TertiaryReferralKey) OVER (PARTITION BY PALL_ID) +
+										COUNT(CAST(MP.ROOT_PRIM_ADJUSTMENT_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY PALL_ID) +
+										COUNT(CAST(MP.ROOT_SUBPRIM_ADJUSTMENT_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY PALL_ID)
+
+FROM		Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc
+INNER JOIN	@MajorIDs_SCOPE Ref_Scope ON mc.Src_UID_Major = Ref_Scope.Src_UID_Major
+								AND mc.SrcSys_Major = Ref_Scope.SrcSys_Major
+
+INNER JOIN	Merge_DM_MatchViews.tblMAIN_PALLIATIVE MP
+											--ON	mc.SrcSys = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge', MP.SrcSysID , 1) AS TINYINT)
+											ON	mc.SrcSys = MP.SrcSysID
+											AND	mc.Src_UID = CAST(MP.CARE_ID AS VARCHAR(255))
+LEFT JOIN	Merge_DM_MatchViews.tblAUDIT aud
+										ON	MP.SrcSysID = aud.SrcSysID
+										AND	MP.ACTION_ID = aud.ACTION_ID
+
+
+--insert records from tblMAIN_SURGERY
+INSERT INTO		@Treatments(
+				Ref_SrcSys_Major 
+ 				,Ref_Src_UID_Major
+				,Ref_SrcSys_Minor 
+				,Ref_Src_UID_Minor
+				,TreatmentDate
+				,Treatment 
+				,TreatmentSite
+				,TreatmentID
+				,LastUpdated
+				,HashBytesValue
+				,NonNullColumnCount
+				)
+
+SELECT			Ref_SrcSys_Major 	= mc.SrcSys_Major
+ 				,Ref_Src_UID_Major	= mc.Src_UID_Major
+				,Ref_SrcSys_Minor 	= mc.SrcSys
+				,Ref_Src_UID_Minor	= mc.Src_UID
+				,TreatmentDate		= MS.N7_8_ADMISSION_DATE
+				,Treatment			= 'tblMAIN_SURGERY'
+				,TreatmentSite		= MS.N7_1_SITE_CODE
+				,TreatmentID		= MS.SURGERY_ID
+				,LastUpdated		= aud.ACTION_DATE
+				,HashBytesValue		= HASHBYTES('SHA2_512', CONCAT_WS	('|'
+																		--,mc.SrcSys_Major
+ 																		--,mc.Src_UID_Major
+																		,mc.LastProcessed
+																		,'tblMAIN_SURGERY'
+																		,MS.SURGERY_ID
+																		,MS.N7_1_SITE_CODE
+																		,MS.N7_8_ADMISSION_DATE
+																		))
+				,NonNullColumnCount	=	COUNT(MS.N7_1_SITE_CODE) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.N_SITE_CODE_DTT) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.N7_2_CONSULTANT) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.N7_3_SPECIALTY) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.N7_4_TREATMENT_INTENT) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.N7_5_DECISION_DATE) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.N7_8_ADMISSION_DATE) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.N7_9_SURGERY_DATE) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_PROCEDURE_SITE) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_PROCEDURE_TYPE) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_PROCEDURE) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_PROCEDURE_SITE2) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_PROCEDURE_TYPE2) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_PROCEDURE2) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_PROCEDURE_SITE3) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_PROCEDURE_TYPE3) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_PROCEDURE3) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_PROCEDURE_SITE4) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_PROCEDURE_TYPE4) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_PROCEDURE4) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.N7_10_PROCEDURE_1) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.N7_11_PROCEDURE_2) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.N7_11_PROCEDURE_3) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.N7_11_PROCEDURE_4) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.N7_12_DISCHARGE_DATE) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.N7_13_DISCHARGE_DESTINATION) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.N_TREATMENT_EVENT) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.N_TREATMENT_SETTING) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_TRIAL) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_SURGEON) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_SURGEON_NAME) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_GRADE) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_ASSISTANT_1) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_ASSISTANT_NAME_1) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_GRADE_1) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_ASSISTANT_2) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_ASSISTANT_NAME_2) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_GRADE_2) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_ANAESTHETIST_NAME) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_ANAESTHETIST) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_ANAESTHETIST_NAME_2) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_ANAESTHETIST_2) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_URGENCY) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_ANASTOMOSIS) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_BLOOD_LOSS) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_SUPPORT) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_COMPLICATIONS) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_COMPLICATIONS2) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_COMPLICATIONS3) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_OTHER_COMP) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_POST_COMP) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_TRANSFER) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_DAYS) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_RETURN_ITU) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_REASON_RETURN) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.L_DAYS_BACK) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.DEFINITIVE_TREATMENT) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.CWT_PROFORMA) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(CAST(MS.L_DISCHARGE_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.STEM_CELL_INFUSION_SOURCE_ID) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.STEM_CELL_INFUSION_SOURCE_ID2) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.STEM_CELL_INFUSION_SOURCE_ID3) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.STEM_CELL_INFUSION_DONOR_ID) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.STEM_CELL_INFUSION_DONOR_ID2) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.STEM_CELL_INFUSION_DONOR_ID3) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.SURGEON_3) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.SURGEON_3_GRADE) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.SURGEON_3_NAME) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.SURGEON_4) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.SURGEON_4_GRADE) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.SURGEON_4_NAME) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(CAST(MS.ROOT_ADMISSION_DATE_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(CAST(MS.ROOT_PERFORMED_DATE_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.GMC_CODE1) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.GMC_CODE2) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.GMC_CODE3) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.GMC_CODE4) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.GMC_CODE5) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.GMC_CODE6) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.PLANNED_ITU_ADMISSION) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.ACTION_ID) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.PLANNED_PROCEDURE_DATE) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.DATE_DISCREPANCY_REASON) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(CAST(MS.ROOT_DECISION_DATE_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.SurgicalAccessID) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.CCLGGuidelineName) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.TreatedToCCLGGuidelines) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.ConditioningRegimenPrimary) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.ConditioningRegimenSub1) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.ConditioningRegimenSub2) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.ResectionStatus) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.ASAGrade) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.AdjunctiveTherapyID) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.OtherTreatmentIntent) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.TherapyType) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.SNOMEDProcedure) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.SNOMEDProcedure2) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.SNOMEDProcedure3) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.TertiaryReferralKey) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.StartTime) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.EndTime) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.RegionalAnaestheticTechnique) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.SNOMEDRTT) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(MS.SNOMEDProcedure4) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(CAST(MS.ROOT_PRIM_ADJUSTMENT_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY SURGERY_ID) +
+										COUNT(CAST(MS.ROOT_SUBPRIM_ADJUSTMENT_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY SURGERY_ID)
+
+FROM		Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc
+INNER JOIN	@MajorIDs_SCOPE Ref_Scope ON mc.Src_UID_Major = Ref_Scope.Src_UID_Major
+								AND mc.SrcSys_Major = Ref_Scope.SrcSys_Major
+
+INNER JOIN	Merge_DM_MatchViews.tblMAIN_SURGERY MS
+											--ON	mc.SrcSys = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge', MS.SrcSysID , 1) AS TINYINT) 
+											ON	mc.SrcSys =  MS.SrcSysID
+											AND	mc.Src_UID = CAST(MS.CARE_ID AS VARCHAR(255))
+LEFT JOIN	Merge_DM_MatchViews.tblAUDIT aud
+										ON	MS.SrcSysID = aud.SrcSysID
+										AND	MS.ACTION_ID = aud.ACTION_ID
+
+
+
+--insert records from tblMAIN_TELETHERAPY
+INSERT INTO		@Treatments(
+				Ref_SrcSys_Major 
+ 				,Ref_Src_UID_Major
+				,Ref_SrcSys_Minor 
+				,Ref_Src_UID_Minor
+				,TreatmentDate
+				,Treatment 
+				,TreatmentSite
+				,TreatmentID
+				,LastUpdated
+				,HashBytesValue
+				,NonNullColumnCount
+				)
+
+SELECT			Ref_SrcSys_Major 	= mc.SrcSys_Major
+ 				,Ref_Src_UID_Major	= mc.Src_UID_Major
+				,Ref_SrcSys_Minor 	= mc.SrcSys
+				,Ref_Src_UID_Minor	= mc.Src_UID
+				,TreatmentDate		= MT.N10_8_START_DATE
+				,Treatment			= 'tblMAIN_TELETHERAPY'
+				,TreatmentSite		= MT.N10_1_SITE_CODE
+				,TreatmentID		= MT.TELE_ID
+				,LastUpdated		= aud.ACTION_DATE
+				,HashBytesValue		= HASHBYTES('SHA2_512', CONCAT_WS	('|'
+																		--,mc.SrcSys_Major
+ 																		--,mc.Src_UID_Major
+																		,mc.LastProcessed
+																		,'tblMAIN_TELETHERAPY'
+																		,MT.TELE_ID
+																		,MT.N10_1_SITE_CODE
+																		,MT.N10_8_START_DATE
+																		))
+				,NonNullColumnCount	=	COUNT(MT.N10_1_SITE_CODE) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N_SITE_CODE_DTT) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N10_2_CONSULTANT) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N10_3_DECISION_DATE) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N10_6_TREATMENT_INTENT) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N10_7_TREATMENT_SITE) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N10_8_START_DATE) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N10_9_END_DATE) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N10_10_DOSE) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N10_11_FRACTIONS) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N10_12_DURATION) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N10_13_ACTUAL_DOSE) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N10_14_ACTUAL_FRACTIONS) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N10_15_ACTUAL_DURATION) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N10_16_BEAM_TYPE) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N10_17_BEAM_ENERGY_1) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N10_17_BEAM_ENERGY_2) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N10_18_FIELDS) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N10_19_COMPLEXITY) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N10_20_ANAESTHETIC) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N10_21_MULTIPLE_PLANNING) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N_L26_RT_GIVEN) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N_TREATMENT_EVENT) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N_TREATMENT_SETTING) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N_PRIORITY) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.N_CHEMORADIO) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.L_DOSE_FRACTIONS) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.L_FRACTIONS_WEEK) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.L_NAMED_COMP) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.L_COMP_3MTH) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.L_SHORT_LONG) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.L_TRIAL) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.L_FRAME) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.R_TREAT_TO) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.DEFINITIVE_TREATMENT) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.CWT_PROFORMA) OVER (PARTITION BY TELE_ID) +
+										COUNT(CAST(MT.L_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.BRAIN_RADIOSURGERY_INDICATOR) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.PRE_TREAT_PSA) OVER (PARTITION BY TELE_ID) +
+										COUNT(CAST(MT.ROOT_START_DATE_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY TELE_ID) +
+										COUNT(CAST(MT.ROOT_END_DATE_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.ACTION_ID) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.DISCHARGE_SIX_DAYS) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.DATE_LAST_FRACTION) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.PLANNED_START_DATE) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.DISCHARGE_DATE) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.DISCHARGE_DELAY_REASON) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.DISCHARGE_DESTINATION) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.PLANNED_REASON) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.DELAY_REASON) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.TECHNIQUE) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.ToxicitySymptom) OVER (PARTITION BY TELE_ID) +
+										COUNT(CAST(MT.ROOT_DECISION_DATE_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.AdjunctiveTherapyID) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.OtherTreatmentIntent) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.HCCEmbolisation) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.HCCEmbolisationModality) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.TreatmentCompletedAsPlanned) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.NotCompleteReasonID) OVER (PARTITION BY TELE_ID) +
+										COUNT(MT.TertiaryReferralKey) OVER (PARTITION BY TELE_ID) +
+										COUNT(CAST(MT.ROOT_PRIM_ADJUSTMENT_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY TELE_ID) +
+										COUNT(CAST(MT.ROOT_SUBPRIM_ADJUSTMENT_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY TELE_ID)
+
+FROM		Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc
+INNER JOIN	@MajorIDs_SCOPE Ref_Scope ON mc.Src_UID_Major = Ref_Scope.Src_UID_Major
+								AND mc.SrcSys_Major = Ref_Scope.SrcSys_Major
+
+INNER JOIN	Merge_DM_MatchViews.tblMAIN_TELETHERAPY MT
+											--ON	mc.SrcSys = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge', MT.SrcSysID , 1) AS TINYINT)
+											ON	mc.SrcSys = MT.SrcSysID
+											AND	mc.Src_UID = CAST(MT.CARE_ID AS VARCHAR(255))
+LEFT JOIN	Merge_DM_MatchViews.tblAUDIT aud
+										ON	MT.SrcSysID = aud.SrcSysID
+										AND	MT.ACTION_ID = aud.ACTION_ID
+
+
+
+--insert records from tblMONITORING
+INSERT INTO		@Treatments(
+				Ref_SrcSys_Major 
+ 				,Ref_Src_UID_Major
+				,Ref_SrcSys_Minor 
+				,Ref_Src_UID_Minor
+				,TreatmentDate
+				,Treatment 
+				,TreatmentSite
+				,TreatmentID
+				,LastUpdated
+				,HashBytesValue
+				,NonNullColumnCount
+				)
+
+SELECT			Ref_SrcSys_Major 	= mc.SrcSys_Major
+ 				,Ref_Src_UID_Major	= mc.Src_UID_Major
+				,Ref_SrcSys_Minor 	= mc.SrcSys
+				,Ref_Src_UID_Minor	= mc.Src_UID
+				,TreatmentDate		= M.N16_10_START_ACTIVE
+				,Treatment			= 'tblMONITORING'
+				,TreatmentSite		= 'Monitoring'
+				,TreatmentID		= M.MONITOR_ID
+				,LastUpdated		= aud.ACTION_DATE
+				,HashBytesValue		= HASHBYTES('SHA2_512', CONCAT_WS	('|'
+																		--,mc.SrcSys_Major
+ 																		--,mc.Src_UID_Major
+																		,mc.LastProcessed
+																		,'tblMONITORING'
+																		,M.MONITOR_ID
+																		,'Monitoring'
+																		,M.N16_10_START_ACTIVE
+																		))
+				,NonNullColumnCount	=	COUNT(M.N16_9_DECISION_ACTIVE) OVER (PARTITION BY MONITOR_ID) +
+										COUNT(M.N16_10_START_ACTIVE) OVER (PARTITION BY MONITOR_ID) +
+										COUNT(M.N1_3_ORG_CODE_TREATMENT) OVER (PARTITION BY MONITOR_ID) +
+										COUNT(M.L_MONITORING_INTENT) OVER (PARTITION BY MONITOR_ID) +
+										COUNT(M.N_SITE_CODE_DTT) OVER (PARTITION BY MONITOR_ID) +
+										COUNT(M.N_TREATMENT_EVENT) OVER (PARTITION BY MONITOR_ID) +
+										COUNT(M.N_TREATMENT_SETTING) OVER (PARTITION BY MONITOR_ID) +
+										COUNT(M.L_TRIAL) OVER (PARTITION BY MONITOR_ID) +
+										COUNT(M.DEFINITIVE_TREATMENT) OVER (PARTITION BY MONITOR_ID) +
+										COUNT(M.CWT_PROFORMA) OVER (PARTITION BY MONITOR_ID) +
+										COUNT(CAST(M.L_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY MONITOR_ID) +
+										COUNT(M.N7_2_CONSULTANT) OVER (PARTITION BY MONITOR_ID) +
+										COUNT(M.PRE_TREAT_PSA) OVER (PARTITION BY MONITOR_ID) +
+										COUNT(CAST(M.ROOT_CAUSE_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY MONITOR_ID) +
+										COUNT(M.ACTION_ID) OVER (PARTITION BY MONITOR_ID) +
+										COUNT(CAST(M.ROOT_DECISION_DATE_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY MONITOR_ID) +
+										COUNT(M.TertiaryReferralKey) OVER (PARTITION BY MONITOR_ID) +
+										COUNT(CAST(M.ROOT_PRIM_ADJUSTMENT_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY MONITOR_ID) +
+										COUNT(CAST(M.ROOT_SUBPRIM_ADJUSTMENT_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY MONITOR_ID)
+
+FROM		Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc
+INNER JOIN	@MajorIDs_SCOPE Ref_Scope ON mc.Src_UID_Major = Ref_Scope.Src_UID_Major
+								AND mc.SrcSys_Major = Ref_Scope.SrcSys_Major
+
+INNER JOIN	Merge_DM_MatchViews.tblMONITORING M
+											--ON	mc.SrcSys = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge', M.SrcSysID , 1) AS TINYINT)
+											ON	mc.SrcSys = M.SrcSysID
+											AND	mc.Src_UID = CAST(M.CARE_ID AS VARCHAR(255))
+LEFT JOIN	Merge_DM_MatchViews.tblAUDIT aud
+										ON	M.SrcSysID = aud.SrcSysID
+										AND	M.ACTION_ID = aud.ACTION_ID
+
+
+
+
+--insert records from tblOTHER_TREATMENT
+INSERT INTO		@Treatments(
+				Ref_SrcSys_Major 
+ 				,Ref_Src_UID_Major
+				,Ref_SrcSys_Minor 
+				,Ref_Src_UID_Minor
+				,TreatmentDate
+				,Treatment 
+				,TreatmentSite
+				,TreatmentID
+				,LastUpdated
+				,HashBytesValue
+				,NonNullColumnCount
+				)
+
+SELECT			Ref_SrcSys_Major 	= mc.SrcSys_Major
+ 				,Ref_Src_UID_Major	= mc.Src_UID_Major
+				,Ref_SrcSys_Minor 	= mc.SrcSys
+				,Ref_Src_UID_Minor	= mc.Src_UID
+				,TreatmentDate		= OT.N16_10_START_ACTIVE
+				,Treatment			= 'tblOTHER_TREATMENT'
+				,TreatmentSite		= 'Other'
+				,TreatmentID		= OT.OTHER_ID
+				,LastUpdated		= aud.ACTION_DATE
+				,HashBytesValue		= HASHBYTES('SHA2_512', CONCAT_WS	('|'
+																		--,mc.SrcSys_Major
+ 																		--,mc.Src_UID_Major
+																		,mc.LastProcessed
+																		,'tblOTHER_TREATMENT'
+																		,OT.OTHER_ID
+																		,'Other'
+																		,OT.N16_10_START_ACTIVE
+																		))
+				,NonNullColumnCount	=	COUNT(OT.N16_10_START_ACTIVE) OVER (PARTITION BY OTHER_ID) +
+										COUNT(OT.N1_3_ORG_CODE_TREATMENT) OVER (PARTITION BY OTHER_ID) +
+										COUNT(OT.N_SITE_CODE_DTT) OVER (PARTITION BY OTHER_ID) +
+										COUNT(OT.N_TREATMENT_EVENT) OVER (PARTITION BY OTHER_ID) +
+										COUNT(OT.N_TREATMENT_SETTING) OVER (PARTITION BY OTHER_ID) +
+										COUNT(OT.L_TRIAL) OVER (PARTITION BY OTHER_ID) +
+										COUNT(OT.DEFINITIVE_TREATMENT) OVER (PARTITION BY OTHER_ID) +
+										COUNT(OT.CWT_PROFORMA) OVER (PARTITION BY OTHER_ID) +
+										COUNT(CAST(OT.L_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY OTHER_ID) +
+										COUNT(OT.N7_2_CONSULTANT) OVER (PARTITION BY OTHER_ID) +
+										COUNT(OT.PRE_TREAT_PSA) OVER (PARTITION BY OTHER_ID) +
+										COUNT(CAST(OT.ROOT_CAUSE_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY OTHER_ID) +
+										COUNT(OT.ACTION_ID) OVER (PARTITION BY OTHER_ID) +
+										COUNT(CAST(OT.ROOT_DECISION_DATE_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY OTHER_ID) +
+										COUNT(OT.HCCEmbolisation) OVER (PARTITION BY OTHER_ID) +
+										COUNT(OT.HCCEmbolisationModality) OVER (PARTITION BY OTHER_ID) +
+										COUNT(OT.TreatmentIntent) OVER (PARTITION BY OTHER_ID) +
+										COUNT(OT.OtherTreatmentIntent) OVER (PARTITION BY OTHER_ID) +
+										COUNT(OT.AdjunctiveTherapyID) OVER (PARTITION BY OTHER_ID) +
+										COUNT(OT.TertiaryReferralKey) OVER (PARTITION BY OTHER_ID) +
+										COUNT(CAST(OT.ROOT_PRIM_ADJUSTMENT_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY OTHER_ID) +
+										COUNT(CAST(OT.ROOT_SUBPRIM_ADJUSTMENT_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY OTHER_ID)
+
+FROM		Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc
+INNER JOIN	@MajorIDs_SCOPE Ref_Scope ON mc.Src_UID_Major = Ref_Scope.Src_UID_Major
+								AND mc.SrcSys_Major = Ref_Scope.SrcSys_Major
+
+INNER JOIN	Merge_DM_MatchViews.tblOTHER_TREATMENT OT
+											--ON	mc.SrcSys = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge', OT.SrcSysID , 1) AS TINYINT)
+											ON	mc.SrcSys = OT.SrcSysID
+											AND	mc.Src_UID = CAST(OT.CARE_ID AS VARCHAR(255))
+LEFT JOIN	Merge_DM_MatchViews.tblAUDIT aud
+										ON	OT.SrcSysID = aud.SrcSysID
+										AND	OT.ACTION_ID = aud.ACTION_ID
+
+
+
+
+--insert records from tblAllTreatmentDeclined
+INSERT INTO		@Treatments(
+				Ref_SrcSys_Major 
+ 				,Ref_Src_UID_Major
+				,Ref_SrcSys_Minor 
+				,Ref_Src_UID_Minor
+				,TreatmentDate
+				,Treatment 
+				,TreatmentSite
+				,TreatmentID
+				,LastUpdated
+				,HashBytesValue
+				,NonNullColumnCount
+				)
+
+SELECT			Ref_SrcSys_Major 	= mc.SrcSys_Major
+ 				,Ref_Src_UID_Major	= mc.Src_UID_Major
+				,Ref_SrcSys_Minor 	= mc.SrcSys
+				,Ref_Src_UID_Minor	= mc.Src_UID
+				,TreatmentDate		= atd.START_DATE
+				,Treatment			= 'tblAllTreatmentDeclined'
+				,TreatmentSite		= 'AllTreatmentDeclined'
+				,TreatmentID		= atd.AllTreatmentDeclinedID
+				,LastUpdated		= aud.ACTION_DATE
+				,HashBytesValue		= HASHBYTES('SHA2_512', CONCAT_WS	('|'
+																		--,mc.SrcSys_Major
+ 																		--,mc.Src_UID_Major
+																		,mc.LastProcessed
+																		,'tblAllTreatmentDeclined'
+																		,atd.AllTreatmentDeclinedID
+																		,'AllTreatmentDeclined'
+																		,atd.START_DATE
+																		))
+				,NonNullColumnCount	=	COUNT(atd.DECISION_DATE) OVER (PARTITION BY AllTreatmentDeclinedID) +
+										COUNT(atd.ORG_CODE_DTT) OVER (PARTITION BY AllTreatmentDeclinedID) +
+										COUNT(atd.START_DATE) OVER (PARTITION BY AllTreatmentDeclinedID) +
+										COUNT(atd.ORG_CODE_TREATMENT) OVER (PARTITION BY AllTreatmentDeclinedID) +
+										COUNT(atd.N_TREATMENT_EVENT) OVER (PARTITION BY AllTreatmentDeclinedID) +
+										COUNT(atd.N_TREATMENT_SETTING) OVER (PARTITION BY AllTreatmentDeclinedID) +
+										COUNT(atd.L_TRIAL) OVER (PARTITION BY AllTreatmentDeclinedID) +
+										COUNT(CAST(atd.L_COMMENTS AS VARCHAR(8000))) OVER (PARTITION BY AllTreatmentDeclinedID) +
+										COUNT(atd.DEFINITIVE_TREATMENT) OVER (PARTITION BY AllTreatmentDeclinedID) +
+										COUNT(atd.CWT_PROFORMA) OVER (PARTITION BY AllTreatmentDeclinedID) +
+										COUNT(CAST(atd.TertiaryReferralKey AS VARCHAR(8000))) OVER (PARTITION BY AllTreatmentDeclinedID)
+
+FROM		Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc
+INNER JOIN	@MajorIDs_SCOPE Ref_Scope ON mc.Src_UID_Major = Ref_Scope.Src_UID_Major
+								AND mc.SrcSys_Major = Ref_Scope.SrcSys_Major
+
+INNER JOIN	Merge_DM_MatchViews.tblAllTreatmentDeclined atd
+											--ON	mc.SrcSys = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge', OT.SrcSysID , 1) AS TINYINT)
+											ON	mc.SrcSys = atd.SrcSysID
+											AND	mc.Src_UID = CAST(atd.CARE_ID AS VARCHAR(255))
+LEFT JOIN	Merge_DM_MatchViews.tblAUDIT aud
+										ON	atd.SrcSysID = aud.SrcSysID
+										AND	atd.ACTION_ID = aud.ACTION_ID
+
+RETURN
+
+END
+
+
+
+GO

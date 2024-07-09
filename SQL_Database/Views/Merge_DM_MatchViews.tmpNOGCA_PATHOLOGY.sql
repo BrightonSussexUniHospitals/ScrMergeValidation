@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the tmpNOGCA_PATHOLOGY SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[tmpNOGCA_PATHOLOGY] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.tmpNOGCA_PATHOLOGY 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.tmpNOGCA_PATHOLOGY 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.tmpNOGCA_PATHOLOGY
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.tmpNOGCA_PATHOLOGY
 GO

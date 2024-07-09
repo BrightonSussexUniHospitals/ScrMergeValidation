@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the tblAHP_CONTACTS SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[tblAHP_CONTACTS] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.tblAHP_CONTACTS 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.tblAHP_CONTACTS 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.tblAHP_CONTACTS
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.tblAHP_CONTACTS
 GO

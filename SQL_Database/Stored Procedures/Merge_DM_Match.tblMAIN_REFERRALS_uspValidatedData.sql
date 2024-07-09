@@ -72,7 +72,7 @@ Description:				A stored procedure to return the validated DM matching data for 
 					,uh.LastUpdated
 		INTO		#mcIx
 		FROM		Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc
-		INNER JOIN	Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_UH uh
+		INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
 																ON	mc.SrcSys = uh.SrcSys
 																AND	mc.Src_UID = uh.Src_UID
 		LEFT JOIN	Merge_DM_Match.tblMAIN_REFERRALS_Match_MajorValidation mmv_Confirmed
@@ -308,7 +308,7 @@ Description:				A stored procedure to return the validated DM matching data for 
 					,uh.PredictedBreachYear
 					,uh.PredictedBreachMonth
 		INTO		#ValidatedData
-		FROM		Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_UH uh
+		FROM		Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
 		WHERE		0 = 1 -- only return an empty dataset with the desired table structure
 
 		-- internal majors
@@ -474,7 +474,7 @@ Description:				A stored procedure to return the validated DM matching data for 
 					,SNOMed_CT									= CASE WHEN mmvc.SNOMed_CT = 1 THEN mmv.SNOMed_CT ELSE uh.SNOMed_CT END
 					,ADT_PLACER_ID								= CASE WHEN mmvc.ADT_PLACER_ID = 1 THEN mmv.ADT_PLACER_ID ELSE uh.ADT_PLACER_ID END
 					,SNOMEDCTDiagnosisID						= CASE WHEN mmvc.SNOMEDCTDiagnosisID = 1 THEN mmv.SNOMEDCTDiagnosisID ELSE uh.SNOMEDCTDiagnosisID END
-					,FasterDiagnosisOrganisationID				= CASE WHEN mmvc.FasterDiagnosisOrganisationID = 1 THEN mmv.FasterDiagnosisOrganisationID ELSE uh.FasterDiagnosisOrganisationID END
+					,FasterDiagnosisOrganisationID				= CASE WHEN mmvc.FasterDiagnosisOrganisationID = 1 THEN ISNULL(FD_org.ID, mmv.FasterDiagnosisOrganisationID) ELSE uh.FasterDiagnosisOrganisationID END
 					,FasterDiagnosisCancerSiteOverrideID		= CASE WHEN mmvc.FasterDiagnosisCancerSiteOverrideID = 1 THEN mmv.FasterDiagnosisCancerSiteOverrideID ELSE uh.FasterDiagnosisCancerSiteOverrideID END
 					,FasterDiagnosisExclusionDate				= CASE WHEN mmvc.FasterDiagnosisExclusionDate = 1 THEN mmv.FasterDiagnosisExclusionDate ELSE uh.FasterDiagnosisExclusionDate END
 					,FasterDiagnosisExclusionReasonID			= CASE WHEN mmvc.FasterDiagnosisExclusionReasonID = 1 THEN mmv.FasterDiagnosisExclusionReasonID ELSE uh.FasterDiagnosisExclusionReasonID END
@@ -521,7 +521,7 @@ Description:				A stored procedure to return the validated DM matching data for 
 					,PredictedBreachYear						= CASE WHEN mmvc.PredictedBreachYear = 1 THEN mmv.PredictedBreachYear ELSE uh.PredictedBreachYear END
 					,PredictedBreachMonth						= CASE WHEN mmvc.PredictedBreachMonth = 1 THEN mmv.PredictedBreachMonth ELSE uh.PredictedBreachMonth END
 		FROM		#mcIx mc
-		INNER JOIN	Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_UH uh
+		INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
 																ON	mc.SrcSys_Major = uh.SrcSys
 																AND	mc.Src_UID_Major = uh.Src_UID
 		LEFT JOIN	Merge_DM_Match.tblMAIN_REFERRALS_Match_MajorValidation mmv
@@ -531,6 +531,12 @@ Description:				A stored procedure to return the validated DM matching data for 
 		LEFT JOIN	Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_Match_MajorValidationColumns mmvc
 																							ON	mmv.SrcSys_Major = mmvc.SrcSys_Major
 																							AND	mmv.Src_UID_Major = mmvc.Src_UID_Major
+		LEFT JOIN	Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_Match_MajorValidationColumns_SrcSys mmvcs
+																							ON	mmv.SrcSys_Major = mmvcs.SrcSys_Major
+																							AND	mmv.Src_UID_Major = mmvcs.Src_UID_Major
+		LEFT JOIN	SCR_DW.SCR.dbo_OrganisationSites FD_org
+															ON	mmvcs.FasterDiagnosisOrganisationID = 2
+															AND	mmv.FasterDiagnosisOrganisationID = FD_Org.DW_SOURCE_PATIENT_ID
 		WHERE		mc.IsMajor = 1
 		AND			mc.IsMajorSCR = 1
 
@@ -697,7 +703,7 @@ Description:				A stored procedure to return the validated DM matching data for 
 					,SNOMed_CT									= CASE WHEN mmvc.SNOMed_CT = 1 THEN mmv.SNOMed_CT ELSE uh.SNOMed_CT END
 					,ADT_PLACER_ID								= CASE WHEN mmvc.ADT_PLACER_ID = 1 THEN mmv.ADT_PLACER_ID ELSE uh.ADT_PLACER_ID END
 					,SNOMEDCTDiagnosisID						= CASE WHEN mmvc.SNOMEDCTDiagnosisID = 1 THEN mmv.SNOMEDCTDiagnosisID ELSE uh.SNOMEDCTDiagnosisID END
-					,FasterDiagnosisOrganisationID				= CASE WHEN mmvc.FasterDiagnosisOrganisationID = 1 THEN mmv.FasterDiagnosisOrganisationID ELSE uh.FasterDiagnosisOrganisationID END
+					,FasterDiagnosisOrganisationID				= CASE WHEN mmvc.FasterDiagnosisOrganisationID = 1 THEN ISNULL(FD_org.ID, mmv.FasterDiagnosisOrganisationID) ELSE uh.FasterDiagnosisOrganisationID END
 					,FasterDiagnosisCancerSiteOverrideID		= CASE WHEN mmvc.FasterDiagnosisCancerSiteOverrideID = 1 THEN mmv.FasterDiagnosisCancerSiteOverrideID ELSE uh.FasterDiagnosisCancerSiteOverrideID END
 					,FasterDiagnosisExclusionDate				= CASE WHEN mmvc.FasterDiagnosisExclusionDate = 1 THEN mmv.FasterDiagnosisExclusionDate ELSE uh.FasterDiagnosisExclusionDate END
 					,FasterDiagnosisExclusionReasonID			= CASE WHEN mmvc.FasterDiagnosisExclusionReasonID = 1 THEN mmv.FasterDiagnosisExclusionReasonID ELSE uh.FasterDiagnosisExclusionReasonID END
@@ -744,7 +750,7 @@ Description:				A stored procedure to return the validated DM matching data for 
 					,PredictedBreachYear						= CASE WHEN mmvc.PredictedBreachYear = 1 THEN mmv.PredictedBreachYear ELSE uh.PredictedBreachYear END
 					,PredictedBreachMonth						= CASE WHEN mmvc.PredictedBreachMonth = 1 THEN mmv.PredictedBreachMonth ELSE uh.PredictedBreachMonth END
 		FROM		#mcIx mc
-		INNER JOIN	Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_UH uh
+		INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
 																ON	mc.SrcSys = uh.SrcSys
 																AND	mc.Src_UID = uh.Src_UID
 		LEFT JOIN	Merge_DM_Match.tblMAIN_REFERRALS_Match_MajorValidation mmv
@@ -754,6 +760,12 @@ Description:				A stored procedure to return the validated DM matching data for 
 		LEFT JOIN	Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_Match_MajorValidationColumns mmvc
 																							ON	mmv.SrcSys_Major = mmvc.SrcSys_Major
 																							AND	mmv.Src_UID_Major = mmvc.Src_UID_Major
+		LEFT JOIN	Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_Match_MajorValidationColumns_SrcSys mmvcs
+																							ON	mmv.SrcSys_Major = mmvcs.SrcSys_Major
+																							AND	mmv.Src_UID_Major = mmvcs.Src_UID_Major
+		LEFT JOIN	SCR_DW.SCR.dbo_OrganisationSites FD_org
+															ON	mmvcs.FasterDiagnosisOrganisationID = 2
+															AND	mmv.FasterDiagnosisOrganisationID = FD_Org.DW_SOURCE_PATIENT_ID
 		WHERE		mc.IsMajorSCR = 0
 		AND			mc.mcIx = 1
 
@@ -967,7 +979,7 @@ Description:				A stored procedure to return the validated DM matching data for 
 					,PredictedBreachYear						= uh.PredictedBreachYear
 					,PredictedBreachMonth						= uh.PredictedBreachMonth
 		FROM		#mcIx mc
-		INNER JOIN	Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_UH uh
+		INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
 																ON	mc.SrcSys = uh.SrcSys
 																AND	mc.Src_UID = uh.Src_UID
 		LEFT JOIN	#ValidatedData vd
@@ -1218,11 +1230,235 @@ Description:				A stored procedure to return the validated DM matching data for 
 					,SharedBreach								= uh.SharedBreach
 					,PredictedBreachYear						= uh.PredictedBreachYear
 					,PredictedBreachMonth						= uh.PredictedBreachMonth
-		FROM		Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_UH uh
+		FROM		Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
 		LEFT JOIN	Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc
 																ON	uh.SrcSys = mc.SrcSys
 																AND	uh.Src_UID = mc.Src_UID
+		LEFT JOIN	#ValidatedData vd
+									ON	mc.SrcSys = vd.SrcSys
+									AND	mc.Src_UID = vd.Src_UID
 		WHERE		mc.SrcSys IS NULL
+		OR			vd.SrcSys IS NULL
+
+		-- Excluded SCR records that won't be in the match control table (if we are creating a bulk dataset)
+		IF @HasRelatedEntities = 0
+		INSERT INTO	#ValidatedData
+		SELECT		SrcSys_MajorExt								= uh.SrcSys
+					,Src_UID_MajorExt							= uh.Src_UID
+					,SrcSys_Major								= uh.SrcSys
+					,Src_UID_Major								= uh.Src_UID
+					,IsValidatedMajor							= 0
+					,IsConfirmed								= 0
+					,LastUpdated								= uh.LastUpdated
+					,SrcSys										= uh.SrcSys
+					,Src_UID									= uh.Src_UID
+					,CARE_ID									= uh.CARE_ID
+					,PATIENT_ID									= uh.PATIENT_ID
+					,TEMP_ID									= uh.TEMP_ID
+					,L_CANCER_SITE								= uh.L_CANCER_SITE
+					,N2_1_REFERRAL_SOURCE						= uh.N2_1_REFERRAL_SOURCE
+					,N2_2_ORG_CODE_REF							= uh.N2_2_ORG_CODE_REF
+					,N2_3_REFERRER_CODE							= uh.N2_3_REFERRER_CODE
+					,N2_4_PRIORITY_TYPE							= uh.N2_4_PRIORITY_TYPE
+					,N2_5_DECISION_DATE							= uh.N2_5_DECISION_DATE
+					,N2_6_RECEIPT_DATE							= uh.N2_6_RECEIPT_DATE
+					,N2_7_CONSULTANT							= uh.N2_7_CONSULTANT
+					,N2_8_SPECIALTY								= uh.N2_8_SPECIALTY
+					,N2_9_FIRST_SEEN_DATE						= uh.N2_9_FIRST_SEEN_DATE
+					,N1_3_ORG_CODE_SEEN							= uh.N1_3_ORG_CODE_SEEN
+					,N2_10_FIRST_SEEN_DELAY						= uh.N2_10_FIRST_SEEN_DELAY
+					,N2_12_CANCER_TYPE							= uh.N2_12_CANCER_TYPE
+					,N2_13_CANCER_STATUS						= uh.N2_13_CANCER_STATUS
+					,L_FIRST_APPOINTMENT						= uh.L_FIRST_APPOINTMENT
+					,L_CANCELLED_DATE							= uh.L_CANCELLED_DATE
+					,N2_14_ADJ_TIME								= uh.N2_14_ADJ_TIME
+					,N2_15_ADJ_REASON							= uh.N2_15_ADJ_REASON
+					,L_REFERRAL_METHOD							= uh.L_REFERRAL_METHOD
+					,N2_16_OP_REFERRAL							= uh.N2_16_OP_REFERRAL
+					,L_SPECIALIST_DATE							= uh.L_SPECIALIST_DATE
+					,L_ORG_CODE_SPECIALIST						= uh.L_ORG_CODE_SPECIALIST
+					,L_SPECIALIST_SEEN_DATE						= uh.L_SPECIALIST_SEEN_DATE
+					,N1_3_ORG_CODE_SPEC_SEEN					= uh.N1_3_ORG_CODE_SPEC_SEEN
+					,N_UPGRADE_DATE								= uh.N_UPGRADE_DATE
+					,N_UPGRADE_ORG_CODE							= uh.N_UPGRADE_ORG_CODE
+					,L_UPGRADE_WHEN								= uh.L_UPGRADE_WHEN
+					,L_UPGRADE_WHO								= uh.L_UPGRADE_WHO
+					,N4_1_DIAGNOSIS_DATE						= uh.N4_1_DIAGNOSIS_DATE
+					,L_DIAGNOSIS								= uh.L_DIAGNOSIS
+					,N4_2_DIAGNOSIS_CODE						= uh.N4_2_DIAGNOSIS_CODE
+					,L_ORG_CODE_DIAGNOSIS						= uh.L_ORG_CODE_DIAGNOSIS
+					,L_PT_INFORMED_DATE							= uh.L_PT_INFORMED_DATE
+					,L_OTHER_DIAG_DATE							= uh.L_OTHER_DIAG_DATE
+					,N4_3_LATERALITY							= uh.N4_3_LATERALITY
+					,N4_4_BASIS_DIAGNOSIS						= uh.N4_4_BASIS_DIAGNOSIS
+					,L_TOPOGRAPHY								= uh.L_TOPOGRAPHY
+					,L_HISTOLOGY_GROUP							= uh.L_HISTOLOGY_GROUP
+					,N4_5_HISTOLOGY								= uh.N4_5_HISTOLOGY
+					,N4_6_DIFFERENTIATION						= uh.N4_6_DIFFERENTIATION
+					,ClinicalTStage								= uh.ClinicalTStage
+					,ClinicalTCertainty							= uh.ClinicalTCertainty
+					,ClinicalNStage								= uh.ClinicalNStage
+					,ClinicalNCertainty							= uh.ClinicalNCertainty
+					,ClinicalMStage								= uh.ClinicalMStage
+					,ClinicalMCertainty							= uh.ClinicalMCertainty
+					,ClinicalOverallCertainty					= uh.ClinicalOverallCertainty
+					,N6_9_SITE_CLASSIFICATION					= uh.N6_9_SITE_CLASSIFICATION
+					,PathologicalOverallCertainty				= uh.PathologicalOverallCertainty
+					,PathologicalTCertainty						= uh.PathologicalTCertainty
+					,PathologicalTStage							= uh.PathologicalTStage
+					,PathologicalNCertainty						= uh.PathologicalNCertainty
+					,PathologicalNStage							= uh.PathologicalNStage
+					,PathologicalMCertainty						= uh.PathologicalMCertainty
+					,PathologicalMStage							= uh.PathologicalMStage
+					,L_GP_INFORMED								= uh.L_GP_INFORMED
+					,L_GP_INFORMED_DATE							= uh.L_GP_INFORMED_DATE
+					,L_GP_NOT									= uh.L_GP_NOT
+					,L_REL_INFORMED								= uh.L_REL_INFORMED
+					,L_NURSE_PRESENT							= uh.L_NURSE_PRESENT
+					,L_SPEC_NURSE_DATE							= uh.L_SPEC_NURSE_DATE
+					,L_SEEN_NURSE_DATE							= uh.L_SEEN_NURSE_DATE
+					,N16_1_ADJ_DAYS								= uh.N16_1_ADJ_DAYS
+					,N16_2_ADJ_DAYS								= uh.N16_2_ADJ_DAYS
+					,N16_3_ADJ_DECISION_CODE					= uh.N16_3_ADJ_DECISION_CODE
+					,N16_4_ADJ_TREAT_CODE						= uh.N16_4_ADJ_TREAT_CODE
+					,N16_5_DECISION_REASON_CODE					= uh.N16_5_DECISION_REASON_CODE
+					,N16_6_TREATMENT_REASON_CODE				= uh.N16_6_TREATMENT_REASON_CODE
+					,PathologicalTNMDate						= uh.PathologicalTNMDate
+					,ClinicalTNMDate							= uh.ClinicalTNMDate
+					,L_FIRST_CONSULTANT							= uh.L_FIRST_CONSULTANT
+					,L_APPROPRIATE								= uh.L_APPROPRIATE
+					,L_TERTIARY_DATE							= uh.L_TERTIARY_DATE
+					,L_TERTIARY_TRUST							= uh.L_TERTIARY_TRUST
+					,L_TERTIARY_REASON							= uh.L_TERTIARY_REASON
+					,L_INAP_REF									= uh.L_INAP_REF
+					,L_NEW_CA_SITE								= uh.L_NEW_CA_SITE
+					,L_AUTO_REF									= uh.L_AUTO_REF
+					,L_SEC_DIAGNOSIS_G							= uh.L_SEC_DIAGNOSIS_G
+					,L_SEC_DIAGNOSIS							= uh.L_SEC_DIAGNOSIS
+					,L_WRONG_REF								= uh.L_WRONG_REF
+					,L_WRONG_REASON								= uh.L_WRONG_REASON
+					,L_TUMOUR_STATUS							= uh.L_TUMOUR_STATUS
+					,L_NON_CANCER								= uh.L_NON_CANCER
+					,L_FIRST_APP								= uh.L_FIRST_APP
+					,L_NO_APP									= uh.L_NO_APP
+					,L_DIAG_WHO									= uh.L_DIAG_WHO
+					,L_RECURRENCE								= uh.L_RECURRENCE
+					,L_OTHER_SYMPS								= uh.L_OTHER_SYMPS
+					,L_COMMENTS									= uh.L_COMMENTS
+					,N2_11_FIRST_SEEN_REASON					= uh.N2_11_FIRST_SEEN_REASON
+					,N16_7_DECISION_REASON						= uh.N16_7_DECISION_REASON
+					,N16_8_TREATMENT_REASON						= uh.N16_8_TREATMENT_REASON
+					,L_DIAGNOSIS_COMMENTS						= uh.L_DIAGNOSIS_COMMENTS
+					,GP_PRACTICE_CODE							= uh.GP_PRACTICE_CODE
+					,ClinicalTNMGroup							= uh.ClinicalTNMGroup
+					,PathologicalTNMGroup						= uh.PathologicalTNMGroup
+					,L_KEY_WORKER_SEEN							= uh.L_KEY_WORKER_SEEN
+					,L_PALLIATIVE_SPECIALIST_SEEN				= uh.L_PALLIATIVE_SPECIALIST_SEEN
+					,GERM_CELL_NON_CNS_ID						= uh.GERM_CELL_NON_CNS_ID
+					,RECURRENCE_CANCER_SITE_ID					= uh.RECURRENCE_CANCER_SITE_ID
+					,ICD03_GROUP								= uh.ICD03_GROUP
+					,ICD03										= uh.ICD03
+					,L_DATE_DIAGNOSIS_DAHNO_LUCADA				= uh.L_DATE_DIAGNOSIS_DAHNO_LUCADA
+					,L_INDICATOR_CODE							= uh.L_INDICATOR_CODE
+					,PRIMARY_DIAGNOSIS_SUB_COMMENT				= uh.PRIMARY_DIAGNOSIS_SUB_COMMENT
+					,CONSULTANT_CODE_AT_DIAGNOSIS				= uh.CONSULTANT_CODE_AT_DIAGNOSIS
+					,CONSULTANT_AGE_SPECIALTY_AT_DIAGNOSIS		= uh.CONSULTANT_AGE_SPECIALTY_AT_DIAGNOSIS
+					,FETOPROTEIN								= uh.FETOPROTEIN
+					,GONADOTROPIN								= uh.GONADOTROPIN
+					,GONADOTROPIN_SERUM							= uh.GONADOTROPIN_SERUM
+					,FETOPROTEIN_SERUM							= uh.FETOPROTEIN_SERUM
+					,SARCOMA_TUMOUR_SITE_BONE					= uh.SARCOMA_TUMOUR_SITE_BONE
+					,SARCOMA_TUMOUR_SITE_SOFT_TISSUE			= uh.SARCOMA_TUMOUR_SITE_SOFT_TISSUE
+					,SARCOMA_TUMOUR_SUBSITE_BONE				= uh.SARCOMA_TUMOUR_SUBSITE_BONE
+					,SARCOMA_TUMOUR_SUBSITE_SOFT_TISSUE			= uh.SARCOMA_TUMOUR_SUBSITE_SOFT_TISSUE
+					,ROOT_DECISION_DATE_COMMENTS				= uh.ROOT_DECISION_DATE_COMMENTS
+					,ROOT_RECEIPT_DATE_COMMENTS					= uh.ROOT_RECEIPT_DATE_COMMENTS
+					,ROOT_FIRST_SEEN_DATE_COMMENTS				= uh.ROOT_FIRST_SEEN_DATE_COMMENTS
+					,ROOT_DIAGNOSIS_DATE_COMMENTS				= uh.ROOT_DIAGNOSIS_DATE_COMMENTS
+					,ROOT_DNA_APPT_REBOOKED_DATE_COMMENTS		= uh.ROOT_DNA_APPT_REBOOKED_DATE_COMMENTS
+					,ROOT_UPGRADE_COMMENTS						= uh.ROOT_UPGRADE_COMMENTS
+					,FIRST_APPT_TIME							= uh.FIRST_APPT_TIME
+					,TRANSFER_REASON							= uh.TRANSFER_REASON
+					,DATE_NEW_REFERRAL							= uh.DATE_NEW_REFERRAL
+					,TUMOUR_SITE_NEW							= uh.TUMOUR_SITE_NEW
+					,DATE_TRANSFER_ACTIONED						= uh.DATE_TRANSFER_ACTIONED
+					,SOURCE_CARE_ID								= uh.SOURCE_CARE_ID
+					,ADT_REF_ID									= uh.ADT_REF_ID
+					,ACTION_ID									= uh.ACTION_ID
+					,DIAGNOSIS_ACTION_ID						= uh.DIAGNOSIS_ACTION_ID
+					,ORIGINAL_SOURCE_CARE_ID					= uh.ORIGINAL_SOURCE_CARE_ID
+					,TRANSFER_DATE_COMMENTS						= uh.TRANSFER_DATE_COMMENTS
+					,SPECIALIST_REFERRAL_COMMENTS				= uh.SPECIALIST_REFERRAL_COMMENTS
+					,NON_CANCER_DIAGNOSIS_CHAPTER				= uh.NON_CANCER_DIAGNOSIS_CHAPTER
+					,NON_CANCER_DIAGNOSIS_GROUP					= uh.NON_CANCER_DIAGNOSIS_GROUP
+					,NON_CANCER_DIAGNOSIS_CODE					= uh.NON_CANCER_DIAGNOSIS_CODE
+					,TNM_UNKNOWN								= uh.TNM_UNKNOWN
+					,ReferringPractice							= uh.ReferringPractice
+					,ReferringGP								= uh.ReferringGP
+					,ReferringBranch							= uh.ReferringBranch
+					,BankedTissue								= uh.BankedTissue
+					,BankedTissueTumour							= uh.BankedTissueTumour
+					,BankedTissueBlood							= uh.BankedTissueBlood
+					,BankedTissueCSF							= uh.BankedTissueCSF
+					,BankedTissueBoneMarrow						= uh.BankedTissueBoneMarrow
+					,SNOMed_CT									= uh.SNOMed_CT
+					,ADT_PLACER_ID								= uh.ADT_PLACER_ID
+					,SNOMEDCTDiagnosisID						= uh.SNOMEDCTDiagnosisID
+					,FasterDiagnosisOrganisationID				= uh.FasterDiagnosisOrganisationID
+					,FasterDiagnosisCancerSiteOverrideID		= uh.FasterDiagnosisCancerSiteOverrideID
+					,FasterDiagnosisExclusionDate				= uh.FasterDiagnosisExclusionDate
+					,FasterDiagnosisExclusionReasonID			= uh.FasterDiagnosisExclusionReasonID
+					,FasterDiagnosisDelayReasonID				= uh.FasterDiagnosisDelayReasonID
+					,FasterDiagnosisDelayReasonComments			= uh.FasterDiagnosisDelayReasonComments
+					,FasterDiagnosisCommunicationMethodID		= uh.FasterDiagnosisCommunicationMethodID
+					,FasterDiagnosisInformingCareProfessionalID	= uh.FasterDiagnosisInformingCareProfessionalID
+					,FasterDiagnosisOtherCareProfessional		= uh.FasterDiagnosisOtherCareProfessional
+					,FasterDiagnosisOtherCommunicationMethod	= uh.FasterDiagnosisOtherCommunicationMethod
+					--,DEPRECATED_20_01_RecurrenceMetastaticType	= uh.DEPRECATED_20_01_RecurrenceMetastaticType
+					,NonPrimaryPathwayOptionsID					= uh.NonPrimaryPathwayOptionsID
+					,DiagnosisUncertainty						= uh.DiagnosisUncertainty
+					,TNMOrganisation							= uh.TNMOrganisation
+					,FasterDiagnosisTargetRCComments			= uh.FasterDiagnosisTargetRCComments
+					,FasterDiagnosisEndRCComments				= uh.FasterDiagnosisEndRCComments
+					,TNMOrganisation_Integrated					= uh.TNMOrganisation_Integrated
+					,LDHValue									= uh.LDHValue
+					--,DEPRECATED_20_01_LDH_NORMAL				= uh.DEPRECATED_20_01_LDH_NORMAL
+					,BankedTissueUrine							= uh.BankedTissueUrine
+					,SubsiteID									= uh.SubsiteID
+					,PredictedBreachStatus						= uh.PredictedBreachStatus
+					,RMRefID									= uh.RMRefID
+					,TertiaryReferralKey						= uh.TertiaryReferralKey
+					,ClinicalTLetter							= uh.ClinicalTLetter
+					,ClinicalNLetter							= uh.ClinicalNLetter
+					,ClinicalMLetter							= uh.ClinicalMLetter
+					,PathologicalTLetter						= uh.PathologicalTLetter
+					,PathologicalNLetter						= uh.PathologicalNLetter
+					,PathologicalMLetter						= uh.PathologicalMLetter
+					,FDPlannedInterval							= uh.FDPlannedInterval
+					,LabReportDate								= uh.LabReportDate
+					,LabReportOrgID								= uh.LabReportOrgID
+					,ReferralRoute								= uh.ReferralRoute
+					,ReferralOtherRoute							= uh.ReferralOtherRoute
+					,RelapseMorphology							= uh.RelapseMorphology
+					,RelapseFlow								= uh.RelapseFlow
+					,RelapseMolecular							= uh.RelapseMolecular
+					,RelapseClinicalExamination					= uh.RelapseClinicalExamination
+					,RelapseOther								= uh.RelapseOther
+					,RapidDiagnostic							= uh.RapidDiagnostic
+					,PrimaryReferralFlag						= uh.PrimaryReferralFlag
+					,OtherAssessedBy							= uh.OtherAssessedBy
+					,SharedBreach								= uh.SharedBreach
+					,PredictedBreachYear						= uh.PredictedBreachYear
+					,PredictedBreachMonth						= uh.PredictedBreachMonth
+		FROM		Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH_Excluded uh
+		LEFT JOIN	Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc
+																ON	uh.SrcSys = mc.SrcSys
+																AND	uh.Src_UID = mc.Src_UID
+		LEFT JOIN	#ValidatedData vd
+									ON	mc.SrcSys = vd.SrcSys
+									AND	mc.Src_UID = vd.Src_UID
+		WHERE		mc.SrcSys IS NULL
+		OR			vd.SrcSys IS NULL
 
 
 /*********************************************************************************************************************************************************************************************************************************************************************************/
@@ -1473,7 +1709,7 @@ Description:				A stored procedure to return the validated DM matching data for 
 							,SharedBreach								= uh.SharedBreach
 							,PredictedBreachYear						= uh.PredictedBreachYear
 							,PredictedBreachMonth						= uh.PredictedBreachMonth
-				FROM		Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_UH uh
+				FROM		Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
 				INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc
 																			ON	uh.SrcSys = mc.SrcSys
 																			AND	uh.Src_UID = mc.Src_UID
@@ -1697,7 +1933,7 @@ Description:				A stored procedure to return the validated DM matching data for 
 							,SharedBreach								= uh.SharedBreach
 							,PredictedBreachYear						= uh.PredictedBreachYear
 							,PredictedBreachMonth						= uh.PredictedBreachMonth
-				FROM		Merge_DM_MatchViews.tblMAIN_REFERRALS_vw_UH uh
+				FROM		Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
 				INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_Match_Control mc
 																			ON	uh.SrcSys = mc.SrcSys
 																			AND	uh.Src_UID = mc.Src_UID
@@ -1951,56 +2187,59 @@ Description:				A stored procedure to return the validated DM matching data for 
 										,PredictedBreachYear						= CAST(d4v.PredictedBreachYear AS VARCHAR(8000))
 										,PredictedBreachMonth						= CAST(d4v.PredictedBreachMonth AS VARCHAR(8000))
 							FROM		#DataForValidation d4v
-							LEFT JOIN	LocalConfig.ltblPRIORITY_TYPE pt
-																			ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',pt.SrcSysID, 1) AS TINYINT)
+							LEFT JOIN	Merge_DM_MatchViews.ltblPRIORITY_TYPE pt
+																			ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = pt.SrcSysID
 																			AND	d4v.N2_4_PRIORITY_TYPE COLLATE DATABASE_DEFAULT = pt.PRIORITY_CODE COLLATE DATABASE_DEFAULT
-							LEFT JOIN	LocalConfig.ltblCANCER_TYPE CType
-																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',CType.SrcSysID, 1) AS TINYINT)
+							LEFT JOIN	Merge_DM_MatchViews.ltblCANCER_TYPE CType
+																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CType.SrcSysID
 																		AND	d4v.N2_12_CANCER_TYPE COLLATE DATABASE_DEFAULT = CType.CANCER_TYPE_CODE COLLATE DATABASE_DEFAULT
-							LEFT JOIN	LocalConfig.ltblSTATUS PStat
-																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',PStat.SrcSysID, 1) AS TINYINT)
+							LEFT JOIN	Merge_DM_MatchViews.ltblSTATUS PStat
+																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = PStat.SrcSysID
 																		AND	d4v.N2_13_CANCER_STATUS COLLATE DATABASE_DEFAULT = PStat.STATUS_CODE COLLATE DATABASE_DEFAULT
-							LEFT JOIN	LocalConfig.ltblOUT_PATIENT_REFERRAL opref
-																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',opref.SrcSysID, 1) AS TINYINT)
+							LEFT JOIN	Merge_DM_MatchViews.ltblOUT_PATIENT_REFERRAL opref
+																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = opref.SrcSysID
 																		AND	d4v.N2_16_OP_REFERRAL COLLATE DATABASE_DEFAULT = opref.REF_CODE COLLATE DATABASE_DEFAULT
-							LEFT JOIN	LocalConfig.ltblAPP_TYPE AppType
-																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',AppType.SrcSysID, 1) AS TINYINT)
+							LEFT JOIN	Merge_DM_MatchViews.ltblAPP_TYPE AppType
+																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = AppType.SrcSysID
 																		AND	d4v.L_FIRST_APP = AppType.TYPE_CODE
-							LEFT JOIN	LocalConfig.CancerReferralSubsites crs
-																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',crs.SrcSysID, 1) AS TINYINT)
+							LEFT JOIN	Merge_DM_MatchViews.CancerReferralSubsites crs
+																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = crs.SrcSysID
 																		AND	d4v.SubsiteID = crs.ID
-							LEFT JOIN	LocalConfig.ltblDELAY_REASON DelayReason
-																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',DelayReason.SrcSysID, 1) AS TINYINT)
+							LEFT JOIN	Merge_DM_MatchViews.ltblDELAY_REASON DelayReason
+																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = DelayReason.SrcSysID
 																		AND	d4v.N2_10_FIRST_SEEN_DELAY COLLATE DATABASE_DEFAULT = DelayReason.DELAY_CODE COLLATE DATABASE_DEFAULT
-							LEFT JOIN	LocalConfig.ltblCANCELLATION Canx
-																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',Canx.SrcSysID, 1) AS TINYINT)
+							LEFT JOIN	Merge_DM_MatchViews.ltblCANCELLATION Canx
+																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = Canx.SrcSysID
 																		AND	d4v.N2_15_ADJ_REASON = Canx.CANCELLED_CODE
-							LEFT JOIN	LocalConfig.ltblDIAGNOSIS Diag
-																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',Diag.SrcSysID, 1) AS TINYINT)
+							LEFT JOIN	Merge_DM_MatchViews.ltblDIAGNOSIS Diag
+																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = Diag.SrcSysID
 																		AND	d4v.N4_2_DIAGNOSIS_CODE COLLATE DATABASE_DEFAULT = Diag.DIAG_CODE COLLATE DATABASE_DEFAULT
-							LEFT JOIN	LocalConfig.ltblLATERALITY lat
-																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',lat.SrcSysID, 1) AS TINYINT)
+							LEFT JOIN	Merge_DM_MatchViews.ltblLATERALITY lat
+																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = lat.SrcSysID
 																		AND	d4v.N4_3_LATERALITY COLLATE DATABASE_DEFAULT = lat.LAT_CODE COLLATE DATABASE_DEFAULT
-							LEFT JOIN	LocalConfig.ltblCA_STATUS TStat
-																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',TStat.SrcSysID, 1) AS TINYINT)
+							LEFT JOIN	Merge_DM_MatchViews.ltblCA_STATUS TStat
+																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = TStat.SrcSysID
 																		AND	d4v.L_TUMOUR_STATUS = TStat.STATUS_CODE
-							LEFT JOIN	LocalConfig.ltblFasterDiagnosisCommunicationMethod fdcm
-																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',fdcm.SrcSysID, 1) AS TINYINT)
+							LEFT JOIN	Merge_DM_MatchViews.ltblFasterDiagnosisCommunicationMethod fdcm
+																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = fdcm.SrcSysID
 																		AND	d4v.FasterDiagnosisCommunicationMethodID = fdcm.ID
-							LEFT JOIN	LocalConfig.ltblCareProfessional cp
-																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',cp.SrcSysID, 1) AS TINYINT)
+							LEFT JOIN	Merge_DM_MatchViews.ltblCareProfessional cp
+																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = cp.SrcSysID
 																		AND	d4v.FasterDiagnosisInformingCareProfessionalID = cp.ID
-							LEFT JOIN	LocalConfig.OrganisationSites FDorg
-																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',FDorg.SrcSysID, 1) AS TINYINT)
-																		AND	d4v.FasterDiagnosisOrganisationID = FDorg.ID
-							LEFT JOIN	LocalConfig.ltblFasterDiagnosisExclusionReason fder
-																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',fder.SrcSysID, 1) AS TINYINT)
+							LEFT JOIN	(SELECT 1 AS Map_SrcSys, ID AS Map_ID, * FROM SCR_DW.SCR.dbo_OrganisationSites
+										UNION ALL
+										SELECT 2 AS Map_SrcSys, DW_SOURCE_PATIENT_ID AS Map_ID, * FROM SCR_DW.SCR.dbo_OrganisationSites WHERE DW_SOURCE_PATIENT_ID IS NOT NULL
+													) FDorg
+															ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = FDorg.Map_SrcSys
+															AND	d4v.FasterDiagnosisOrganisationID = FDorg.Map_ID
+							LEFT JOIN	Merge_DM_MatchViews.ltblFasterDiagnosisExclusionReason fder
+																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = fder.SrcSysID
 																		AND	d4v.FasterDiagnosisExclusionReasonID = fder.ID
-							LEFT JOIN	LocalConfig.ltblFasterDiagnosisDelayReason fddr
-																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',fddr.SrcSysID, 1) AS TINYINT)
+							LEFT JOIN	Merge_DM_MatchViews.ltblFasterDiagnosisDelayReason fddr
+																		ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = fddr.SrcSysID
 																		AND	d4v.FasterDiagnosisDelayReasonID = fddr.ID
 							LEFT JOIN	SCR_Warehouse.SCR_CWT CWT
-																ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',CWT.SrcSysID, 1) AS TINYINT)
+																ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CWT.SrcSysID
 																AND	d4v.CARE_ID = CWT.CARE_ID
 																AND	CWT.cwtFlag62 IN (0,1,2)
 										) UnpivotPrepare
@@ -2260,12 +2499,15 @@ Description:				A stored procedure to return the validated DM matching data for 
 													ON	up.SrcSys = d4v.SrcSys
 													AND	up.Src_UID = d4v.Src_UID
 													AND	up.IsValidatedMajor = d4v.IsValidatedMajor
-				LEFT JOIN	LocalConfig.ltblPRIORITY_TYPE pt
-																ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',pt.SrcSysID, 1) AS TINYINT)
+				LEFT JOIN	Merge_DM_MatchViews.ltblPRIORITY_TYPE pt
+																ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = pt.SrcSysID
 																AND	d4v.N2_4_PRIORITY_TYPE COLLATE DATABASE_DEFAULT = pt.PRIORITY_CODE COLLATE DATABASE_DEFAULT
-				LEFT JOIN	LocalConfig.OrganisationSites FDorg
-															ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge',FDorg.SrcSysID, 1) AS TINYINT)
-															AND	d4v.FasterDiagnosisOrganisationID = FDorg.ID
+				LEFT JOIN	(SELECT 1 AS Map_SrcSys, ID AS Map_ID, * FROM SCR_DW.SCR.dbo_OrganisationSites
+							UNION ALL
+							SELECT 2 AS Map_SrcSys, DW_SOURCE_PATIENT_ID AS Map_ID, * FROM SCR_DW.SCR.dbo_OrganisationSites WHERE DW_SOURCE_PATIENT_ID IS NOT NULL
+										) FDorg
+												ON	CASE WHEN d4v.SrcSys > 2 THEN 1 ELSE d4v.SrcSys END = FDorg.Map_SrcSys
+												AND	d4v.FasterDiagnosisOrganisationID = FDorg.Map_ID
 
 				-- Add the count of unseen columns with different data
 				UPDATE		up
@@ -2286,14 +2528,14 @@ Description:				A stored procedure to return the validated DM matching data for 
 																,up_inner.FieldValue
 																,COUNT(*) AS Prevalence
 													FROM		#Unpivoted up_inner
-													WHERE		up_inner.FieldName NOT IN ('L_CANCER_SITE', 'N2_4_PRIORITY_TYPE', 'N4_2_DIAGNOSIS_CODE', 'N4_1_DIAGNOSIS_DATE', 'FasterDiagnosisOrganisationID'
-																							, 'ClinicalTStage', 'ClinicalNStage', 'ClinicalMStage', 'ClinicalTNMDate')
 													GROUP BY	up_inner.SrcSys_MajorExt
 																,up_inner.Src_UID_MajorExt
 																,up_inner.ColumnGroup
 																,up_inner.FieldName
 																,up_inner.FieldValue
 																) ValuesPerField
+										--WHERE		ValuesPerField.FieldName NOT IN ('L_CANCER_SITE', 'N2_4_PRIORITY_TYPE', 'N4_2_DIAGNOSIS_CODE', 'N4_1_DIAGNOSIS_DATE', 'FasterDiagnosisOrganisationID'
+										--										, 'ClinicalTStage', 'ClinicalNStage', 'ClinicalMStage', 'ClinicalTNMDate')
 										GROUP BY	ValuesPerField.SrcSys_MajorExt
 													,ValuesPerField.Src_UID_MajorExt
 													,ValuesPerField.ColumnGroup

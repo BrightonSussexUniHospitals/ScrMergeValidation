@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the MacmillanImportStatus SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[MacmillanImportStatus] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.MacmillanImportStatus 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.MacmillanImportStatus 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.MacmillanImportStatus
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.MacmillanImportStatus
 GO

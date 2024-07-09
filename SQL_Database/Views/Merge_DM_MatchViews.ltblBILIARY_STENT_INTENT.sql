@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblBILIARY_STENT_INTENT SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblBILIARY_STENT_INTENT] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblBILIARY_STENT_INTENT 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblBILIARY_STENT_INTENT 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblBILIARY_STENT_INTENT
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblBILIARY_STENT_INTENT
 GO

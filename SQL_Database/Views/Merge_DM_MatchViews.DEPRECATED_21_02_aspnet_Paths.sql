@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the DEPRECATED_21_02_aspnet_Paths SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[DEPRECATED_21_02_aspnet_Paths] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.DEPRECATED_21_02_aspnet_Paths 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.DEPRECATED_21_02_aspnet_Paths 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.DEPRECATED_21_02_aspnet_Paths
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.DEPRECATED_21_02_aspnet_Paths
 GO

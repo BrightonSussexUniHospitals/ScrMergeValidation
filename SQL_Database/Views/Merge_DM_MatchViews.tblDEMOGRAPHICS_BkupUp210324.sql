@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the tblDEMOGRAPHICS_BkupUp210324 SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[tblDEMOGRAPHICS_BkupUp210324] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.tblDEMOGRAPHICS_BkupUp210324 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.tblDEMOGRAPHICS_BkupUp210324 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.tblDEMOGRAPHICS_BkupUp210324
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.tblDEMOGRAPHICS_BkupUp210324
 GO

@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblINCOMPLETE_REASON SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblINCOMPLETE_REASON] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblINCOMPLETE_REASON 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblINCOMPLETE_REASON 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblINCOMPLETE_REASON
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblINCOMPLETE_REASON
 GO

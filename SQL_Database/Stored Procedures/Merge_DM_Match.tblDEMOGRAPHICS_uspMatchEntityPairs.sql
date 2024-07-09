@@ -110,6 +110,58 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 							,ISNULL(mc_minor.SrcSys, mc_major.SrcSys)
 							,ISNULL(mc_minor.Src_UID, mc_major.Src_UID)
 
+				-- Refresh records related to majors with a deleted record since the last refresh
+				INSERT INTO	#Incremental
+							(IsSCR
+							,SrcSys
+							,Src_UID)
+				SELECT		mc.IsSCR
+							,mc.SrcSys
+							,mc.Src_UID
+				FROM		Merge_DM_Match.tblDEMOGRAPHICS_Match_Control mc
+				INNER JOIN	(SELECT		mc_inner.SrcSys_Major
+										,mc_inner.Src_UID_Major
+										,mc_inner.DeletedDttm
+							FROM		Merge_DM_Match.tblDEMOGRAPHICS_Match_Control mc_inner
+							WHERE		mc_inner.DeletedDttm IS NOT NULL
+							GROUP BY	mc_inner.SrcSys_Major
+										,mc_inner.Src_UID_Major
+										,mc_inner.DeletedDttm
+										) mc_deleted
+													ON	mc.SrcSys_Major = mc_deleted.SrcSys_Major
+													AND	mc.Src_UID_Major = mc_deleted.Src_UID_Major
+													AND	mc.LastProcessed <= mc_deleted.DeletedDttm
+				LEFT JOIN	#Incremental inc
+											ON	mc.SrcSys = inc.SrcSys
+											AND	mc.Src_UID = inc.Src_UID
+				WHERE		mc.DeletedDttm IS NULL
+				AND			inc.SrcSys IS NULL
+				GROUP BY	mc.IsSCR
+							,mc.SrcSys
+							,mc.Src_UID
+
+				-- Refresh records related to orphaned minors (minors whose major no longer exists)
+				INSERT INTO	#Incremental
+							(IsSCR
+							,SrcSys
+							,Src_UID)
+				SELECT		mc.IsSCR
+							,mc.SrcSys
+							,mc.Src_UID
+				FROM		Merge_DM_Match.tblDEMOGRAPHICS_Match_Control mc
+				LEFT JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_Control mc_major
+																				ON	mc.SrcSys_Major = mc_major.SrcSys
+																				AND	mc.Src_UID_Major = mc_major.Src_UID
+				LEFT JOIN	#Incremental inc
+											ON	mc.SrcSys = inc.SrcSys
+											AND	mc.Src_UID = inc.Src_UID
+				WHERE		mc.DeletedDttm IS NULL
+				AND			mc_major.SrcSys IS NULL
+				AND			inc.SrcSys IS NULL
+				GROUP BY	mc.IsSCR
+							,mc.SrcSys
+							,mc.Src_UID
+
 		END
 		ELSE
 		BEGIN
@@ -318,43 +370,6 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 
 		BEGIN	
 				
-				/*****************************************************************************************************************************************************************************************************************************************************************************************/
-				-- Take a copy of the UH view for more efficient query performance
-				/*****************************************************************************************************************************************************************************************************************************************************************************************/
-
-				-- Create #tblDEMOGRAPHICS_vw_UH
-				IF OBJECT_ID('tempdb..#tblDEMOGRAPHICS_vw_UH') IS NOT NULL DROP TABLE #tblDEMOGRAPHICS_vw_UH
-				SELECT		*
-				INTO		#tblDEMOGRAPHICS_vw_UH
-				FROM		Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_UH
-
-				-- Index the #tblDEMOGRAPHICS_vw_UH table		--		DECLARE	@SQL VARCHAR(MAX) ,@Guid VARCHAR(255) SELECT @Guid = CAST(NEWID() AS VARCHAR(255))
-				SET @SQL =	'CREATE UNIQUE CLUSTERED INDEX [PK_Dem_UH_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (SrcSys ASC, Src_UID ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_IsSCR_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (IsSCR ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_IsMostRecent_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (IsMostRecent ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_NhsNumber_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (NhsNumber ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_OrignalNhsNo_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (OriginalNhsNo ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_OriginalPasId_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (OriginalPasId ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_PasId_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (PasId ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_CasenoteId_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (CasenoteId ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_DoB_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (DoB ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_DoD_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (DoD ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_Surname_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (Surname ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_Forename_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (Forename ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_Postcode_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (Postcode ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_Sex_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (Sex ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_Address1_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (Address1 ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_Address2_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (Address2 ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_Address3_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (Address3 ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_Address4_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (Address4 ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_Address5_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (Address5 ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_DeathStatus_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (DeathStatus ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_Title_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (Title ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_Ethnicity_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (Ethnicity ASC) ' + CHAR(13) +
-							'CREATE NONCLUSTERED INDEX [Ix_Dem_UH_ReligionCode_' + @Guid + '] ON #tblDEMOGRAPHICS_vw_UH (ReligionCode ASC) '
-
-				EXEC (@SQL)
-
 
 				--		DECLARE	@SQL VARCHAR(MAX) ,@Guid VARCHAR(255), @CurrentUser VARCHAR(255), @ProcIdName VARCHAR(255), @CurrentSection VARCHAR(255), @CurrentDttm DATETIME2, @LoopCounter SMALLINT = 1 SELECT @Guid = CAST(NEWID() AS VARCHAR(255)), @CurrentUser = CURRENT_USER, @ProcIdName = ISNULL(OBJECT_NAME(@@PROCID), 'ad hoc')
 				/*****************************************************************************************************************************************************************************************************************************************************************************************/
@@ -421,7 +436,7 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 									,uh.Ethnicity
 									,uh.ReligionCode
 						INTO		#tblDEMOGRAPHICS_Incremental
-						FROM		#tblDEMOGRAPHICS_vw_UH uh
+						FROM		Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH uh
 						INNER JOIN	#Incremental inc 
 													ON	uh.SrcSys = inc.SrcSys 
 													AND	uh.Src_UID = inc.Src_UID 
@@ -503,7 +518,7 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 																'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																'FROM		#tblDEMOGRAPHICS_Incremental A ' + CHAR(13) +
-																'INNER JOIN	#tblDEMOGRAPHICS_vw_UH B ' + CHAR(13) +
+																'INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH B ' + CHAR(13) +
 																'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + CHAR(13) + -- Don't self join
 						CASE WHEN @LoopCounter > 1		THEN	'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @IsMostRecent = 1		THEN	'									AND A.IsMostRecent	= B.IsMostRecent ' + CHAR(13) ELSE '' END +
@@ -586,7 +601,7 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 																'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																'FROM		#tblDEMOGRAPHICS_Incremental A ' + CHAR(13) +
-																'INNER JOIN	#tblDEMOGRAPHICS_vw_UH B ' + CHAR(13) +
+																'INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH B ' + CHAR(13) +
 																'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + CHAR(13) + -- Don't self join
 						CASE WHEN @LoopCounter > 1		THEN	'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @IsMostRecent = 1		THEN	'									AND A.IsMostRecent	= B.IsMostRecent ' + CHAR(13) ELSE '' END +
@@ -671,7 +686,7 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 																'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																'FROM		#tblDEMOGRAPHICS_Incremental A ' + CHAR(13) +
-																'INNER JOIN	#tblDEMOGRAPHICS_vw_UH B ' + CHAR(13) +
+																'INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH B ' + CHAR(13) +
 																'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + CHAR(13) + -- Don't self join
 						CASE WHEN @LoopCounter > 1		THEN	'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @IsMostRecent = 1		THEN	'									AND A.IsMostRecent	= B.IsMostRecent ' + CHAR(13) ELSE '' END +
@@ -755,7 +770,7 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 																'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																'FROM		#tblDEMOGRAPHICS_Incremental A ' + CHAR(13) +
-																'INNER JOIN	#tblDEMOGRAPHICS_vw_UH B ' + CHAR(13) +
+																'INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH B ' + CHAR(13) +
 																'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + CHAR(13) + -- Don't self join
 						CASE WHEN @LoopCounter > 1		THEN	'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @IsMostRecent = 1		THEN	'									AND A.IsMostRecent	= B.IsMostRecent ' + CHAR(13) ELSE '' END +
@@ -837,7 +852,7 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 																'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																'FROM		#tblDEMOGRAPHICS_Incremental A ' + CHAR(13) +
-																'INNER JOIN	#tblDEMOGRAPHICS_vw_UH B ' + CHAR(13) +
+																'INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH B ' + CHAR(13) +
 																'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + CHAR(13) + -- Don't self join
 						CASE WHEN @LoopCounter > 1		THEN	'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @IsMostRecent = 1		THEN	'									AND A.IsMostRecent	= B.IsMostRecent ' + CHAR(13) ELSE '' END +
@@ -918,7 +933,7 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 						--										'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 						--										'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 						--										'FROM		#tblDEMOGRAPHICS_Incremental A ' + CHAR(13) +
-						--										'INNER JOIN	#tblDEMOGRAPHICS_vw_UH B ' + CHAR(13) +
+						--										'INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH B ' + CHAR(13) +
 						--										'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + CHAR(13) + -- Don't self join
 						--CASE WHEN @LoopCounter > 1		THEN	'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						--CASE WHEN @IsMostRecent = 1		THEN	'									AND A.IsMostRecent	= B.IsMostRecent ' + CHAR(13) ELSE '' END +
@@ -999,7 +1014,7 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 						--										'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 						--										'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 						--										'FROM		#tblDEMOGRAPHICS_Incremental A ' + CHAR(13) +
-						--										'INNER JOIN	#tblDEMOGRAPHICS_vw_UH B ' + CHAR(13) +
+						--										'INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH B ' + CHAR(13) +
 						--										'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + CHAR(13) + -- Don't self join
 						--CASE WHEN @LoopCounter > 1		THEN	'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						--CASE WHEN @IsMostRecent = 1		THEN	'									AND A.IsMostRecent	= B.IsMostRecent ' + CHAR(13) ELSE '' END +
@@ -1086,7 +1101,7 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 																'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																'FROM		#tblDEMOGRAPHICS_Incremental A ' + CHAR(13) +
-																'INNER JOIN	#tblDEMOGRAPHICS_vw_UH B ' + CHAR(13) +
+																'INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH B ' + CHAR(13) +
 																'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + CHAR(13) + -- Don't self join
 						CASE WHEN @LoopCounter > 1		THEN	'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @IsMostRecent = 1		THEN	'									AND A.IsMostRecent	= B.IsMostRecent ' + CHAR(13) ELSE '' END +
@@ -1176,7 +1191,7 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 																'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																'FROM		#tblDEMOGRAPHICS_Incremental A ' + CHAR(13) +
-																'INNER JOIN	#tblDEMOGRAPHICS_vw_UH B ' + CHAR(13) +
+																'INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH B ' + CHAR(13) +
 																'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + CHAR(13) + -- Don't self join
 						CASE WHEN @LoopCounter > 1		THEN	'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @IsMostRecent = 1		THEN	'									AND A.IsMostRecent	= B.IsMostRecent ' + CHAR(13) ELSE '' END +
@@ -1267,7 +1282,7 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 																'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																'FROM		#tblDEMOGRAPHICS_Incremental A ' + CHAR(13) +
-																'INNER JOIN	#tblDEMOGRAPHICS_vw_UH B ' + CHAR(13) +
+																'INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH B ' + CHAR(13) +
 																'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + CHAR(13) + -- Don't self join
 						CASE WHEN @LoopCounter > 1		THEN	'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @IsMostRecent = 1		THEN	'									AND A.IsMostRecent	= B.IsMostRecent ' + CHAR(13) ELSE '' END +
@@ -1348,7 +1363,7 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 																'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 																'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 																'FROM		#tblDEMOGRAPHICS_Incremental A ' + CHAR(13) +
-																'INNER JOIN	#tblDEMOGRAPHICS_vw_UH B ' + CHAR(13) +
+																'INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH B ' + CHAR(13) +
 																'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + CHAR(13) + -- Don't self join
 						CASE WHEN @LoopCounter > 1		THEN	'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						CASE WHEN @IsMostRecent = 1		THEN	'									AND A.IsMostRecent	= B.IsMostRecent ' + CHAR(13) ELSE '' END +
@@ -1445,7 +1460,7 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 						--										'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
 						--										'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
 						--										'FROM		#tblDEMOGRAPHICS_Incremental A ' + CHAR(13) +
-						--										'INNER JOIN	#tblDEMOGRAPHICS_vw_UH B ' + CHAR(13) +
+						--										'INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH B ' + CHAR(13) +
 						--										'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + CHAR(13) + -- Don't self join
 						--CASE WHEN @LoopCounter > 1		THEN	'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
 						--CASE WHEN @IsMostRecent = 1		THEN	'									AND A.IsMostRecent	= B.IsMostRecent ' + CHAR(13) ELSE '' END +
@@ -1659,9 +1674,10 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 					,mmv.LastValidatedDttm
 					,CAST(NULL AS DATETIME2) AS DeletedDttm
 		FROM		#Incremental inc
-		INNER JOIN	Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_H_SCR H_SCR
+		INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH H_SCR
 												ON	inc.SrcSys = H_SCR.SrcSys
 												AND	inc.Src_UID = H_SCR.Src_UID
+												AND	H_SCR.SrcSys IN (1,2)
 		LEFT JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_MajorValidation mmv
 														ON	H_SCR.SrcSys = mmv.SrcSys_Major
 														AND	H_SCR.Src_UID = mmv.Src_UID_Major
@@ -1701,9 +1717,10 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 					,mmv.LastValidatedDttm
 					,CAST(NULL AS DATETIME2) AS DeletedDttm
 		FROM		#Incremental inc
-		INNER JOIN	Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_H_Careflow H_CF
+		INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH H_CF
 												ON	inc.SrcSys = H_CF.SrcSys
 												AND	inc.Src_UID = H_CF.Src_UID
+												AND	H_CF.SrcSys = 3
 		LEFT JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_MajorValidation mmv
 														ON	H_CF.SrcSys = mmv.SrcSys_Major
 														AND	H_CF.Src_UID = mmv.Src_UID_Major
@@ -2387,6 +2404,8 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 		WHERE		mc_pre.EntityCount >= mc_post.EntityCount	-- there are no extra entities as a part of the major group
 		AND			mc_post.MajorChangeDetected = 0				-- the record underneath the major validation hasn't changed since it was last processed 
 
+		-- SELECT * FROM #tblDEMOGRAPHICS_Match_MajorValidation WHERE SrcSys_Major_Post IS NULL
+
 		-- Bring along the Major_MatchValidationColumns records for major validation records that will persist
 		IF OBJECT_ID('tempdb..#tblDEMOGRAPHICS_Match_MajorValidationColumns') IS NOT NULL DROP TABLE #tblDEMOGRAPHICS_Match_MajorValidationColumns
 		SELECT		mmv.SrcSys_Major_Pre
@@ -2736,31 +2755,59 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 
 		-- Find all persistent entity pairs all records that relate to the initial incremental dataset (these will be for deletion)
 		IF OBJECT_ID('tempdb..#tblDEMOGRAPHICS_Match_EntityPairs_All_ToDelete') IS NOT NULL DROP TABLE #tblDEMOGRAPHICS_Match_EntityPairs_All_ToDelete
-		SELECT		ep_a.SrcSys_A
-					,ep_a.Src_UID_A
-					,ep_a.SrcSys_B
-					,ep_a.Src_UID_B
+		SELECT		UnionAorB.SrcSys_A
+					,UnionAorB.Src_UID_A
+					,UnionAorB.SrcSys_B
+					,UnionAorB.Src_UID_B
 		INTO		#tblDEMOGRAPHICS_Match_EntityPairs_All_ToDelete
-		FROM		#tblDEMOGRAPHICS_Match_Control_ToDelete mc
-		INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_EntityPairs_All ep_a
-															ON	(mc.SrcSys = ep_a.SrcSys_A
-															AND	mc.Src_UID = ep_a.Src_UID_A)
-															OR	(mc.SrcSys = ep_a.SrcSys_B
-															AND	mc.Src_UID = ep_a.Src_UID_B)
+		FROM		(SELECT		ep_a.SrcSys_A
+								,ep_a.Src_UID_A
+								,ep_a.SrcSys_B
+								,ep_a.Src_UID_B
+					FROM		#tblDEMOGRAPHICS_Match_Control_ToDelete mc
+					INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_EntityPairs_All ep_a
+																		ON	mc.SrcSys = ep_a.SrcSys_A
+																		AND	mc.Src_UID = ep_a.Src_UID_A
+
+					UNION
+					
+					SELECT		ep_a.SrcSys_A
+								,ep_a.Src_UID_A
+								,ep_a.SrcSys_B
+								,ep_a.Src_UID_B
+					FROM		#tblDEMOGRAPHICS_Match_Control_ToDelete mc
+					INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_EntityPairs_All ep_a
+																		ON	mc.SrcSys = ep_a.SrcSys_B
+																		AND	mc.Src_UID = ep_a.Src_UID_B
+								) UnionAorB
 
 		-- Find all persistent entity pairs unique records that relate to the initial incremental dataset (these will be for deletion)
 		IF OBJECT_ID('tempdb..#tblDEMOGRAPHICS_Match_EntityPairs_Unique_ToDelete') IS NOT NULL DROP TABLE #tblDEMOGRAPHICS_Match_EntityPairs_Unique_ToDelete
-		SELECT		ep_u.SrcSys_A
-					,ep_u.Src_UID_A
-					,ep_u.SrcSys_B
-					,ep_u.Src_UID_B
+		SELECT		UnionAorB.SrcSys_A
+					,UnionAorB.Src_UID_A
+					,UnionAorB.SrcSys_B
+					,UnionAorB.Src_UID_B
 		INTO		#tblDEMOGRAPHICS_Match_EntityPairs_Unique_ToDelete
-		FROM		#tblDEMOGRAPHICS_Match_Control_ToDelete mc
-		INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_EntityPairs_Unique ep_u
-															ON	(mc.SrcSys = ep_u.SrcSys_A
-															AND	mc.Src_UID = ep_u.Src_UID_A)
-															OR	(mc.SrcSys = ep_u.SrcSys_B
-															AND	mc.Src_UID = ep_u.Src_UID_B)
+		FROM		(SELECT		ep_u.SrcSys_A
+								,ep_u.Src_UID_A
+								,ep_u.SrcSys_B
+								,ep_u.Src_UID_B
+					FROM		#tblDEMOGRAPHICS_Match_Control_ToDelete mc
+					INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_EntityPairs_Unique ep_u
+																		ON	mc.SrcSys = ep_u.SrcSys_A
+																		AND	mc.Src_UID = ep_u.Src_UID_A
+
+					UNION
+
+					SELECT		ep_u.SrcSys_A
+								,ep_u.Src_UID_A
+								,ep_u.SrcSys_B
+								,ep_u.Src_UID_B
+					FROM		#tblDEMOGRAPHICS_Match_Control_ToDelete mc
+					INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_EntityPairs_Unique ep_u
+																		ON	mc.SrcSys = ep_u.SrcSys_B
+																		AND	mc.Src_UID = ep_u.Src_UID_B
+								) UnionAorB
 
 		-- Find all persistent major validation records that relate to the initial incremental dataset (these will be for deletion)
 		IF OBJECT_ID('tempdb..#tblDEMOGRAPHICS_Match_MajorValidation_ToDelete') IS NOT NULL DROP TABLE #tblDEMOGRAPHICS_Match_MajorValidation_ToDelete
@@ -3236,6 +3283,8 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 		OR	@MajorID_Src_UID IS NULL
 		BEGIN
 
+				PRINT 'Starting Auto-Validation' + CHAR(13) + CHAR(13)
+				
 				-- Create the #MakeMajor table
 				IF OBJECT_ID('tempdb..#MakeMajor') IS NOT NULL DROP TABLE #MakeMajor
 				CREATE TABLE #MakeMajor
@@ -3266,6 +3315,7 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 							)
 
 				-- Insert the current major records for which we wish to automatically find and confirm the major
+				-- Algorithmic matches that have no more than 1 record on either SCR and no more than 4 PAS records
 				INSERT INTO #MakeMajor (SrcSys_Major_Curr,Src_UID_Major_Curr)
 				SELECT		mc.SrcSys_Major
 							,mc.Src_UID_Major
@@ -3275,6 +3325,7 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 										,SUM(CASE WHEN mc_inner.SrcSys = 2 THEN 1 ELSE 0 END) AS SrcSys_BSUH
 										,SUM(CASE WHEN mc_inner.SrcSys > 2 THEN 1 ELSE 0 END) AS SrcSys_Ext
 							FROM		Merge_DM_Match.tblDEMOGRAPHICS_Match_Control mc_inner
+							WHERE		mc_inner.DeletedDttm IS NULL
 							GROUP BY	mc_inner.SrcSys_Major
 										,mc_inner.Src_UID_Major
 										) mc
@@ -3300,6 +3351,33 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 				AND			mc.SrcSys_WSHT <= 1
 				AND			mc.SrcSys_Ext <= 4
 
+				-- Insert the current major records for which we wish to automatically find and confirm the major
+				-- Any matches that have a single record on one SCR only that has been updated by PAS
+				INSERT INTO #MakeMajor (SrcSys_Major_Curr,Src_UID_Major_Curr)
+				SELECT		mc.SrcSys_Major
+							,mc.Src_UID_Major
+				FROM		Merge_DM_Match.tblDEMOGRAPHICS_Match_Control mc
+				LEFT JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_MajorValidation mmv
+																					ON	mc.SrcSys_Major = mmv.SrcSys_Major
+																					AND	mc.Src_UID_Major = mmv.Src_UID_Major
+																					AND	mmv.ValidationStatus IN ('Confirmed','Dont Merge')
+				LEFT JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH UH
+																	ON	mc.SrcSys = UH.SrcSys
+																	AND	mc.Src_UID = UH.Src_UID
+				WHERE		mc.DeletedDttm IS NULL
+				GROUP BY	mc.SrcSys_Major
+							,mc.Src_UID_Major
+				HAVING		COUNT(*) > 1
+				AND			MAX(CASE WHEN mmv.SrcSys_Major IS NOT NULL THEN 1 ELSE 0 END) = 0
+				AND			((SUM(CASE WHEN mc.SrcSys = 1 AND UH.UpdateByPas = 1 THEN 1 ELSE 0 END) = 1	-- a single WHST record updated by PAS
+						AND	SUM(CASE WHEN mc.SrcSys = 2 THEN 1 ELSE 0 END) = 0							-- no BSUH record
+						AND	SUM(CASE WHEN mc.SrcSys = 3 THEN 1 ELSE 0 END) <= 4)						-- no more than 4 PAS records
+						OR	(SUM(CASE WHEN mc.SrcSys = 2 AND UH.UpdateByPas = 1 THEN 1 ELSE 0 END) = 1	-- a single BSUH record updated by PAS
+						AND	SUM(CASE WHEN mc.SrcSys = 1 THEN 1 ELSE 0 END) = 0)							-- no WSHT record
+						AND	SUM(CASE WHEN mc.SrcSys = 3 THEN 1 ELSE 0 END) <= 4)						-- no more than 4 PAS records
+
+
+				
 				-- Remove any records where there are multiple dates of death across minors
 				DELETE
 				FROM		mm
@@ -3345,14 +3423,16 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 													,mc_inner.Src_UID_Major
 													,ISNULL(h_scr.N1_9_SEX, h_cf.N1_9_SEX) AS N1_9_SEX
 										FROM		Merge_DM_Match.tblDEMOGRAPHICS_Match_Control mc_inner
-										LEFT JOIN	Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_H_SCR h_scr
+										LEFT JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH h_scr
 																										ON	mc_inner.SrcSys = h_scr.SrcSys
 																										AND	mc_inner.Src_UID = h_scr.Src_UID
 																										AND	h_scr.N1_9_SEX IS NOT NULL
-										LEFT JOIN	Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_H_Careflow h_cf
+																										AND	h_scr.SrcSys IN (1,2)
+										LEFT JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH h_cf
 																										ON	mc_inner.SrcSys = h_cf.SrcSys
 																										AND	mc_inner.Src_UID = h_cf.Src_UID
 																										AND	ISNULL(h_cf.N1_9_SEX, '') != ''
+																										AND	h_cf.SrcSys = 3
 										LEFT JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_MajorValidation mmv_inner
 																													ON	mc_inner.SrcSys_Major = mmv_inner.SrcSys_Major
 																													AND	mc_inner.Src_UID_Major = mmv_inner.Src_UID_Major
@@ -3380,15 +3460,17 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 													,mc_inner.Src_UID_Major
 													,ISNULL(h_scr.N1_15_ETHNICITY, h_cf.N1_15_ETHNICITY) AS N1_15_ETHNICITY
 										FROM		Merge_DM_Match.tblDEMOGRAPHICS_Match_Control mc_inner
-										LEFT JOIN	Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_H_SCR h_scr
+										LEFT JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH h_scr
 																										ON	mc_inner.SrcSys = h_scr.SrcSys
 																										AND	mc_inner.Src_UID = h_scr.Src_UID
 																										AND	h_scr.N1_15_ETHNICITY IS NOT NULL
 																										AND	ISNULL(h_scr.N1_15_ETHNICITY, '') NOT IN ('','Z','99')
-										LEFT JOIN	Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_H_Careflow h_cf
+																										AND	h_scr.SrcSys IN (1,2)
+										LEFT JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH h_cf
 																										ON	mc_inner.SrcSys = h_cf.SrcSys
 																										AND	mc_inner.Src_UID = h_cf.Src_UID
 																										AND	ISNULL(h_cf.N1_15_ETHNICITY, '') NOT IN ('','Z','XXXX')
+																										AND	h_cf.SrcSys = 3
 										LEFT JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_MajorValidation mmv_inner
 																													ON	mc_inner.SrcSys_Major = mmv_inner.SrcSys_Major
 																													AND	mc_inner.Src_UID_Major = mmv_inner.Src_UID_Major
@@ -3419,9 +3501,9 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 							INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_Control mc
 																						ON	mm_inner.SrcSys_Major_Curr = mc.SrcSys_Major
 																						AND	mm_inner.Src_UID_Major_Curr = mc.Src_UID_Major
-							INNER JOIN	Merge_DM_MatchViews.tblDEMOGRAPHICS_vw_UH uh
-																					ON	mc.SrcSys = uh.SrcSys
-																					AND	mc.Src_UID = uh.Src_UID
+							INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH uh
+																				ON	mc.SrcSys = uh.SrcSys
+																				AND	mc.Src_UID = uh.Src_UID
 										) mostRecentMinor
 				INNER JOIN	#MakeMajor mm
 											ON	mostRecentMinor.SrcSys_Major_Curr = mm.SrcSys_Major_Curr
@@ -3435,6 +3517,8 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 				FROM		#MakeMajor mm
 				WHERE		mm.SrcSys_Major_Curr = mm.SrcSys_Major_New
 				AND			mm.Src_UID_Major_Curr = mm.Src_UID_Major_New
+				GROUP BY	mm.SrcSys_Major_Curr
+							,mm.Src_UID_Major_Curr
 
 				-- Remove any records that already have the correct major from #MakeMajor
 				DELETE

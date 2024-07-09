@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the lnkReferralSymptoms SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[lnkReferralSymptoms] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.lnkReferralSymptoms 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.lnkReferralSymptoms 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.lnkReferralSymptoms
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.lnkReferralSymptoms
 GO

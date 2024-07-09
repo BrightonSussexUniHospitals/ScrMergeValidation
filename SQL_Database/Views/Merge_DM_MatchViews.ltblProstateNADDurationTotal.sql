@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblProstateNADDurationTotal SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblProstateNADDurationTotal] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblProstateNADDurationTotal 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblProstateNADDurationTotal 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblProstateNADDurationTotal
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblProstateNADDurationTotal
 GO

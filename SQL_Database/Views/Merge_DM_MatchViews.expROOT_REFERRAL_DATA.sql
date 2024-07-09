@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the expROOT_REFERRAL_DATA SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[expROOT_REFERRAL_DATA] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.expROOT_REFERRAL_DATA 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.expROOT_REFERRAL_DATA 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.expROOT_REFERRAL_DATA
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.expROOT_REFERRAL_DATA
 GO

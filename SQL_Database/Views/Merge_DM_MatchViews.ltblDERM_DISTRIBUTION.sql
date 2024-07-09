@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblDERM_DISTRIBUTION SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblDERM_DISTRIBUTION] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblDERM_DISTRIBUTION 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblDERM_DISTRIBUTION 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblDERM_DISTRIBUTION
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblDERM_DISTRIBUTION
 GO

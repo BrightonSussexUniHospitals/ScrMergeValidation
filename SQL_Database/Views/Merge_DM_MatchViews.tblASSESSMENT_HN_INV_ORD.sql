@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the tblASSESSMENT_HN_INV_ORD SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[tblASSESSMENT_HN_INV_ORD] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.tblASSESSMENT_HN_INV_ORD 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.tblASSESSMENT_HN_INV_ORD 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.tblASSESSMENT_HN_INV_ORD
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.tblASSESSMENT_HN_INV_ORD
 GO

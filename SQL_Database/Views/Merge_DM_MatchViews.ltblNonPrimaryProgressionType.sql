@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblNonPrimaryProgressionType SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblNonPrimaryProgressionType] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblNonPrimaryProgressionType 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblNonPrimaryProgressionType 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblNonPrimaryProgressionType
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblNonPrimaryProgressionType
 GO

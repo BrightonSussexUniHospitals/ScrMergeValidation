@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblPAL_LOCATION_FROMTO SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblPAL_LOCATION_FROMTO] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblPAL_LOCATION_FROMTO 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblPAL_LOCATION_FROMTO 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblPAL_LOCATION_FROMTO
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblPAL_LOCATION_FROMTO
 GO

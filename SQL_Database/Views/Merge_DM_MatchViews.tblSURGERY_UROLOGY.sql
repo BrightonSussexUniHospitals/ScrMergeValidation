@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the tblSURGERY_UROLOGY SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[tblSURGERY_UROLOGY] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.tblSURGERY_UROLOGY 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.tblSURGERY_UROLOGY 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.tblSURGERY_UROLOGY
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.tblSURGERY_UROLOGY
 GO

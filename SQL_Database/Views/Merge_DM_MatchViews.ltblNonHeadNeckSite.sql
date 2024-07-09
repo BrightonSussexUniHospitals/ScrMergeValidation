@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblNonHeadNeckSite SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblNonHeadNeckSite] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblNonHeadNeckSite 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblNonHeadNeckSite 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblNonHeadNeckSite
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblNonHeadNeckSite
 GO

@@ -5,6 +5,7 @@ GO
 
 
 
+
 CREATE VIEW [Merge_R_Compare].[VwSCR_Warehouse_SCR_NextActions]
 AS
 
@@ -32,8 +33,8 @@ SELECT		 pre.PathwayUpdateEventID AS OrigPathwayUpdateEventID
 			,dwpue.PathwayUpdateEventID
 			,pre.SrcSysID AS OrigSrcSysID
 			,5 AS SrcSysID
-			,pre.CareID AS OrigCARE_ID
-			,dwref.CARE_ID
+			,pre.CareID AS OrigCareID
+			,dwref.CARE_ID AS CareID
 			,pre.NextActionID --mapping
 			,pre.NextActionDesc
 			,pre.NextActionSpecificID --mapping?

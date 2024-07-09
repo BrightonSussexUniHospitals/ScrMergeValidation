@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the TreatmentSummarySharedWith SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[TreatmentSummarySharedWith] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.TreatmentSummarySharedWith 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.TreatmentSummarySharedWith 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.TreatmentSummarySharedWith
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.TreatmentSummarySharedWith
 GO

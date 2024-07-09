@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the AspNetUserLogins SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[AspNetUserLogins] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.AspNetUserLogins 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.AspNetUserLogins 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.AspNetUserLogins
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.AspNetUserLogins
 GO

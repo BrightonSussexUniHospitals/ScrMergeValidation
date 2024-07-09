@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblNUTRITION SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblNUTRITION] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblNUTRITION 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblNUTRITION 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblNUTRITION
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblNUTRITION
 GO

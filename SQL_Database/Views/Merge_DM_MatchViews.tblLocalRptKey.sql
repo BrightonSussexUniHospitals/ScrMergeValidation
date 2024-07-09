@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the tblLocalRptKey SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[tblLocalRptKey] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.tblLocalRptKey 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.tblLocalRptKey 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.tblLocalRptKey
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.tblLocalRptKey
 GO

@@ -200,7 +200,7 @@ Description:				A stored procedure to unlink incorrect matches between an entity
 					'								) IterateNext ' + CHAR(13) +
 					'												ON	dist.SrcSys = IterateNext.SrcSys_Link ' + CHAR(13) +
 					'												AND	dist.Src_UID = IterateNext.Src_UID_Link ' + CHAR(13) +
-					'		INNER JOIN	Merge_DM_Match.tbl_XXX_Match_Control mc ' + CHAR(13) +
+					'		INNER JOIN	Merge_DM_Match.' + @tableName + '_Match_Control mc ' + CHAR(13) +
 					'															ON	IterateNext.SrcSys_Iterative = mc.SrcSys ' + CHAR(13) +
 					'															AND	IterateNext.Src_UID_Iterative = mc.Src_UID ' + CHAR(13) +
 					'		LEFT JOIN	#Distance dist_notPresent ' + CHAR(13) +

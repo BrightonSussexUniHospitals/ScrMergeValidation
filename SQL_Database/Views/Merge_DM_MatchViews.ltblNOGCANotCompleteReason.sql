@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblNOGCANotCompleteReason SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblNOGCANotCompleteReason] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblNOGCANotCompleteReason 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblNOGCANotCompleteReason 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblNOGCANotCompleteReason
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblNOGCANotCompleteReason
 GO

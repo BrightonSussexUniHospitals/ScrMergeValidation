@@ -7,15 +7,7 @@ GO
 
 
 
-
-
-
-
-
-
-
-
-CREATE VIEW [Merge_DM_MatchViews].[tblMAIN_REFERRALS_vw_UH] AS	
+CREATE VIEW [Merge_DM_MatchViews].[zzztblMAIN_REFERRALS_vw_UH_FilterFlag] AS	
 
 		SELECT		-- Source ID's to go back to match
 					IsSCR								= CAST(1 AS BIT)
@@ -258,22 +250,31 @@ CREATE VIEW [Merge_DM_MatchViews].[tblMAIN_REFERRALS_vw_UH] AS
 					,mainref.SharedBreach
 					,mainref.PredictedBreachYear
 					,mainref.PredictedBreachMonth
+					,CASE	WHEN		ISNULL(mainref.N2_13_CANCER_STATUS, '') != '69' -- exclude cancer status for linked referral
+							AND			IsLR.SrcSysID IS NULL							-- exclude joins to the linked referral table 
+							AND			ISNULL(mainref.L_INAP_REF,'') != '1'
+							AND			ISNULL(mainref.TRANSFER_REASON,'') != '1'
+							AND			ISNULL(mainref.L_TUMOUR_STATUS,'') NOT IN ('7') --not  OtherTumourSite
+							AND NOT (	ISNULL(mainref.L_TUMOUR_STATUS,'')  IN ('1') AND MayBeEmptyRef.SrcSysID IS NULL) -- exclude Unknown TumourStatus only when no link to MayBeEmptyRef table
+							THEN 1
+							ELSE 0 
+							END AS MatchingFilter
 
 					-- Uncategorised
 					
-		FROM		LocalConfig.tblMAIN_REFERRALS mainref
-		LEFT JOIN	LocalConfig.tblDEMOGRAPHICS dem
+		FROM		Merge_DM_MatchViews.tblMAIN_REFERRALS mainref
+		LEFT JOIN	Merge_DM_MatchViews.tblDEMOGRAPHICS dem
 													ON	mainref.SrcSysID = dem.SrcSysID
 													AND	mainref.PATIENT_ID = dem.PATIENT_ID
 		LEFT JOIN	Merge_DM_Match.tblDEMOGRAPHICS_tblValidatedData dem_val
-																			ON	CAST(Merge_DM_Match.fnSrcSys('Convert Live to Merge', mainref.SrcSysID, 1) AS TINYINT) = dem_val.SrcSys
+																			ON	mainref.SrcSysID = dem_val.SrcSys
 																			AND	mainref.PATIENT_ID = dem_val.Src_UID
 		LEFT JOIN	Merge_DM_Match.tblDEMOGRAPHICS_tblValidatedData dem_val_maj
 																			ON	dem_val.SrcSys_Major = dem_val_maj.SrcSys
 																			AND	dem_val.Src_UID_Major = dem_val_maj.Src_UID
 		LEFT JOIN	(SELECT * 
 							,ROW_NUMBER() OVER (PARTITION BY tblDEFINITIVE_TREATMENT.SrcSysID, tblDEFINITIVE_TREATMENT.CARE_ID ORDER BY tblDEFINITIVE_TREATMENT.TREAT_NO, CASE WHEN tblDEFINITIVE_TREATMENT.TREATMENT_EVENT IS NULL THEN 0 ELSE 1 END DESC, tblDEFINITIVE_TREATMENT.DECISION_DATE ASC, tblDEFINITIVE_TREATMENT.START_DATE ASC ) AS TreatIx
-							FROM LocalConfig.tblDEFINITIVE_TREATMENT
+							FROM Merge_DM_MatchViews.tblDEFINITIVE_TREATMENT
 							WHERE	tblDEFINITIVE_TREATMENT.PATHWAY_ID IS NOT NULL 
 									AND	tblDEFINITIVE_TREATMENT.PATHWAY_ID != ''
 									AND	LEFT(tblDEFINITIVE_TREATMENT.PATHWAY_ID, 4) != '1000'
@@ -282,20 +283,24 @@ CREATE VIEW [Merge_DM_MatchViews].[tblMAIN_REFERRALS_vw_UH] AS
 														ON	mainref.CARE_ID = dt.CARE_ID							--links to treatment table for PathwayID
 														AND	mainref.SrcSysID = dt.SrcSysID
 														AND dt.TreatIx = 1
-		LEFT JOIN	LocalConfig.tblAUDIT aud
+		LEFT JOIN	Merge_DM_MatchViews.tblAUDIT aud
 											ON	mainref.SrcSysID = aud.SrcSysID
 											AND	mainref.ACTION_ID = aud.ACTION_ID
-		LEFT JOIN	LocalConfig.OrganisationSites fd_org
+		LEFT JOIN	Merge_DM_MatchViews.OrganisationSites fd_org
 														ON	mainref.SrcSysID = fd_org.SrcSysID
 														AND	mainref.FasterDiagnosisOrganisationID = fd_org.ID
 
 		LEFT JOIN   Merge_DM_MatchViews.tblLinkedReferrals LR 
-															ON LR.srcsysID = mainref.SrcSysID
-															AND LR.LinkedCareID = mainref.CARE_ID
+															ON mainref.SrcSysID = LR.srcsysID
+															AND mainref.CARE_ID = LR.LinkedCareID
+
+		LEFT JOIN   (SELECT srcsysID, OriginalCareID FROM Merge_DM_MatchViews.tblLinkedReferrals GROUP BY srcsysID, OriginalCareID) IsLR 
+																																		ON mainref.SrcSysID = IsLR.srcsysID
+																																		AND mainref.CARE_ID = IsLR.OriginalCareID
 
 		LEFT JOIN	(SELECT ADT_REF_ID
 							,SrcSysID
-							FROM LocalConfig.tblMAIN_REFERRALS
+							FROM Merge_DM_MatchViews.tblMAIN_REFERRALS
 					GROUP BY ADT_REF_ID
 							,SrcSysID
 					HAVING COUNT(*) >1) MayBeEmptyRef
@@ -303,11 +308,11 @@ CREATE VIEW [Merge_DM_MatchViews].[tblMAIN_REFERRALS_vw_UH] AS
 														AND mainref.SrcSysID = MayBeEmptyRef.SrcSysID
 
 											
-		WHERE		ISNULL(mainref.N2_13_CANCER_STATUS, '') != '69'
-		AND			ISNULL(mainref.L_INAP_REF,'') != '1'
-		AND			ISNULL(mainref.TRANSFER_REASON,'') != '1'
-		AND			ISNULL(mainref.L_TUMOUR_STATUS,'') NOT IN ('7') --not  OtherTumourSite
-		AND NOT (	ISNULL(mainref.L_TUMOUR_STATUS,'')  IN ('1') AND MayBeEmptyRef.SrcSysID IS NULL) -- exclude Unknown TumourStatus only when no link to MayBeEmptyRef table
+		--WHERE		ISNULL(mainref.N2_13_CANCER_STATUS, '') != '69'
+		--AND			ISNULL(mainref.L_INAP_REF,'') != '1'
+		--AND			ISNULL(mainref.TRANSFER_REASON,'') != '1'
+		--AND			ISNULL(mainref.L_TUMOUR_STATUS,'') NOT IN ('7') --not  OtherTumourSite
+		--AND NOT (	ISNULL(mainref.L_TUMOUR_STATUS,'')  IN ('1') AND MayBeEmptyRef.SrcSysID IS NULL) -- exclude Unknown TumourStatus only when no link to MayBeEmptyRef table
 
 
 GO

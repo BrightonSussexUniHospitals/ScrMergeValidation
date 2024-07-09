@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblSENIOR_SURGEON_GRADE SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblSENIOR_SURGEON_GRADE] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblSENIOR_SURGEON_GRADE 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblSENIOR_SURGEON_GRADE 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblSENIOR_SURGEON_GRADE
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblSENIOR_SURGEON_GRADE
 GO

@@ -2,16 +2,6 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
-
-
-
-
-
-
-
-
---CREATE SCHEMA Merge_R_Compare AUTHORIZATION dbo
-
 CREATE VIEW [Merge_R_Compare].[VwSCR_Warehouse_SCR_Referrals]
 AS
 
@@ -49,22 +39,25 @@ SELECT		pre.CARE_ID AS OrigCARE_ID
 			,ss.SrcSysName
 			,pre.PatientPathwayID 
 			,pre.PatientPathwayIdIssuer
-			,ISNULL(Pat_IDs.PRIMARY_PATIENT_ID, dwref.PATIENT_ID) AS PATIENT_ID
-			,mainref_aud.ACTION_ID AS MainRefActionId
+			,dw_dem.PATIENT_ID AS PATIENT_ID
+			,ISNULL(mainref_aud.ACTION_ID, dwref.ACTION_ID) AS MainRefActionId
 			,diag_aud.ACTION_ID AS DiagnosisActionId 
-			,dem_aud.ACTION_ID AS DemographicsActionId 
-			,pre.Forename
-			,pre.Surname
-			,pre.DateBirth
-			,pre.HospitalNumber
-			,pre.NHSNumber
-			,pre.NHSNumberStatusCode
-			,pre.NstsStatus
-			,pre.IsTemporaryNHSNumber
-			,pre.DeathStatus
-			,pre.DateDeath
-			,pre.PctCode
-			,pre.PctDesc
+			,dem_aud.ACTION_ID AS DemographicsActionId  
+			,val_dem.N1_6_FORENAME AS Forename
+			,val_dem.N1_5_SURNAME AS Surname
+			,val_dem.N1_10_DATE_BIRTH AS DateBirth
+			,val_dem.N1_2_HOSPITAL_NUMBER AS HospitalNumber
+			,val_dem.N1_1_NHS_NUMBER AS NHSNumber
+			,val_dem.NHS_NUMBER_STATUS AS NHSNumberStatusCode
+			,val_dem.L_NSTS_STATUS AS NstsStatus
+			,CASE	WHEN	val_dem.L_NSTS_STATUS IN (0,9) 
+					THEN	1
+					ELSE	0
+					END AS IsTemporaryNHSNumber
+			,val_dem.L_DEATH_STATUS AS DeathStatus
+			,val_dem.N15_1_DATE_DEATH AS DateDeath
+			,val_dem.N1_13_PCT AS PctCode
+			,PCT.PCT_DESC AS PctDesc
 			,pre.CcgCode
 			,pre.CcgDesc
 			,pre.CancerSite
@@ -213,22 +206,28 @@ LEFT JOIN	SCR_DW.SCR.dbo_tblMAIN_REFERRALS dwref
 											ON	pre.CARE_ID = dwref.DW_SOURCE_ID
 											AND pre.SrcSysID = dwref.DW_SOURCE_SYSTEM_ID
 
-LEFT JOIN	Patient_Merge.Patient_Merge.Pat_IDs Pat_IDs --to get the west PATIENT_ID when the brighton record has a west equivalent
-														ON	pre.SrcSysID = Pat_IDs.MINOR_DW_SOURCE_SYSTEM_ID
-														AND	pre.PATIENT_ID = Pat_IDs.MINOR_LOCAL_PATIENT_ID
+LEFT JOIN	(SELECT		SrcSys AS SrcSys_Orig
+						,Src_UID AS Src_UID_Orig
+						,CASE WHEN IsConfirmed = 1 AND IsValidatedMajor = 0 THEN SrcSys_Major ELSE SrcSys END AS SrcSys
+						,CASE WHEN IsConfirmed = 1 AND IsValidatedMajor = 0 THEN Src_UID_Major ELSE Src_UID END AS Src_UID
+			FROM		SCR_ETL.map.tblDEMOGRAPHICS_tblValidatedData
+						) map_dem
+									ON	pre.SrcSysID = map_dem.SrcSys_Orig
+									AND	pre.PATIENT_ID = map_dem.Src_UID_Orig
 
-LEFT JOIN	SCR_DW.SCR.dbo_tblDEMOGRAPHICS dwdem -- to get the renumbered brighton PATIENT_ID when the brighton record has no west equivalent
-														ON	pre.SrcSysID = dwdem.DW_SOURCE_SYSTEM_ID
-														AND	pre.PATIENT_ID = dwdem.DW_SOURCE_PATIENT_ID
-
-LEFT JOIN	CancerReporting_PREMERGE.LocalConfig.tblDEMOGRAPHICS lc_dem -- to get original action ID from west demographic record when the brighton demographic record has a west equivalent
-																	ON	Pat_IDs.PRIMARY_DW_SOURCE_SYSTEM_ID = lc_dem.SrcSysID
-																	AND	Pat_IDs.PRIMARY_PATIENT_ID = lc_dem.PATIENT_ID
+LEFT JOIN	Merge_R_Compare.tblDEMOGRAPHICS_tblValidatedData val_dem
+																ON	map_dem.SrcSys = val_dem.SrcSys
+																AND	map_dem.Src_UID = val_dem.Src_UID
+LEFT JOIN	LocalConfig.ltblNATIONAL_PCT PCT 
+											ON	val_dem.SrcSys = PCT.SrcSysID
+											AND	val_dem.N1_13_PCT = PCT.PCT_CODE
+LEFT JOIN	MERGE_R_COMPARE.dbo_tblDEMOGRAPHICS dw_dem
+												ON	val_dem.SrcSys = dw_dem.DW_SOURCE_SYSTEM_ID
+												AND	val_dem.PATIENT_ID = dw_dem.DW_SOURCE_ID
 
 LEFT JOIN	SCR_DW.SCR.dbo_tblAUDIT dem_aud
-											ON	pre.SrcSysID = dem_aud.DW_SOURCE_SYSTEM_ID
-											AND	ISNULL(lc_dem.ACTION_ID, pre.DemographicsActionId) = dem_aud.DW_SOURCE_ID
-
+											ON	val_dem.SrcSys = dem_aud.DW_SOURCE_SYSTEM_ID
+											AND	val_dem.ACTION_ID = dem_aud.DW_SOURCE_ID
 LEFT JOIN	SCR_DW.SCR.dbo_tblAUDIT diag_aud
 											ON	pre.SrcSysID = diag_aud.DW_SOURCE_SYSTEM_ID
 											AND	pre.DiagnosisActionId = diag_aud.DW_SOURCE_ID

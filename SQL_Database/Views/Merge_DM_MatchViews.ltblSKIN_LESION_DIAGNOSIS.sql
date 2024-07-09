@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblSKIN_LESION_DIAGNOSIS SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblSKIN_LESION_DIAGNOSIS] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblSKIN_LESION_DIAGNOSIS 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblSKIN_LESION_DIAGNOSIS 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblSKIN_LESION_DIAGNOSIS
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblSKIN_LESION_DIAGNOSIS
 GO

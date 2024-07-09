@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the tblHNProcedureNeeded SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[tblHNProcedureNeeded] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.tblHNProcedureNeeded 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.tblHNProcedureNeeded 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.tblHNProcedureNeeded
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.tblHNProcedureNeeded
 GO

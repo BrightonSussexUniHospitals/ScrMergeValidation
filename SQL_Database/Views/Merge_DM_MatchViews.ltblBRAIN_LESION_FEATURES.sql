@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblBRAIN_LESION_FEATURES SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblBRAIN_LESION_FEATURES] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblBRAIN_LESION_FEATURES 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblBRAIN_LESION_FEATURES 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblBRAIN_LESION_FEATURES
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblBRAIN_LESION_FEATURES
 GO

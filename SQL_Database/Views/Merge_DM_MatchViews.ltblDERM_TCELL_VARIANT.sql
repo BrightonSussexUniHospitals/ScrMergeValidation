@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblDERM_TCELL_VARIANT SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblDERM_TCELL_VARIANT] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblDERM_TCELL_VARIANT 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblDERM_TCELL_VARIANT 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblDERM_TCELL_VARIANT
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblDERM_TCELL_VARIANT
 GO

@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the TobaccoAddiction SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[TobaccoAddiction] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.TobaccoAddiction 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.TobaccoAddiction 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.TobaccoAddiction
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.TobaccoAddiction
 GO

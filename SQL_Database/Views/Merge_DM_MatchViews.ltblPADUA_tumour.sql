@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblPADUA_tumour SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblPADUA_tumour] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblPADUA_tumour 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblPADUA_tumour 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblPADUA_tumour
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblPADUA_tumour
 GO

@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the tblPOSSUM_SCORE SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[tblPOSSUM_SCORE] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.tblPOSSUM_SCORE 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.tblPOSSUM_SCORE 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.tblPOSSUM_SCORE
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.tblPOSSUM_SCORE
 GO

@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblHNATypeOffered SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblHNATypeOffered] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblHNATypeOffered 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblHNATypeOffered 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblHNATypeOffered
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblHNATypeOffered
 GO

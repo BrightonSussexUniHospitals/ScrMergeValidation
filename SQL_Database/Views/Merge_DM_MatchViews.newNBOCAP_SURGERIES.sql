@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the newNBOCAP_SURGERIES SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[newNBOCAP_SURGERIES] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.newNBOCAP_SURGERIES 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.newNBOCAP_SURGERIES 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.newNBOCAP_SURGERIES
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.newNBOCAP_SURGERIES
 GO

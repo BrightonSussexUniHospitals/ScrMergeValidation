@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the RDCTestsPerformedHelper1 SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[RDCTestsPerformedHelper1] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.RDCTestsPerformedHelper1 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.RDCTestsPerformedHelper1 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.RDCTestsPerformedHelper1
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.RDCTestsPerformedHelper1
 GO

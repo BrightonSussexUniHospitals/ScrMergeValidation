@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the tblHIGH_GRADE_DYSPLASIA SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[tblHIGH_GRADE_DYSPLASIA] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.tblHIGH_GRADE_DYSPLASIA 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.tblHIGH_GRADE_DYSPLASIA 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.tblHIGH_GRADE_DYSPLASIA
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.tblHIGH_GRADE_DYSPLASIA
 GO

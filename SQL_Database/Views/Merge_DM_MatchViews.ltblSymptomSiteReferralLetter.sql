@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblSymptomSiteReferralLetter SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblSymptomSiteReferralLetter] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblSymptomSiteReferralLetter 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblSymptomSiteReferralLetter 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblSymptomSiteReferralLetter
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblSymptomSiteReferralLetter
 GO

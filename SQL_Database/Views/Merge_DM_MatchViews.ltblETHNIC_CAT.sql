@@ -7,11 +7,11 @@ GO
 
 CREATE VIEW [Merge_DM_MatchViews].[ltblETHNIC_CAT] AS 
 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblETHNIC_CAT
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblETHNIC_CAT
 
 UNION ALL
 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblETHNIC_CAT
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblETHNIC_CAT
 
 
 

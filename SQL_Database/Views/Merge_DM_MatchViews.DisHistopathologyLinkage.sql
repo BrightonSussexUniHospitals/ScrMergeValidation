@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the DisHistopathologyLinkage SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[DisHistopathologyLinkage] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.DisHistopathologyLinkage 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.DisHistopathologyLinkage 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.DisHistopathologyLinkage
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.DisHistopathologyLinkage
 GO

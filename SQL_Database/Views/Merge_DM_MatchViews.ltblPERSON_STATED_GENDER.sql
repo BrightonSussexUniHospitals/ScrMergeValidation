@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblPERSON_STATED_GENDER SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblPERSON_STATED_GENDER] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblPERSON_STATED_GENDER 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblPERSON_STATED_GENDER 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblPERSON_STATED_GENDER
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblPERSON_STATED_GENDER
 GO

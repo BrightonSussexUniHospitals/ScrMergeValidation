@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblLAPAROSCOPIC SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblLAPAROSCOPIC] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblLAPAROSCOPIC 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblLAPAROSCOPIC 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblLAPAROSCOPIC
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblLAPAROSCOPIC
 GO

@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblHNOtherSite SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblHNOtherSite] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblHNOtherSite 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblHNOtherSite 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblHNOtherSite
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblHNOtherSite
 GO

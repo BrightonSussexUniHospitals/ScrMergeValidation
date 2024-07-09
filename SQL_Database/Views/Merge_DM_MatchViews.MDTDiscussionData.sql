@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the MDTDiscussionData SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[MDTDiscussionData] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.MDTDiscussionData 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.MDTDiscussionData 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.MDTDiscussionData
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.MDTDiscussionData
 GO

@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the lnkAO_ASSESSMENT_RESULT SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[lnkAO_ASSESSMENT_RESULT] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.lnkAO_ASSESSMENT_RESULT 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.lnkAO_ASSESSMENT_RESULT 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.lnkAO_ASSESSMENT_RESULT
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.lnkAO_ASSESSMENT_RESULT
 GO

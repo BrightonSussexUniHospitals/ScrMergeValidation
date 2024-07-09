@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblHANASynchronousTumour SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblHANASynchronousTumour] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblHANASynchronousTumour 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblHANASynchronousTumour 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblHANASynchronousTumour
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblHANASynchronousTumour
 GO

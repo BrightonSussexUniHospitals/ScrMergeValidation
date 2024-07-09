@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblConduitNecrosisFailure SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblConduitNecrosisFailure] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblConduitNecrosisFailure 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblConduitNecrosisFailure 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblConduitNecrosisFailure
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblConduitNecrosisFailure
 GO

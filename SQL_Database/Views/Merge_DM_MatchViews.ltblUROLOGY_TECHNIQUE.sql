@@ -5,9 +5,9 @@ GO
 -- Create a view to union the data for the ltblUROLOGY_TECHNIQUE SCR table 
 CREATE VIEW [Merge_DM_MatchViews].[ltblUROLOGY_TECHNIQUE] AS 
  
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblUROLOGY_TECHNIQUE 
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblUROLOGY_TECHNIQUE 
  
 UNION ALL 
  
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblUROLOGY_TECHNIQUE
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblUROLOGY_TECHNIQUE
 GO
