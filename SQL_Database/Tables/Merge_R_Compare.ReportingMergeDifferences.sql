@@ -8,6 +8,8 @@ CREATE TABLE [Merge_R_Compare].[ReportingMergeDifferences]
 [ColumnIx] [smallint] NULL,
 [DiffType] [varchar] (255) COLLATE Latin1_General_CI_AS NULL,
 [PreValue] [sql_variant] NULL,
-[MerValue] [sql_variant] NULL
+[MerValue] [sql_variant] NULL,
+[IsDedupeDrop] [int] NULL,
+[HasDedupeChangeDiff] [int] NULL
 ) ON [PRIMARY]
 GO
