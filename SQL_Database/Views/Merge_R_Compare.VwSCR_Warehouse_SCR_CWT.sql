@@ -12,6 +12,11 @@ GO
 
 
 
+
+
+
+
+
 CREATE VIEW [Merge_R_Compare].[VwSCR_Warehouse_SCR_CWT]
 AS
 
@@ -21,7 +26,7 @@ WITH	OrganisationSites_Id AS
 				,id
 				,code
 				,description
-		FROM	[SCR_DW].[SCR].[dbo_OrganisationSites]
+		FROM	SCR_DW.SCR.dbo_OrganisationSites
 							
 		UNION ALL 
 							
@@ -30,27 +35,27 @@ WITH	OrganisationSites_Id AS
 				,id
 				,code
 				,description
-		FROM	[SCR_DW].[SCR].[dbo_OrganisationSites]
+		FROM	SCR_DW.SCR.dbo_OrganisationSites
 		WHERE	dw_source_patient_id IS NOT NULL
 		AND		dw_source_system_id = 1
 		),OrganisationSites_Code AS 
 		(SELECT	id
 				,code
 				,description
-		FROM	[SCR_DW].[SCR].[dbo_OrganisationSites]
+		FROM	SCR_DW.SCR.dbo_OrganisationSites
 		)
 
-SELECT		 pre.[CWTInsertIx]
-			,pre.[OriginalCWTInsertIx]
-			,pre.[CARE_ID] AS OrigCARE_ID
-			,dwref.[CARE_ID]
-			,pre.[SrcSysID] AS OrigSrcSysID
-			,5 AS [SrcSysID] 
-			,ss.[SrcSysCode] 
-			,ss.[SrcSysName] 
+SELECT		 pre.CWTInsertIx
+			,pre.OriginalCWTInsertIx
+			,pre.CARE_ID AS OrigCARE_ID
+			,dw_ref.CARE_ID
+			,pre.SrcSysID AS OrigSrcSysID
+			,5 AS SrcSysID 
+			,ss.SrcSysCode 
+			,ss.SrcSysName 
 			,pre.CWT_ID AS OrigCWT_ID
 			,CWT_ID	=	CAST(5 AS VARCHAR(255)) + '|' + 
-								CAST(dwref.CARE_ID AS VARCHAR(255)) + '|' + 
+								CAST(dw_ref.CARE_ID AS VARCHAR(255)) + '|' + 
 								ISNULL(CAST(dwtre.TREATMENT_ID AS VARCHAR(255)),'') + '|' +
 								ISNULL(CAST(dwchem.CHEMO_ID AS VARCHAR(255)),'0') + '|' +
 								ISNULL(CAST(dwtel.TELE_ID AS VARCHAR(255)),'0') + '|' +
@@ -60,7 +65,7 @@ SELECT		 pre.[CWTInsertIx]
 								ISNULL(CAST(dwsur.SURGERY_ID AS VARCHAR(255)),'0') + '|' +
 								ISNULL(CAST(dwmon.MONITOR_ID AS VARCHAR(255)),'0')
 			,Tx_ID	=	CAST(5 AS VARCHAR(255)) + '|' + -- done
-								CAST(dwref.CARE_ID AS VARCHAR(255)) + '|' + 
+								CAST(dw_ref.CARE_ID AS VARCHAR(255)) + '|' + 
 								ISNULL(CAST(dwchem.CHEMO_ID AS VARCHAR(255)),'0') + '|' +
 								ISNULL(CAST(dwtel.TELE_ID AS VARCHAR(255)),'0') + '|' +
 								ISNULL(CAST(dwpal.PALL_ID AS VARCHAR(255)),'0') + '|' +
@@ -68,219 +73,234 @@ SELECT		 pre.[CWTInsertIx]
 								ISNULL(CAST(dwoth.OTHER_ID AS VARCHAR(255)),'0') + '|' +
 								ISNULL(CAST(dwsur.SURGERY_ID AS VARCHAR(255)),'0') + '|' +
 								ISNULL(CAST(dwmon.MONITOR_ID AS VARCHAR(255)),'0')
-			,dwtre.[TREATMENT_ID]
-			,CASE WHEN pre.TREAT_ID = pre.CHEMO_ID THEN dwchem.[CHEMO_ID]
-				WHEN pre.TREAT_ID = pre.TELE_ID THEN dwtel.[TELE_ID] 
-				WHEN pre.TREAT_ID = pre.[PALL_ID] THEN dwpal.[PALL_ID]  
-				WHEN pre.TREAT_ID = pre.[BRACHY_ID] THEN dwbra.[BRACHY_ID]
-				WHEN pre.TREAT_ID = pre.[OTHER_ID] THEN dwoth.[OTHER_ID]  
-				WHEN pre.TREAT_ID = pre.[SURGERY_ID] THEN dwsur.[SURGERY_ID] 
-				WHEN pre.TREAT_ID = pre.[MONITOR_ID] THEN dwmon.[MONITOR_ID] 
+			,dwtre.TREATMENT_ID
+			,CASE WHEN pre.SrcSysID = 1 THEN pre.TREAT_ID
+				WHEN pre.TREAT_ID = pre.CHEMO_ID THEN dwchem.CHEMO_ID
+				WHEN pre.TREAT_ID = pre.TELE_ID THEN dwtel.TELE_ID 
+				WHEN pre.TREAT_ID = pre.PALL_ID THEN dwpal.PALL_ID  
+				WHEN pre.TREAT_ID = pre.BRACHY_ID THEN dwbra.BRACHY_ID
+				WHEN pre.TREAT_ID = pre.OTHER_ID THEN dwoth.OTHER_ID  
+				WHEN pre.TREAT_ID = pre.SURGERY_ID THEN dwsur.SURGERY_ID 
+				WHEN pre.TREAT_ID = pre.MONITOR_ID THEN dwmon.MONITOR_ID 
 				--WHEN pre.TREAT_ID = dwdec.AllTreatmentDeclinedID THEN dwdec.AllTreatmentDeclinedID
 				WHEN pre.TREAT_ID = dwdec.DW_SOURCE_ID THEN dwdec.AllTreatmentDeclinedID
-				WHEN pre.[SrcSysID] = 1 THEN pre.TREAT_ID
-				END AS [TREAT_ID]
-			,dwchem.[CHEMO_ID] 
-			,dwtel.[TELE_ID] 
-			,dwpal.[PALL_ID] 
-			,dwbra.[BRACHY_ID]
-			,dwoth.[OTHER_ID] 
-			,dwsur.[SURGERY_ID] 
-			,dwmon.[MONITOR_ID] 
-			,chem_aud.ACTION_ID AS [ChemoActionId]
-			,tel_aud.ACTION_ID AS [TeleActionId] 
-			,pal_aud.ACTION_ID AS [PallActionId] 
-			,bra_aud.ACTION_ID AS [BrachyActionId] 
-			,oth_aud.ACTION_ID AS [OtherActionId] 
-			,sur_aud.ACTION_ID AS [SurgeryActionId]
-			,mon_aud.ACTION_ID AS [MonitorActionId]
-			,pre.[DeftTreatmentEventCode]
-			,pre.[DeftTreatmentEventDesc]
-			,pre.[DeftTreatmentCode]
-			,pre.[DeftTreatmentDesc]
-			,pre.[DeftTreatmentSettingCode]
-			,pre.[DeftTreatmentSettingDesc]
-			,pre.[DeftDateDecisionTreat]
-			,pre.[DeftDateTreatment]
-			,pre.[DeftDTTAdjTime]
-			,pre.[DeftDTTAdjReasonCode]
-			,pre.[DeftDTTAdjReasonDesc]
-			,org_deftDTT.[ID] AS [DeftOrgIdDecisionTreat]
-			,pre.[DeftOrgCodeDecisionTreat]
-			,org_deftDTT.Description AS [DeftOrgDescDecisionTreat]
-			,org_deftTre.[ID] AS [DeftOrgIdTreatment]
-			,pre.[DeftOrgCodeTreatment]
-			,org_deftTre.Description AS [DeftOrgDescTreatment]
-			,pre.[DeftDefinitiveTreatment]
-			,pre.[DeftChemoRT]
-			,pre.[TxModTreatmentEventCode]
-			,pre.[TxModTreatmentEventDesc]
-			,pre.[TxModTreatmentCode]
-			,pre.[TxModTreatmentDesc]
-			,pre.[TxModTreatmentSettingCode]
-			,pre.[TxModTreatmentSettingDesc]
-			,pre.[TxModDateDecisionTreat]
-			,pre.[TxModDateTreatment]
-			,org_txDTT.[ID] AS [TxModOrgIdDecisionTreat]
-			,pre.[TxModOrgCodeDecisionTreat]
-			,org_txDTT.Description AS [TxModOrgDescDecisionTreat]
-			,org_txTre.[ID] AS [TxModOrgIdTreatment] 
-			,pre.[TxModOrgCodeTreatment]
-			,org_txTre.Description AS [TxModOrgDescTreatment]
-			,pre.[TxModDefinitiveTreatment]
-			,pre.[TxModChemoRadio]
-			,pre.[TxModChemoRT]
-			,pre.[TxModModalitySubCode]
-			,pre.[TxModRadioSurgery]
-			,pre.[ChemRtLinkTreatmentEventCode]
-			,pre.[ChemRtLinkTreatmentEventDesc]
-			,pre.[ChemRtLinkTreatmentCode]
-			,pre.[ChemRtLinkTreatmentDesc]
-			,pre.[ChemRtLinkTreatmentSettingCode]
-			,pre.[ChemRtLinkTreatmentSettingDesc]
-			,pre.[ChemRtLinkDateDecisionTreat]
-			,pre.[ChemRtLinkDateTreatment]
-			,org_chemDTT.[ID] AS [ChemRtLinkOrgIdDecisionTreat]
-			,pre.[ChemRtLinkOrgCodeDecisionTreat]
-			,org_chemDTT.Description AS [ChemRtLinkOrgDescDecisionTreat]
-			,org_chemTre.[ID] AS [ChemRtLinkOrgIdTreatment]
-			,pre.[ChemRtLinkOrgCodeTreatment]
-			,org_chemTre.Description AS [ChemRtLinkOrgDescTreatment]
-			,pre.[ChemRtLinkDefinitiveTreatment]
-			,pre.[ChemRtLinkChemoRadio]
-			,pre.[ChemRtLinkModalitySubCode]
-			,pre.[ChemRtLinkRadioSurgery]
-			,pre.[cwtFlag2WW]
-			,pre.[cwtFlag28]
-			,pre.[cwtFlag31]
-			,pre.[cwtFlag62]
-			,pre.[cwtFlagSurv]
-			,pre.[cwtType2WW]
-			,pre.[cwtType28]
-			,pre.[cwtType31]
-			,pre.[cwtType62]
-			,pre.[cwtReason2WW]
-			,pre.[cwtReason28]
-			,pre.[cwtReason31]
-			,pre.[cwtReason62]
-			,pre.[HasTxMod]
-			,pre.[HasChemRtLink]
-			,pre.[ClockStartDate2WW]
-			,pre.[ClockStartDate28]
-			,pre.[ClockStartDate31]
-			,pre.[ClockStartDate62]
-			,pre.[ClockStartDateSurv]
-			,pre.[AdjTime2WW]
-			,pre.[AdjTime28]
-			,pre.[AdjTime31]
-			,pre.[AdjTime62]
-			,pre.[TargetDate2WW]
-			,pre.[TargetDate28]
-			,pre.[TargetDate31]
-			,pre.[TargetDate62]
-			,pre.[DaysTo2WWBreach]
-			,pre.[DaysTo28DayBreach]
-			,pre.[DaysTo31DayBreach]
-			,pre.[DaysTo62DayBreach]
-			,pre.[ClockStopDate2WW]
-			,pre.[ClockStopDate28]
-			,pre.[ClockStopDate31]
-			,pre.[ClockStopDate62]
-			,pre.[ClockStopDateSurv]
-			,pre.[Waitingtime2WW]
-			,pre.[Waitingtime28]
-			,pre.[Waitingtime31]
-			,pre.[Waitingtime62]
-			,pre.[WaitingtimeSurv]
-			,pre.[Breach2WW]
-			,pre.[Breach28]
-			,pre.[Breach31]
-			,pre.[Breach62]
-			,pre.[WillBeClockStopDate2WW]
-			,pre.[WillBeClockStopDate28]
-			,pre.[WillBeClockStopDate31]
-			,pre.[WillBeClockStopDate62]
-			,pre.[WillBeWaitingtime2WW]
-			,pre.[WillBeWaitingtime28]
-			,pre.[WillBeWaitingtime31]
-			,pre.[WillBeWaitingtime62]
-			,pre.[WillBeBreach2WW]
-			,pre.[WillBeBreach28]
-			,pre.[WillBeBreach31]
-			,pre.[WillBeBreach62]
-			,pre.[DaysTo62DayBreachNoDTT]
-			,pre.[Treated7Days]
-			,pre.[Treated7Days62Days]
-			,pre.[FutureAchieve62Days]
-			,pre.[FutureFail62Days]
-			,pre.[ActualWaitDTTTreatment]
-			,pre.[DTTTreated7Days]
-			,pre.[Treated7Days31Days]
-			,pre.[Treated7DaysBreach31Days]
-			,pre.[FutureAchieve31Days]
-			,pre.[FutureFail31Days]
-			,pre.[FutureDTT]
-			,pre.[NoDTTDate]
-			,pre.[RTTValidatedForUpload]
-			,pre.[LastCommentUser]
-			,pre.[LastCommentDate]
-			,pre.[ReportDate]
-			,pre.[DominantCWTStatusCode]
-			,pre.[DominantCWTStatusDesc]
-			,pre.[CWTStatusCode2WW]
-			,pre.[CWTStatusDesc2WW]
-			,pre.[CwtPathwayTypeId2WW]
-			,pre.[CwtPathwayTypeDesc2WW]
-			,pre.[DefaultShow2WW]
-			,pre.[CWTStatusCode28]
-			,pre.[CWTStatusDesc28]
-			,pre.[CwtPathwayTypeId28] 
-			,pre.[CwtPathwayTypeDesc28]
-			,pre.[DefaultShow28]
-			,pre.[CWTStatusCode31]
-			,pre.[CWTStatusDesc31]
-			,pre.[CwtPathwayTypeId31] 
-			,pre.[CwtPathwayTypeDesc31]
-			,pre.[DefaultShow31]
-			,pre.[CWTStatusCode62]
-			,pre.[CWTStatusDesc62]
-			,pre.[CwtPathwayTypeId62] 
-			,pre.[CwtPathwayTypeDesc62]
-			,pre.[DefaultShow62]
-			,pre.[CWTStatusCodeSurv]
-			,pre.[CWTStatusDescSurv]
-			,pre.[CwtPathwayTypeIdSurv]
-			,pre.[CwtPathwayTypeDescSurv]
-			,pre.[DefaultShowSurv]
-			,pre.[UnifyPtlStatusCode]
-			,pre.[UnifyPtlStatusDesc]
-			,pre.[Pathway]
-			,pre.[ReportingPathwayLength]
-			,pre.[Weighting]
-			,pre.[DominantColourValue]
-			,pre.[ColourValue2WW]
-			,pre.[ColourValue28Day]
-			,pre.[ColourValue31Day]
-			,pre.[ColourValue62Day]
-			,pre.[ColourValueSurv]
-			,pre.[DominantColourDesc]
-			,pre.[ColourDesc2WW]
-			,pre.[ColourDesc28Day]
-			,pre.[ColourDesc31Day]
-			,pre.[ColourDesc62Day]
-			,pre.[ColourDescSurv]
-			,pre.[DominantPriority]
-			,pre.[Priority2WW]
-			,pre.[Priority28]
-			,pre.[Priority31]
-			,pre.[Priority62]
-
-FROM		[SCR_Warehouse].[SCR_CWT] pre
+				--ELSE dwtre.TREAT_ID
+				END AS TREAT_ID
+			,dwchem.CHEMO_ID 
+			,dwtel.TELE_ID 
+			,dwpal.PALL_ID 
+			,dwbra.BRACHY_ID
+			,dwoth.OTHER_ID 
+			,dwsur.SURGERY_ID 
+			,dwmon.MONITOR_ID 
+			,chem_aud.ACTION_ID AS ChemoActionId
+			,tel_aud.ACTION_ID AS TeleActionId 
+			,pal_aud.ACTION_ID AS PallActionId 
+			,bra_aud.ACTION_ID AS BrachyActionId 
+			,oth_aud.ACTION_ID AS OtherActionId 
+			,sur_aud.ACTION_ID AS SurgeryActionId
+			,mon_aud.ACTION_ID AS MonitorActionId
+			,pre.DeftTreatmentEventCode
+			,pre.DeftTreatmentEventDesc
+			,pre.DeftTreatmentCode
+			,pre.DeftTreatmentDesc
+			,pre.DeftTreatmentSettingCode
+			,pre.DeftTreatmentSettingDesc
+			,pre.DeftDateDecisionTreat
+			,pre.DeftDateTreatment
+			,pre.DeftDTTAdjTime
+			,pre.DeftDTTAdjReasonCode
+			,pre.DeftDTTAdjReasonDesc
+			,org_deftDTT.ID AS DeftOrgIdDecisionTreat
+			,pre.DeftOrgCodeDecisionTreat
+			,org_deftDTT.Description AS DeftOrgDescDecisionTreat
+			,org_deftTre.ID AS DeftOrgIdTreatment
+			,pre.DeftOrgCodeTreatment
+			,org_deftTre.Description AS DeftOrgDescTreatment
+			,pre.DeftDefinitiveTreatment
+			,pre.DeftChemoRT
+			,pre.TxModTreatmentEventCode
+			,pre.TxModTreatmentEventDesc
+			,pre.TxModTreatmentCode
+			,pre.TxModTreatmentDesc
+			,pre.TxModTreatmentSettingCode
+			,pre.TxModTreatmentSettingDesc
+			,pre.TxModDateDecisionTreat
+			,pre.TxModDateTreatment
+			,org_txDTT.ID AS TxModOrgIdDecisionTreat
+			,pre.TxModOrgCodeDecisionTreat
+			,org_txDTT.Description AS TxModOrgDescDecisionTreat
+			,org_txTre.ID AS TxModOrgIdTreatment 
+			,pre.TxModOrgCodeTreatment
+			,org_txTre.Description AS TxModOrgDescTreatment
+			,pre.TxModDefinitiveTreatment
+			,pre.TxModChemoRadio
+			,pre.TxModChemoRT
+			,pre.TxModModalitySubCode
+			,pre.TxModRadioSurgery
+			,pre.ChemRtLinkTreatmentEventCode
+			,pre.ChemRtLinkTreatmentEventDesc
+			,pre.ChemRtLinkTreatmentCode
+			,pre.ChemRtLinkTreatmentDesc
+			,pre.ChemRtLinkTreatmentSettingCode
+			,pre.ChemRtLinkTreatmentSettingDesc
+			,pre.ChemRtLinkDateDecisionTreat
+			,pre.ChemRtLinkDateTreatment
+			,org_chemDTT.ID AS ChemRtLinkOrgIdDecisionTreat
+			,pre.ChemRtLinkOrgCodeDecisionTreat
+			,org_chemDTT.Description AS ChemRtLinkOrgDescDecisionTreat
+			,org_chemTre.ID AS ChemRtLinkOrgIdTreatment
+			,pre.ChemRtLinkOrgCodeTreatment
+			,org_chemTre.Description AS ChemRtLinkOrgDescTreatment
+			,pre.ChemRtLinkDefinitiveTreatment
+			,pre.ChemRtLinkChemoRadio
+			,pre.ChemRtLinkModalitySubCode
+			,pre.ChemRtLinkRadioSurgery
+			,pre.cwtFlag2WW
+			,pre.cwtFlag28
+			,pre.cwtFlag31
+			,pre.cwtFlag62
+			,pre.cwtFlagSurv
+			,pre.cwtType2WW
+			,pre.cwtType28
+			,pre.cwtType31
+			,pre.cwtType62
+			,pre.cwtReason2WW
+			,pre.cwtReason28
+			,pre.cwtReason31
+			,pre.cwtReason62
+			,pre.HasTxMod
+			,pre.HasChemRtLink
+			,pre.ClockStartDate2WW
+			,pre.ClockStartDate28
+			,pre.ClockStartDate31
+			,pre.ClockStartDate62
+			,pre.ClockStartDateSurv
+			,pre.AdjTime2WW
+			,pre.AdjTime28
+			,pre.AdjTime31
+			,pre.AdjTime62
+			,pre.TargetDate2WW
+			,pre.TargetDate28
+			,pre.TargetDate31
+			,pre.TargetDate62
+			,pre.DaysTo2WWBreach
+			,pre.DaysTo28DayBreach
+			,pre.DaysTo31DayBreach
+			,pre.DaysTo62DayBreach
+			,pre.ClockStopDate2WW
+			,pre.ClockStopDate28
+			,pre.ClockStopDate31
+			,pre.ClockStopDate62
+			,pre.ClockStopDateSurv
+			,pre.Waitingtime2WW
+			,pre.Waitingtime28
+			,pre.Waitingtime31
+			,pre.Waitingtime62
+			,pre.WaitingtimeSurv
+			,pre.Breach2WW
+			,pre.Breach28
+			,pre.Breach31
+			,pre.Breach62
+			,pre.WillBeClockStopDate2WW
+			,pre.WillBeClockStopDate28
+			,pre.WillBeClockStopDate31
+			,pre.WillBeClockStopDate62
+			,pre.WillBeWaitingtime2WW
+			,pre.WillBeWaitingtime28
+			,pre.WillBeWaitingtime31
+			,pre.WillBeWaitingtime62
+			,pre.WillBeBreach2WW
+			,pre.WillBeBreach28
+			,pre.WillBeBreach31
+			,pre.WillBeBreach62
+			,pre.DaysTo62DayBreachNoDTT
+			,pre.Treated7Days
+			,pre.Treated7Days62Days
+			,pre.FutureAchieve62Days
+			,pre.FutureFail62Days
+			,pre.ActualWaitDTTTreatment
+			,pre.DTTTreated7Days
+			,pre.Treated7Days31Days
+			,pre.Treated7DaysBreach31Days
+			,pre.FutureAchieve31Days
+			,pre.FutureFail31Days
+			,pre.FutureDTT
+			,pre.NoDTTDate
+			,pre.RTTValidatedForUpload
+			,pre.LastCommentUser
+			,pre.LastCommentDate
+			,pre.ReportDate
+			,pre.DominantCWTStatusCode
+			,pre.DominantCWTStatusDesc
+			,pre.CWTStatusCode2WW
+			,pre.CWTStatusDesc2WW
+			,pre.CwtPathwayTypeId2WW
+			,pre.CwtPathwayTypeDesc2WW
+			,pre.DefaultShow2WW
+			,pre.CWTStatusCode28
+			,pre.CWTStatusDesc28
+			,pre.CwtPathwayTypeId28 
+			,pre.CwtPathwayTypeDesc28
+			,pre.DefaultShow28
+			,pre.CWTStatusCode31
+			,pre.CWTStatusDesc31
+			,pre.CwtPathwayTypeId31 
+			,pre.CwtPathwayTypeDesc31
+			,pre.DefaultShow31
+			,pre.CWTStatusCode62
+			,pre.CWTStatusDesc62
+			,pre.CwtPathwayTypeId62 
+			,pre.CwtPathwayTypeDesc62
+			,pre.DefaultShow62
+			,pre.CWTStatusCodeSurv
+			,pre.CWTStatusDescSurv
+			,pre.CwtPathwayTypeIdSurv
+			,pre.CwtPathwayTypeDescSurv
+			,pre.DefaultShowSurv
+			,pre.UnifyPtlStatusCode
+			,pre.UnifyPtlStatusDesc
+			,pre.Pathway
+			,pre.ReportingPathwayLength
+			,pre.Weighting
+			,pre.DominantColourValue
+			,pre.ColourValue2WW
+			,pre.ColourValue28Day
+			,pre.ColourValue31Day
+			,pre.ColourValue62Day
+			,pre.ColourValueSurv
+			,pre.DominantColourDesc
+			,pre.ColourDesc2WW
+			,pre.ColourDesc28Day
+			,pre.ColourDesc31Day
+			,pre.ColourDesc62Day
+			,pre.ColourDescSurv
+			,pre.DominantPriority
+			,pre.Priority2WW
+			,pre.Priority28
+			,pre.Priority31
+			,pre.Priority62
+FROM		SCR_Warehouse.SCR_CWT pre
 
 -- Care ID mapping
-LEFT JOIN	SCR_DW.SCR.dbo_tblMAIN_REFERRALS dwref
-											ON	pre.CARE_ID = dwref.DW_SOURCE_ID
-											AND pre.SrcSysID = dwref.DW_SOURCE_SYSTEM_ID
+
+-- referrals deduplicating, column overrides and remapping
+LEFT JOIN	(SELECT		SrcSys AS SrcSys_Orig
+						,Src_UID AS Src_UID_Orig
+						,CASE WHEN IsConfirmed = 1 AND IsValidatedMajor = 0 THEN SrcSys_Major ELSE SrcSys END AS SrcSys
+						,CASE WHEN IsConfirmed = 1 AND IsValidatedMajor = 0 THEN Src_UID_Major ELSE Src_UID END AS Src_UID
+			FROM		Merge_R_Compare.tblMAIN_REFERRALS_tblValidatedData
+						) map_ref
+									ON	pre.SrcSysID = map_ref.SrcSys_Orig
+									AND	pre.CARE_ID = map_ref.Src_UID_Orig
+
+LEFT JOIN	Merge_R_Compare.tblMAIN_REFERRALS_tblValidatedData val_ref
+																ON	map_ref.SrcSys = val_ref.SrcSys
+																AND	map_ref.Src_UID = val_ref.Src_UID
+
+LEFT JOIN	Merge_R_Compare.dbo_tblMAIN_REFERRALS dw_ref
+											ON	val_ref.Src_UID = dw_ref.DW_SOURCE_ID
+											AND val_ref.SrcSys = dw_ref.DW_SOURCE_SYSTEM_ID
 LEFT JOIN	CancerReporting_MERGE.LocalConfig.SourceSystems ss
 														ON ss.SrcSysID = 5
 -- Treatment ID Mapping

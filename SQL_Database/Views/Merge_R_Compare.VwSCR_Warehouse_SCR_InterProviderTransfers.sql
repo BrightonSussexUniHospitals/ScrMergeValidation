@@ -9,6 +9,7 @@ GO
 
 
 
+
 CREATE VIEW [Merge_R_Compare].[VwSCR_Warehouse_SCR_InterProviderTransfers]
 AS
 
@@ -61,7 +62,13 @@ SELECT		 pre.SrcSysID AS OrigSrcSysID
 			,dworg_rec.Code AS ReceivingOrgCode
 			,dworg_rec.Description AS ReceivingOrgName
 			,pre.IptReasonTypeCareIdIx 
-			,pre.CrossSiteRevIx
+			,pre.IptPPI_Ix
+			,pre.IptPPI_RevIx
+			,pre.IptChainRevIx
+			,pre.IptErrorCode
+			,pre.IptErrorDesc
+			,pre.BreakChain
+			,pre.IncludeInChain
 			,pre.IsTransferOfCare
 			,LEFT(CAST(dwusers.FullName + ' {.' + dwusers.UserName + '.}' AS VARCHAR(4000)),50) AS LastUpdatedBy 
 

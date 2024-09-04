@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily">
+  <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
+  <AutoRefresh>0</AutoRefresh>
+  <DataSources>
+    <DataSource Name="CancerReporting">
+      <ConnectionProperties>
+        <DataProvider>SQL</DataProvider>
+        <ConnectString>Data Source=svvscrtemp01.bsuh.nhs.uk;Initial Catalog=CancerReporting_PREMERGE</ConnectString>
+        <IntegratedSecurity>true</IntegratedSecurity>
+      </ConnectionProperties>
+      <rd:SecurityType>Integrated</rd:SecurityType>
+      <rd:DataSourceID>a4aa74cf-9139-4c48-827a-958af591c714</rd:DataSourceID>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="uspOverrideMajorColumnValue">
+      <Query>
+        <DataSourceName>CancerReporting</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@tableName">
+            <Value>=Parameters!tableName.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@SrcSys_Major">
+            <Value>=Parameters!SrcSys_Major.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@Src_UID_Major">
+            <Value>=Parameters!Src_UID_Major.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@CohortName">
+            <Value>=Parameters!ColumnName.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@SrcSys_Donor">
+            <Value>=Parameters!SrcSys_Donor.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@Src_UID_Donor">
+            <Value>=Parameters!Src_UID_Donor.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@UserID">
+            <Value>=User!UserID</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandType>StoredProcedure</CommandType>
+        <CommandText>Merge_DM_Match.uspOverrideMajorGroupValues</CommandText>
+      </Query>
+    </DataSet>
+  </DataSets>
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Textbox Name="Textbox1">
+            <CanGrow>true</CanGrow>
+            <KeepTogether>true</KeepTogether>
+            <Paragraphs>
+              <Paragraph>
+                <TextRuns>
+                  <TextRun>
+                    <Value>=CStr(Parameters!ColumnName.Value) &amp; " was updated successfully"</Value>
+                    <Style />
+                  </TextRun>
+                </TextRuns>
+                <Style />
+              </Paragraph>
+            </Paragraphs>
+            <rd:DefaultName>Textbox1</rd:DefaultName>
+            <Top>0.44662cm</Top>
+            <Left>0.52599cm</Left>
+            <Height>1.52604cm</Height>
+            <Width>4.19333cm</Width>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+              <PaddingLeft>2pt</PaddingLeft>
+              <PaddingRight>2pt</PaddingRight>
+              <PaddingTop>2pt</PaddingTop>
+              <PaddingBottom>2pt</PaddingBottom>
+            </Style>
+          </Textbox>
+        </ReportItems>
+        <Height>0.91667in</Height>
+        <Style />
+      </Body>
+      <Width>2.10417in</Width>
+      <Page>
+        <PageHeight>29.7cm</PageHeight>
+        <PageWidth>21cm</PageWidth>
+        <LeftMargin>2cm</LeftMargin>
+        <RightMargin>2cm</RightMargin>
+        <TopMargin>2cm</TopMargin>
+        <BottomMargin>2cm</BottomMargin>
+        <ColumnSpacing>0.13cm</ColumnSpacing>
+        <Style />
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <ReportParameters>
+    <ReportParameter Name="tableName">
+      <DataType>String</DataType>
+      <Prompt>table Name</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="SrcSys_Major">
+      <DataType>String</DataType>
+      <Prompt>Src Sys Major</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="Src_UID_Major">
+      <DataType>String</DataType>
+      <Prompt>Src UID Major</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="ColumnName">
+      <DataType>String</DataType>
+      <Prompt>Column Name</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="SrcSys_Donor">
+      <DataType>String</DataType>
+      <Prompt>Src Sys Donor</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="Src_UID_Donor">
+      <DataType>String</DataType>
+      <Prompt>Src UID Donor</Prompt>
+    </ReportParameter>
+  </ReportParameters>
+  <ReportParametersLayout>
+    <GridLayoutDefinition>
+      <NumberOfColumns>4</NumberOfColumns>
+      <NumberOfRows>2</NumberOfRows>
+      <CellDefinitions>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>tableName</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>SrcSys_Major</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>Src_UID_Major</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>3</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>ColumnName</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>1</RowIndex>
+          <ParameterName>SrcSys_Donor</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>1</RowIndex>
+          <ParameterName>Src_UID_Donor</ParameterName>
+        </CellDefinition>
+      </CellDefinitions>
+    </GridLayoutDefinition>
+  </ReportParametersLayout>
+  <rd:ReportUnitType>Cm</rd:ReportUnitType>
+  <rd:ReportID>4948b243-422e-49ab-b011-6904e19ae699</rd:ReportID>
+</Report>

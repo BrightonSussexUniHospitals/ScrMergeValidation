@@ -1462,6 +1462,361 @@ Description:				A stored procedure to return the validated DM matching data for 
 
 
 /*********************************************************************************************************************************************************************************************************************************************************************************/
+-- Auto column over-rides
+/*********************************************************************************************************************************************************************************************************************************************************************************/
+
+		-- Create a temporary table to keep a record of auto column over-rides
+		IF OBJECT_ID('tempdb..#tblMAIN_REFERRALS_AutoColumnOverrides') IS NOT NULL DROP TABLE #tblMAIN_REFERRALS_AutoColumnOverrides
+		CREATE TABLE #tblMAIN_REFERRALS_AutoColumnOverrides
+					(SrcSys_MajorExt TINYINT NOT NULL
+					,Src_UID_MajorExt VARCHAR(255) NOT NULL
+					,SrcSys TINYINT NOT NULL
+					,Src_UID VARCHAR(255) NOT NULL
+					,FieldName VARCHAR(255) NOT NULL
+					)
+
+		-- Auto column over-ride missing resultant SubsiteID where a minor has one (SubsiteID)
+		UPDATE		ref_vd
+		SET			ref_vd.SubsiteID = MinorOverride.SubsiteID
+		OUTPUT		Inserted.SrcSys_MajorExt
+					,Inserted.Src_UID_MajorExt
+					,Inserted.SrcSys
+					,Inserted.Src_UID
+					,'SubsiteID'
+		INTO		#tblMAIN_REFERRALS_AutoColumnOverrides (SrcSys_MajorExt,Src_UID_MajorExt,SrcSys,Src_UID,FieldName)
+		FROM		#ValidatedData ref_vd
+		INNER JOIN	(SELECT		ref_vd_major.SrcSys_MajorExt
+								,ref_vd_major.Src_UID_MajorExt
+								,ref_vd_major.SrcSys
+								,ref_vd_major.Src_UID
+								,uh.SubsiteID
+								,ROW_NUMBER() OVER (PARTITION BY ref_vd_major.SrcSys_MajorExt, ref_vd_major.Src_UID_MajorExt ORDER BY uh.LastUpdated DESC, CASE WHEN ref_vd_major.SrcSys != uh.SrcSys THEN 1 ELSE 2 END, uh.Src_UID DESC) AS DeadlockIx
+					FROM		#ValidatedData ref_vd_major
+					LEFT JOIN	#ValidatedData ref_vd_minor
+															ON	ref_vd_major.SrcSys_MajorExt = ref_vd_minor.SrcSys_MajorExt
+															AND	ref_vd_major.Src_UID_MajorExt = ref_vd_minor.Src_UID_MajorExt
+															AND	ref_vd_minor.IsConfirmed = 1
+															AND	ref_vd_minor.IsValidatedMajor = 0
+					LEFT JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
+																			ON	ref_vd_minor.SrcSys = uh.SrcSys
+																			AND	ref_vd_minor.Src_UID = uh.Src_UID
+					WHERE		ref_vd_major.IsConfirmed = 1					-- ref_vd_major is a validated major
+					AND			ref_vd_major.IsValidatedMajor = 1				-- ref_vd_major is a validated major
+					AND			ref_vd_major.SubsiteID IS NULL					-- resultant referral is missing a subsite
+					AND			uh.SubsiteID IS NOT NULL						-- a minor record has a subsite
+					AND			ref_vd_major.L_CANCER_SITE = uh.L_CANCER_SITE	-- the major and minor are in the same tumour site
+								) MinorOverride
+												ON	ref_vd.SrcSys_MajorExt = MinorOverride.SrcSys_MajorExt
+												AND	ref_vd.Src_UID_MajorExt = MinorOverride.Src_UID_MajorExt
+												AND	ref_vd.SrcSys = MinorOverride.SrcSys
+												AND	ref_vd.Src_UID = MinorOverride.Src_UID
+												AND	MinorOverride.DeadlockIx = 1
+
+		-- Auto column over-ride resultant cancer status of first treatment where a minor has a subsequent treatment (N2_13_CANCER_STATUS)
+		UPDATE		ref_vd
+		SET			ref_vd.N2_13_CANCER_STATUS = MinorOverride.N2_13_CANCER_STATUS
+		OUTPUT		Inserted.SrcSys_MajorExt
+					,Inserted.Src_UID_MajorExt
+					,Inserted.SrcSys
+					,Inserted.Src_UID
+					,'N2_13_CANCER_STATUS'
+		INTO		#tblMAIN_REFERRALS_AutoColumnOverrides (SrcSys_MajorExt,Src_UID_MajorExt,SrcSys,Src_UID,FieldName)
+		FROM		#ValidatedData ref_vd
+		INNER JOIN	(SELECT		ref_vd_major.SrcSys_MajorExt
+								,ref_vd_major.Src_UID_MajorExt
+								,ref_vd_major.SrcSys
+								,ref_vd_major.Src_UID
+								,uh.N2_13_CANCER_STATUS
+								,ROW_NUMBER() OVER (PARTITION BY ref_vd_major.SrcSys_MajorExt, ref_vd_major.Src_UID_MajorExt ORDER BY uh.LastUpdated DESC, CASE WHEN ref_vd_major.SrcSys != uh.SrcSys THEN 1 ELSE 2 END, uh.Src_UID DESC) AS DeadlockIx
+					FROM		#ValidatedData ref_vd_major
+					LEFT JOIN	#ValidatedData ref_vd_minor
+															ON	ref_vd_major.SrcSys_MajorExt = ref_vd_minor.SrcSys_MajorExt
+															AND	ref_vd_major.Src_UID_MajorExt = ref_vd_minor.Src_UID_MajorExt
+															AND	ref_vd_minor.IsConfirmed = 1
+															AND	ref_vd_minor.IsValidatedMajor = 0
+					LEFT JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
+																			ON	ref_vd_minor.SrcSys = uh.SrcSys
+																			AND	ref_vd_minor.Src_UID = uh.Src_UID
+					WHERE		ref_vd_major.IsConfirmed = 1							-- ref_vd_major is a validated major
+					AND			ref_vd_major.IsValidatedMajor = 1						-- ref_vd_major is a validated major
+					AND			ISNULL(ref_vd_major.N2_13_CANCER_STATUS, '') != '21'	-- resultant referral is not a subsequent treatment
+					AND			uh.N2_13_CANCER_STATUS = '21'							-- a minor record has a cancer status of subsequent treatment
+								) MinorOverride
+												ON	ref_vd.SrcSys_MajorExt = MinorOverride.SrcSys_MajorExt
+												AND	ref_vd.Src_UID_MajorExt = MinorOverride.Src_UID_MajorExt
+												AND	ref_vd.SrcSys = MinorOverride.SrcSys
+												AND	ref_vd.Src_UID = MinorOverride.Src_UID
+												AND	MinorOverride.DeadlockIx = 1
+
+		-- Auto column over-ride missing resultant CNS Seen By Indication Code where a minor has one (L_INDICATOR_CODE)
+		UPDATE		ref_vd
+		SET			ref_vd.L_INDICATOR_CODE = MinorOverride.L_INDICATOR_CODE
+		OUTPUT		Inserted.SrcSys_MajorExt
+					,Inserted.Src_UID_MajorExt
+					,Inserted.SrcSys
+					,Inserted.Src_UID
+					,'L_INDICATOR_CODE'
+		INTO		#tblMAIN_REFERRALS_AutoColumnOverrides (SrcSys_MajorExt,Src_UID_MajorExt,SrcSys,Src_UID,FieldName)
+		FROM		#ValidatedData ref_vd
+		INNER JOIN	(SELECT		ref_vd_major.SrcSys_MajorExt
+								,ref_vd_major.Src_UID_MajorExt
+								,ref_vd_major.SrcSys
+								,ref_vd_major.Src_UID
+								,uh.L_INDICATOR_CODE
+								,ROW_NUMBER() OVER (PARTITION BY ref_vd_major.SrcSys_MajorExt, ref_vd_major.Src_UID_MajorExt ORDER BY uh.LastUpdated DESC, CASE WHEN ref_vd_major.SrcSys != uh.SrcSys THEN 1 ELSE 2 END, uh.Src_UID DESC) AS DeadlockIx
+					FROM		#ValidatedData ref_vd_major
+					LEFT JOIN	#ValidatedData ref_vd_minor
+															ON	ref_vd_major.SrcSys_MajorExt = ref_vd_minor.SrcSys_MajorExt
+															AND	ref_vd_major.Src_UID_MajorExt = ref_vd_minor.Src_UID_MajorExt
+															AND	ref_vd_minor.IsConfirmed = 1
+															AND	ref_vd_minor.IsValidatedMajor = 0
+					LEFT JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
+																			ON	ref_vd_minor.SrcSys = uh.SrcSys
+																			AND	ref_vd_minor.Src_UID = uh.Src_UID
+					WHERE		ref_vd_major.IsConfirmed = 1													-- ref_vd_major is a validated major
+					AND			ref_vd_major.IsValidatedMajor = 1												-- ref_vd_major is a validated major
+					AND			ref_vd_major.L_INDICATOR_CODE IS NULL											-- resultant referral is missing a CNS Seen By Indication Code
+					AND			uh.L_INDICATOR_CODE IS NOT NULL													-- a minor record has a CNS Seen By Indication Code
+					AND			(ref_vd_major.L_Diagnosis = uh.L_DIAGNOSIS										-- have the same basic diagnosis code
+					OR			LEFT(ref_vd_major.N4_2_DIAGNOSIS_CODE, 3) = LEFT(uh.N4_2_DIAGNOSIS_CODE, 3))	-- have the same basic diagnosis code
+					AND			ABS(DATEDIFF(DAY,ref_vd_major.N4_1_DIAGNOSIS_DATE, uh.N4_1_DIAGNOSIS_DATE)) <= 7-- have a diagnosis date within 7 days of each other
+								) MinorOverride
+												ON	ref_vd.SrcSys_MajorExt = MinorOverride.SrcSys_MajorExt
+												AND	ref_vd.Src_UID_MajorExt = MinorOverride.Src_UID_MajorExt
+												AND	ref_vd.SrcSys = MinorOverride.SrcSys
+												AND	ref_vd.Src_UID = MinorOverride.Src_UID
+												AND	MinorOverride.DeadlockIx = 1
+
+		-- Auto column over-ride missing resultant Final Pre-Treatment (Clinical) Staging - T Stage where a minor has one (ClinicalTStage)
+		UPDATE		ref_vd
+		SET			ref_vd.ClinicalTStage = MinorOverride.ClinicalTStage
+		OUTPUT		Inserted.SrcSys_MajorExt
+					,Inserted.Src_UID_MajorExt
+					,Inserted.SrcSys
+					,Inserted.Src_UID
+					,'ClinicalTStage'
+		INTO		#tblMAIN_REFERRALS_AutoColumnOverrides (SrcSys_MajorExt,Src_UID_MajorExt,SrcSys,Src_UID,FieldName)
+		FROM		#ValidatedData ref_vd
+		INNER JOIN	(SELECT		ref_vd_major.SrcSys_MajorExt
+								,ref_vd_major.Src_UID_MajorExt
+								,ref_vd_major.SrcSys
+								,ref_vd_major.Src_UID
+								,uh.ClinicalTStage
+								,ROW_NUMBER() OVER (PARTITION BY ref_vd_major.SrcSys_MajorExt, ref_vd_major.Src_UID_MajorExt ORDER BY uh.LastUpdated DESC, CASE WHEN ref_vd_major.SrcSys != uh.SrcSys THEN 1 ELSE 2 END, uh.Src_UID DESC) AS DeadlockIx
+					FROM		#ValidatedData ref_vd_major
+					LEFT JOIN	#ValidatedData ref_vd_minor
+															ON	ref_vd_major.SrcSys_MajorExt = ref_vd_minor.SrcSys_MajorExt
+															AND	ref_vd_major.Src_UID_MajorExt = ref_vd_minor.Src_UID_MajorExt
+															AND	ref_vd_minor.IsConfirmed = 1
+															AND	ref_vd_minor.IsValidatedMajor = 0
+					LEFT JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
+																			ON	ref_vd_minor.SrcSys = uh.SrcSys
+																			AND	ref_vd_minor.Src_UID = uh.Src_UID
+					WHERE		ref_vd_major.IsConfirmed = 1													-- ref_vd_major is a validated major
+					AND			ref_vd_major.IsValidatedMajor = 1												-- ref_vd_major is a validated major
+					AND			ref_vd_major.ClinicalTStage IS NULL												-- resultant referral is missing a CNS Seen By Indication Code
+					AND			uh.ClinicalTStage IS NOT NULL													-- a minor record has a CNS Seen By Indication Code
+					AND			(ref_vd_major.L_Diagnosis = uh.L_DIAGNOSIS										-- have the same basic diagnosis code
+					OR			LEFT(ref_vd_major.N4_2_DIAGNOSIS_CODE, 3) = LEFT(uh.N4_2_DIAGNOSIS_CODE, 3))	-- have the same basic diagnosis code
+					AND			ABS(DATEDIFF(DAY,ref_vd_major.N4_1_DIAGNOSIS_DATE, uh.N4_1_DIAGNOSIS_DATE)) <= 7-- have a diagnosis date within 7 days of each other
+								) MinorOverride
+												ON	ref_vd.SrcSys_MajorExt = MinorOverride.SrcSys_MajorExt
+												AND	ref_vd.Src_UID_MajorExt = MinorOverride.Src_UID_MajorExt
+												AND	ref_vd.SrcSys = MinorOverride.SrcSys
+												AND	ref_vd.Src_UID = MinorOverride.Src_UID
+												AND	MinorOverride.DeadlockIx = 1
+
+		-- Auto column over-ride missing resultant Final Pre-Treatment (Clinical) Staging - N Stage where a minor has one (ClinicalNStage)
+		UPDATE		ref_vd
+		SET			ref_vd.ClinicalNStage = MinorOverride.ClinicalNStage
+		OUTPUT		Inserted.SrcSys_MajorExt
+					,Inserted.Src_UID_MajorExt
+					,Inserted.SrcSys
+					,Inserted.Src_UID
+					,'ClinicalNStage'
+		INTO		#tblMAIN_REFERRALS_AutoColumnOverrides (SrcSys_MajorExt,Src_UID_MajorExt,SrcSys,Src_UID,FieldName)
+		FROM		#ValidatedData ref_vd
+		INNER JOIN	(SELECT		ref_vd_major.SrcSys_MajorExt
+								,ref_vd_major.Src_UID_MajorExt
+								,ref_vd_major.SrcSys
+								,ref_vd_major.Src_UID
+								,uh.ClinicalNStage
+								,ROW_NUMBER() OVER (PARTITION BY ref_vd_major.SrcSys_MajorExt, ref_vd_major.Src_UID_MajorExt ORDER BY uh.LastUpdated DESC, CASE WHEN ref_vd_major.SrcSys != uh.SrcSys THEN 1 ELSE 2 END, uh.Src_UID DESC) AS DeadlockIx
+					FROM		#ValidatedData ref_vd_major
+					LEFT JOIN	#ValidatedData ref_vd_minor
+															ON	ref_vd_major.SrcSys_MajorExt = ref_vd_minor.SrcSys_MajorExt
+															AND	ref_vd_major.Src_UID_MajorExt = ref_vd_minor.Src_UID_MajorExt
+															AND	ref_vd_minor.IsConfirmed = 1
+															AND	ref_vd_minor.IsValidatedMajor = 0
+					LEFT JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
+																			ON	ref_vd_minor.SrcSys = uh.SrcSys
+																			AND	ref_vd_minor.Src_UID = uh.Src_UID
+					WHERE		ref_vd_major.IsConfirmed = 1													-- ref_vd_major is a validated major
+					AND			ref_vd_major.IsValidatedMajor = 1												-- ref_vd_major is a validated major
+					AND			ref_vd_major.ClinicalNStage IS NULL												-- resultant referral is missing a CNS Seen By Indication Code
+					AND			uh.ClinicalNStage IS NOT NULL													-- a minor record has a CNS Seen By Indication Code
+					AND			(ref_vd_major.L_Diagnosis = uh.L_DIAGNOSIS										-- have the same basic diagnosis code
+					OR			LEFT(ref_vd_major.N4_2_DIAGNOSIS_CODE, 3) = LEFT(uh.N4_2_DIAGNOSIS_CODE, 3))	-- have the same basic diagnosis code
+					AND			ABS(DATEDIFF(DAY,ref_vd_major.N4_1_DIAGNOSIS_DATE, uh.N4_1_DIAGNOSIS_DATE)) <= 7-- have a diagnosis date within 7 days of each other
+								) MinorOverride
+												ON	ref_vd.SrcSys_MajorExt = MinorOverride.SrcSys_MajorExt
+												AND	ref_vd.Src_UID_MajorExt = MinorOverride.Src_UID_MajorExt
+												AND	ref_vd.SrcSys = MinorOverride.SrcSys
+												AND	ref_vd.Src_UID = MinorOverride.Src_UID
+												AND	MinorOverride.DeadlockIx = 1
+
+		-- Auto column over-ride missing resultant Final Pre-Treatment (Clinical) Staging - M Stage where a minor has one (ClinicalMStage)
+		UPDATE		ref_vd
+		SET			ref_vd.ClinicalMStage = MinorOverride.ClinicalMStage
+		OUTPUT		Inserted.SrcSys_MajorExt
+					,Inserted.Src_UID_MajorExt
+					,Inserted.SrcSys
+					,Inserted.Src_UID
+					,'ClinicalMStage'
+		INTO		#tblMAIN_REFERRALS_AutoColumnOverrides (SrcSys_MajorExt,Src_UID_MajorExt,SrcSys,Src_UID,FieldName)
+		FROM		#ValidatedData ref_vd
+		INNER JOIN	(SELECT		ref_vd_major.SrcSys_MajorExt
+								,ref_vd_major.Src_UID_MajorExt
+								,ref_vd_major.SrcSys
+								,ref_vd_major.Src_UID
+								,uh.ClinicalMStage
+								,ROW_NUMBER() OVER (PARTITION BY ref_vd_major.SrcSys_MajorExt, ref_vd_major.Src_UID_MajorExt ORDER BY uh.LastUpdated DESC, CASE WHEN ref_vd_major.SrcSys != uh.SrcSys THEN 1 ELSE 2 END, uh.Src_UID DESC) AS DeadlockIx
+					FROM		#ValidatedData ref_vd_major
+					LEFT JOIN	#ValidatedData ref_vd_minor
+															ON	ref_vd_major.SrcSys_MajorExt = ref_vd_minor.SrcSys_MajorExt
+															AND	ref_vd_major.Src_UID_MajorExt = ref_vd_minor.Src_UID_MajorExt
+															AND	ref_vd_minor.IsConfirmed = 1
+															AND	ref_vd_minor.IsValidatedMajor = 0
+					LEFT JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
+																			ON	ref_vd_minor.SrcSys = uh.SrcSys
+																			AND	ref_vd_minor.Src_UID = uh.Src_UID
+					WHERE		ref_vd_major.IsConfirmed = 1													-- ref_vd_major is a validated major
+					AND			ref_vd_major.IsValidatedMajor = 1												-- ref_vd_major is a validated major
+					AND			ref_vd_major.ClinicalMStage IS NULL												-- resultant referral is missing a CNS Seen By Indication Code
+					AND			uh.ClinicalMStage IS NOT NULL													-- a minor record has a CNS Seen By Indication Code
+					AND			(ref_vd_major.L_Diagnosis = uh.L_DIAGNOSIS										-- have the same basic diagnosis code
+					OR			LEFT(ref_vd_major.N4_2_DIAGNOSIS_CODE, 3) = LEFT(uh.N4_2_DIAGNOSIS_CODE, 3))	-- have the same basic diagnosis code
+					AND			ABS(DATEDIFF(DAY,ref_vd_major.N4_1_DIAGNOSIS_DATE, uh.N4_1_DIAGNOSIS_DATE)) <= 7-- have a diagnosis date within 7 days of each other
+								) MinorOverride
+												ON	ref_vd.SrcSys_MajorExt = MinorOverride.SrcSys_MajorExt
+												AND	ref_vd.Src_UID_MajorExt = MinorOverride.Src_UID_MajorExt
+												AND	ref_vd.SrcSys = MinorOverride.SrcSys
+												AND	ref_vd.Src_UID = MinorOverride.Src_UID
+												AND	MinorOverride.DeadlockIx = 1
+
+		-- Auto column over-ride missing resultant Final Pre-Treatment (Clinical) Staging - Date where a minor has one (ClinicalTNMDate)
+		UPDATE		ref_vd
+		SET			ref_vd.ClinicalTNMDate = MinorOverride.ClinicalTNMDate
+		OUTPUT		Inserted.SrcSys_MajorExt
+					,Inserted.Src_UID_MajorExt
+					,Inserted.SrcSys
+					,Inserted.Src_UID
+					,'ClinicalTNMDate'
+		INTO		#tblMAIN_REFERRALS_AutoColumnOverrides (SrcSys_MajorExt,Src_UID_MajorExt,SrcSys,Src_UID,FieldName)
+		FROM		#ValidatedData ref_vd
+		INNER JOIN	(SELECT		ref_vd_major.SrcSys_MajorExt
+								,ref_vd_major.Src_UID_MajorExt
+								,ref_vd_major.SrcSys
+								,ref_vd_major.Src_UID
+								,uh.ClinicalTNMDate
+								,ROW_NUMBER() OVER (PARTITION BY ref_vd_major.SrcSys_MajorExt, ref_vd_major.Src_UID_MajorExt ORDER BY uh.LastUpdated DESC, CASE WHEN ref_vd_major.SrcSys != uh.SrcSys THEN 1 ELSE 2 END, uh.Src_UID DESC) AS DeadlockIx
+					FROM		#ValidatedData ref_vd_major
+					LEFT JOIN	#ValidatedData ref_vd_minor
+															ON	ref_vd_major.SrcSys_MajorExt = ref_vd_minor.SrcSys_MajorExt
+															AND	ref_vd_major.Src_UID_MajorExt = ref_vd_minor.Src_UID_MajorExt
+															AND	ref_vd_minor.IsConfirmed = 1
+															AND	ref_vd_minor.IsValidatedMajor = 0
+					LEFT JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
+																			ON	ref_vd_minor.SrcSys = uh.SrcSys
+																			AND	ref_vd_minor.Src_UID = uh.Src_UID
+					WHERE		ref_vd_major.IsConfirmed = 1													-- ref_vd_major is a validated major
+					AND			ref_vd_major.IsValidatedMajor = 1												-- ref_vd_major is a validated major
+					AND			ref_vd_major.ClinicalTNMDate IS NULL											-- resultant referral is missing a CNS Seen By Indication Code
+					AND			uh.ClinicalTNMDate IS NOT NULL													-- a minor record has a CNS Seen By Indication Code
+					AND			(ref_vd_major.L_Diagnosis = uh.L_DIAGNOSIS										-- have the same basic diagnosis code
+					OR			LEFT(ref_vd_major.N4_2_DIAGNOSIS_CODE, 3) = LEFT(uh.N4_2_DIAGNOSIS_CODE, 3))	-- have the same basic diagnosis code
+					AND			ABS(DATEDIFF(DAY,ref_vd_major.N4_1_DIAGNOSIS_DATE, uh.N4_1_DIAGNOSIS_DATE)) <= 7-- have a diagnosis date within 7 days of each other
+								) MinorOverride
+												ON	ref_vd.SrcSys_MajorExt = MinorOverride.SrcSys_MajorExt
+												AND	ref_vd.Src_UID_MajorExt = MinorOverride.Src_UID_MajorExt
+												AND	ref_vd.SrcSys = MinorOverride.SrcSys
+												AND	ref_vd.Src_UID = MinorOverride.Src_UID
+												AND	MinorOverride.DeadlockIx = 1
+
+		-- Auto column over-ride missing resultant ADT_REF_ID where a minor has one (ADT_REF_ID)
+		UPDATE		ref_vd
+		SET			ref_vd.ADT_REF_ID = MinorOverride.ADT_REF_ID
+		OUTPUT		Inserted.SrcSys_MajorExt
+					,Inserted.Src_UID_MajorExt
+					,Inserted.SrcSys
+					,Inserted.Src_UID
+					,'ADT_REF_ID'
+		INTO		#tblMAIN_REFERRALS_AutoColumnOverrides (SrcSys_MajorExt,Src_UID_MajorExt,SrcSys,Src_UID,FieldName)
+		FROM		#ValidatedData ref_vd
+		INNER JOIN	(SELECT		ref_vd_major.SrcSys_MajorExt
+								,ref_vd_major.Src_UID_MajorExt
+								,ref_vd_major.SrcSys
+								,ref_vd_major.Src_UID
+								,uh.ADT_REF_ID
+								,ROW_NUMBER() OVER (PARTITION BY ref_vd_major.SrcSys_MajorExt, ref_vd_major.Src_UID_MajorExt ORDER BY uh.LastUpdated DESC, CASE WHEN ref_vd_major.SrcSys != uh.SrcSys THEN 1 ELSE 2 END, uh.Src_UID DESC) AS DeadlockIx
+					FROM		#ValidatedData ref_vd_major
+					LEFT JOIN	#ValidatedData ref_vd_minor
+															ON	ref_vd_major.SrcSys_MajorExt = ref_vd_minor.SrcSys_MajorExt
+															AND	ref_vd_major.Src_UID_MajorExt = ref_vd_minor.Src_UID_MajorExt
+															AND	ref_vd_minor.IsConfirmed = 1
+															AND	ref_vd_minor.IsValidatedMajor = 0
+					LEFT JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
+																			ON	ref_vd_minor.SrcSys = uh.SrcSys
+																			AND	ref_vd_minor.Src_UID = uh.Src_UID
+					WHERE		ref_vd_major.IsConfirmed = 1													-- ref_vd_major is a validated major
+					AND			ref_vd_major.IsValidatedMajor = 1												-- ref_vd_major is a validated major
+					AND			ref_vd_major.ADT_REF_ID IS NULL													-- resultant referral is missing an ADT_REF_ID
+					AND			uh.ADT_REF_ID IS NOT NULL														-- a minor record has an ADT_REF_ID
+								) MinorOverride
+												ON	ref_vd.SrcSys_MajorExt = MinorOverride.SrcSys_MajorExt
+												AND	ref_vd.Src_UID_MajorExt = MinorOverride.Src_UID_MajorExt
+												AND	ref_vd.SrcSys = MinorOverride.SrcSys
+												AND	ref_vd.Src_UID = MinorOverride.Src_UID
+												AND	MinorOverride.DeadlockIx = 1
+												
+
+		-- Auto column over-ride missing resultant ADT_REF_ID where a minor has one (ADT_REF_ID)
+		UPDATE		ref_vd
+		SET			ref_vd.ADT_PLACER_ID = MinorOverride.ADT_PLACER_ID
+		OUTPUT		Inserted.SrcSys_MajorExt
+					,Inserted.Src_UID_MajorExt
+					,Inserted.SrcSys
+					,Inserted.Src_UID
+					,'ADT_PLACER_ID'
+		INTO		#tblMAIN_REFERRALS_AutoColumnOverrides (SrcSys_MajorExt,Src_UID_MajorExt,SrcSys,Src_UID,FieldName)
+		FROM		#ValidatedData ref_vd
+		INNER JOIN	(SELECT		ref_vd_major.SrcSys_MajorExt
+								,ref_vd_major.Src_UID_MajorExt
+								,ref_vd_major.SrcSys
+								,ref_vd_major.Src_UID
+								,uh.ADT_PLACER_ID
+								,ROW_NUMBER() OVER (PARTITION BY ref_vd_major.SrcSys_MajorExt, ref_vd_major.Src_UID_MajorExt ORDER BY uh.LastUpdated DESC, CASE WHEN ref_vd_major.SrcSys != uh.SrcSys THEN 1 ELSE 2 END, uh.Src_UID DESC) AS DeadlockIx
+					FROM		#ValidatedData ref_vd_major
+					LEFT JOIN	#ValidatedData ref_vd_minor
+															ON	ref_vd_major.SrcSys_MajorExt = ref_vd_minor.SrcSys_MajorExt
+															AND	ref_vd_major.Src_UID_MajorExt = ref_vd_minor.Src_UID_MajorExt
+															AND	ref_vd_minor.IsConfirmed = 1
+															AND	ref_vd_minor.IsValidatedMajor = 0
+					LEFT JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
+																			ON	ref_vd_minor.SrcSys = uh.SrcSys
+																			AND	ref_vd_minor.Src_UID = uh.Src_UID
+					WHERE		ref_vd_major.IsConfirmed = 1													-- ref_vd_major is a validated major
+					AND			ref_vd_major.IsValidatedMajor = 1												-- ref_vd_major is a validated major
+					AND			ref_vd_major.ADT_PLACER_ID IS NULL													-- resultant referral is missing an ADT_REF_ID
+					AND			uh.ADT_PLACER_ID IS NOT NULL														-- a minor record has an ADT_REF_ID
+								) MinorOverride
+												ON	ref_vd.SrcSys_MajorExt = MinorOverride.SrcSys_MajorExt
+												AND	ref_vd.Src_UID_MajorExt = MinorOverride.Src_UID_MajorExt
+												AND	ref_vd.SrcSys = MinorOverride.SrcSys
+												AND	ref_vd.Src_UID = MinorOverride.Src_UID
+												AND	MinorOverride.DeadlockIx = 1
+
+/*********************************************************************************************************************************************************************************************************************************************************************************/
 -- Output the data
 /*********************************************************************************************************************************************************************************************************************************************************************************/
 
@@ -1977,7 +2332,7 @@ Description:				A stored procedure to return the validated DM matching data for 
 							,CAST(NULL AS TINYINT) AS ColumnGroupSort
 							,CAST(NULL AS VARCHAR(1000)) AS ColumnGroupSummary
 							,CAST(NULL AS SMALLINT) AS UnseenColumnsWithDiffs
-							,CASE WHEN mmvc.SrcSys_Major IS NOT NULL THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS IsColumnOverride
+							,CASE WHEN mmvc.SrcSys_Major IS NOT NULL OR ref_aco.SrcSys IS NOT NULL THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS IsColumnOverride
 				INTO		#Unpivoted
 				FROM		(SELECT		d4v.SrcSys_MajorExt
 										,d4v.Src_UID_MajorExt
@@ -2446,6 +2801,12 @@ Description:				A stored procedure to return the validated DM matching data for 
 										) AS RowWise
 				INNER JOIN	#ColumnDetails cols
 												ON	RowWise.FieldName COLLATE DATABASE_DEFAULT = cols.ColumnName COLLATE DATABASE_DEFAULT
+				LEFT JOIN	#tblMAIN_REFERRALS_AutoColumnOverrides ref_aco
+																		ON	RowWise.SrcSys_MajorExt = ref_aco.SrcSys_MajorExt
+																		AND	RowWise.Src_UID_MajorExt COLLATE DATABASE_DEFAULT = ref_aco.Src_UID_MajorExt COLLATE DATABASE_DEFAULT
+																		AND	RowWise.SrcSys = ref_aco.SrcSys
+																		AND	RowWise.Src_UID COLLATE DATABASE_DEFAULT = ref_aco.Src_UID COLLATE DATABASE_DEFAULT
+																		AND	RowWise.FieldName COLLATE DATABASE_DEFAULT = ref_aco.FieldName COLLATE DATABASE_DEFAULT
 				FULL JOIN		(SELECT		d4v_inner.SrcSys_MajorExt
 											,d4v_inner.Src_UID_MajorExt
 											,d4v_inner.SrcSys_Major

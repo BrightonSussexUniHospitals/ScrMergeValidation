@@ -1,6 +1,14 @@
 CREATE TABLE [Merge_R_Compare].[DedupeChangedRefs]
 (
+[SrcSys_MajorExt] [tinyint] NULL,
+[Src_UID_MajorExt] [varchar] (255) NULL,
+[SrcSys_Major] [tinyint] NULL,
+[Src_UID_Major] [varchar] (255) NULL,
+[IsValidatedMajor] [bit] NULL,
+[IsConfirmed] [bit] NULL,
+[LastUpdated] [datetime] NULL,
 [SrcSys] [tinyint] NOT NULL,
+[Src_UID] [varchar] (255) NOT NULL,
 [CARE_ID] [int] NULL,
 [PATIENT_ID] [int] NULL,
 [OrigPATIENT_ID] [int] NOT NULL,
@@ -185,5 +193,5 @@ CREATE TABLE [Merge_R_Compare].[DedupeChangedRefs]
 [SharedBreach_Diff] [int] NOT NULL,
 [PredictedBreachYear_Diff] [int] NOT NULL,
 [PredictedBreachMonth_Diff] [int] NOT NULL
-) ON [PRIMARY]
+)
 GO

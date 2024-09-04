@@ -918,6 +918,34 @@ Description:				A stored procedure to return the validated DM matching data for 
 				INNER JOIN	#ReplacementNhsNoStatus	NhsNoStatus
 																ON	vd.SrcSys = NhsNoStatus.SrcSys
 																AND	vd.Src_UID = NhsNoStatus.Src_UID
+		
+				-- Create the table of L_DEATH_STATUS values to update back into #ValidatedData where the record has been given a date death
+				IF OBJECT_ID('tempdb..#ReplacementDeathStatus') IS NOT NULL DROP TABLE #ReplacementDeathStatus
+				SELECT		vd.SrcSys
+							,vd.Src_UID
+				INTO		#ReplacementDeathStatus
+				FROM		#ValidatedData vd -- Merge_DM_Match.tblDEMOGRAPHICS_tblValidatedData vd
+				INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_Match_Control mc
+																			ON	vd.SrcSys_MajorExt = mc.SrcSys_Major
+																			AND	vd.Src_UID_MajorExt = mc.Src_UID_Major
+				INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH UH
+																	ON	mc.SrcSys = UH.SrcSys
+																	AND	mc.Src_UID = UH.Src_UID
+																	AND	UH.NHS_NUMBER_STATUS IS NOT NULL
+				WHERE		uh.N15_1_DATE_DEATH IS NULL
+				AND			vd.N15_1_DATE_DEATH IS NOT NULL
+				GROUP BY	vd.SrcSys
+							,vd.Src_UID
+				ORDER BY	vd.SrcSys
+							,vd.Src_UID
+
+				-- Update #ValidatedData where the record has been given a date death
+				UPDATE		vd
+				SET			vd.L_DEATH_STATUS = 1
+				FROM		#ValidatedData vd
+				INNER JOIN	#ReplacementDeathStatus	DeathStatus
+																ON	vd.SrcSys = DeathStatus.SrcSys
+																AND	vd.Src_UID = DeathStatus.Src_UID
 
 		END
 

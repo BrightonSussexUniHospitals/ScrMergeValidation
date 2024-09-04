@@ -8,26 +8,32 @@ CREATE TABLE [Merge_R_Compare].[pre_scr_InterProviderTransfers]
 [CareID] [int] NULL,
 [ACTION_ID] [int] NULL,
 [SCR_IPTTypeCode] [int] NOT NULL,
-[SCR_IPTTypeDesc] [varchar] (100) COLLATE Latin1_General_CI_AS NULL,
+[SCR_IPTTypeDesc] [varchar] (100) NULL,
 [LogicalIPTTypeCode] [int] NULL,
-[LogicalIPTTypeDesc] [varchar] (100) COLLATE Latin1_General_CI_AS NULL,
+[LogicalIPTTypeDesc] [varchar] (100) NULL,
 [IPTDate] [datetime] NULL,
 [IPTReferralReasonCode] [int] NULL,
-[IPTReferralReasonDesc] [varchar] (100) COLLATE Latin1_General_CI_AS NULL,
+[IPTReferralReasonDesc] [varchar] (100) NULL,
 [IPTReceiptReasonCode] [int] NULL,
-[IPTReceiptReasonDesc] [varchar] (100) COLLATE Latin1_General_CI_AS NULL,
+[IPTReceiptReasonDesc] [varchar] (100) NULL,
 [ReferringOrgID] [int] NULL,
-[ReferringOrgCode] [varchar] (5) COLLATE Latin1_General_CI_AS NULL,
-[ReferringOrgName] [nvarchar] (250) COLLATE Latin1_General_CI_AS NULL,
-[TertiaryReferralOutComments] [varchar] (1000) COLLATE Latin1_General_CI_AS NULL,
+[ReferringOrgCode] [varchar] (5) NULL,
+[ReferringOrgName] [nvarchar] (250) NULL,
+[TertiaryReferralOutComments] [varchar] (1000) NULL,
 [ReceivingOrgID] [int] NULL,
-[ReceivingOrgCode] [varchar] (5) COLLATE Latin1_General_CI_AS NULL,
-[ReceivingOrgName] [nvarchar] (250) COLLATE Latin1_General_CI_AS NULL,
+[ReceivingOrgCode] [varchar] (5) NULL,
+[ReceivingOrgName] [nvarchar] (250) NULL,
 [IptReasonTypeCareIdIx] [int] NULL,
-[CrossSiteRevIx] [int] NULL,
+[IptPPI_Ix] [int] NULL,
+[IptPPI_RevIx] [int] NULL,
+[IptChainRevIx] [int] NULL,
+[IptErrorCode] [tinyint] NULL,
+[IptErrorDesc] [varchar] (255) NULL,
+[BreakChain] [bit] NULL,
+[IncludeInChain] [bit] NULL,
 [IsTransferOfCare] [bit] NULL,
-[LastUpdatedBy] [varchar] (50) COLLATE Latin1_General_CI_AS NULL
-) ON [PRIMARY]
+[LastUpdatedBy] [varchar] (50) NULL
+)
 GO
-CREATE NONCLUSTERED INDEX [ix_IPT] ON [Merge_R_Compare].[pre_scr_InterProviderTransfers] ([TertiaryReferralID], [SCR_IPTTypeCode]) ON [PRIMARY]
+CREATE NONCLUSTERED INDEX [ix_IPT] ON [Merge_R_Compare].[pre_scr_InterProviderTransfers] ([TertiaryReferralID], [SCR_IPTTypeCode])
 GO

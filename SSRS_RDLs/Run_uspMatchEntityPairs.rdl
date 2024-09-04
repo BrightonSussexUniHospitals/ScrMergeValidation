@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily">
+  <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
+  <AutoRefresh>0</AutoRefresh>
+  <DataSources>
+    <DataSource Name="CancerReporting">
+      <ConnectionProperties>
+        <DataProvider>SQL</DataProvider>
+        <ConnectString>Data Source=ryrsqlwhclu003.sussex.nhs.uk;Initial Catalog=CancerReporting</ConnectString>
+        <IntegratedSecurity>true</IntegratedSecurity>
+      </ConnectionProperties>
+      <rd:SecurityType>Integrated</rd:SecurityType>
+      <rd:DataSourceID>a735679b-3d26-4296-ace2-53dd41f4378b</rd:DataSourceID>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="uspMakeMajor">
+      <Query>
+        <DataSourceName>CancerReporting</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@tableName">
+            <Value>=Parameters!tableName.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@SrcSys_Major_Curr">
+            <Value>=Parameters!SrcSys_Major_Curr.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@Src_UID_Major_Curr">
+            <Value>=Parameters!Src_UID_Major_Curr.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@SrcSys_Major_New">
+            <Value>=Parameters!SrcSys_Major_New.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@Src_UID_Major_New">
+            <Value>=Parameters!Src_UID_Major_New.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@UserID">
+            <Value>=User!UserID</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandType>StoredProcedure</CommandType>
+        <CommandText>Merge_DM_Match.uspMakeMajor</CommandText>
+      </Query>
+    </DataSet>
+  </DataSets>
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Textbox Name="Textbox1">
+            <CanGrow>true</CanGrow>
+            <KeepTogether>true</KeepTogether>
+            <Paragraphs>
+              <Paragraph>
+                <TextRuns>
+                  <TextRun>
+                    <Value>=CStr(Parameters!tableName.Value) &amp; " updated successfully"</Value>
+                    <Style />
+                  </TextRun>
+                </TextRuns>
+                <Style />
+              </Paragraph>
+            </Paragraphs>
+            <rd:DefaultName>Textbox1</rd:DefaultName>
+            <Top>0.4276cm</Top>
+            <Left>0.64177cm</Left>
+            <Height>1.52604cm</Height>
+            <Width>4.19333cm</Width>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+              <PaddingLeft>2pt</PaddingLeft>
+              <PaddingRight>2pt</PaddingRight>
+              <PaddingTop>2pt</PaddingTop>
+              <PaddingBottom>2pt</PaddingBottom>
+            </Style>
+          </Textbox>
+        </ReportItems>
+        <Height>0.9375in</Height>
+        <Style />
+      </Body>
+      <Width>2.15625in</Width>
+      <Page>
+        <PageHeight>29.7cm</PageHeight>
+        <PageWidth>21cm</PageWidth>
+        <LeftMargin>2cm</LeftMargin>
+        <RightMargin>2cm</RightMargin>
+        <TopMargin>2cm</TopMargin>
+        <BottomMargin>2cm</BottomMargin>
+        <ColumnSpacing>0.13cm</ColumnSpacing>
+        <Style />
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <ReportParameters>
+    <ReportParameter Name="tableName">
+      <DataType>String</DataType>
+      <Prompt>table Name</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="SrcSys_Major_Curr">
+      <DataType>String</DataType>
+      <Prompt>Src Sys Major Curr</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="Src_UID_Major_Curr">
+      <DataType>String</DataType>
+      <Prompt>Src UID Major Curr</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="SrcSys_Major_New">
+      <DataType>String</DataType>
+      <Prompt>Src Sys Major New</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="Src_UID_Major_New">
+      <DataType>String</DataType>
+      <Prompt>Src UID Major New</Prompt>
+    </ReportParameter>
+  </ReportParameters>
+  <ReportParametersLayout>
+    <GridLayoutDefinition>
+      <NumberOfColumns>4</NumberOfColumns>
+      <NumberOfRows>2</NumberOfRows>
+      <CellDefinitions>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>tableName</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>SrcSys_Major_Curr</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>Src_UID_Major_Curr</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>3</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>SrcSys_Major_New</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>1</RowIndex>
+          <ParameterName>Src_UID_Major_New</ParameterName>
+        </CellDefinition>
+      </CellDefinitions>
+    </GridLayoutDefinition>
+  </ReportParametersLayout>
+  <rd:ReportUnitType>Cm</rd:ReportUnitType>
+  <rd:ReportID>138a6f7a-1529-49e6-962c-e5a84725dd0b</rd:ReportID>
+</Report>

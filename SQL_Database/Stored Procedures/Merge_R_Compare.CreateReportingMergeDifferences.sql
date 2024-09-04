@@ -4,10 +4,6 @@ SET ANSI_NULLS ON
 GO
 
 
-
-
-
-
 -- =======================================================================================================================================
 -- Author:		<Author, Emily Welsby>
 -- Create date: <Create Date, 16/02/2024>
@@ -21,7 +17,7 @@ AS
 
 
 		SET NOCOUNT ON;
-		DECLARE @ErrorMessage VARCHAR(MAX)
+		DECLARE @ErrorMessage_DW VARCHAR(MAX)
 
 /********************************************************************************************************************************************************************************************************************************/
 -- Take copies of the SCR_DW and SCR_ETL tables we need for reconciliation
@@ -153,13 +149,13 @@ AS
 
 		BEGIN CATCH
  
-			SELECT @ErrorMessage = ERROR_MESSAGE()
+			SELECT @ErrorMessage_DW = ERROR_MESSAGE()
 			
 			SELECT ERROR_NUMBER() AS ErrorNumber
-			SELECT @ErrorMessage AS ErrorMessage
+			SELECT @ErrorMessage_DW AS ErrorMessage
  
 			PRINT ERROR_NUMBER()
-			PRINT @ErrorMessage
+			PRINT @ErrorMessage_DW
 
 			IF @@TRANCOUNT > 0 -- SELECT @@TRANCOUNT
 			BEGIN
@@ -167,16 +163,18 @@ AS
 				ROLLBACK TRANSACTION
 			END
 
-			RAISERROR (@ErrorMessage, -- Message text.  
+			RAISERROR (@ErrorMessage_DW, -- Message text.  
 										15, -- Severity.  
 										1 -- State.  
 										);
  
 		END CATCH
-		
+
 /********************************************************************************************************************************************************************************************************************************/
 -- Drop any _work tables used in the reconciliation
 /********************************************************************************************************************************************************************************************************************************/
+
+		DECLARE @ErrorMessage VARCHAR(MAX)
 
 		PRINT CHAR(13) + '-- Drop any _work tables used in the reconciliation' + CHAR(13)
 			
@@ -190,7 +188,7 @@ AS
 		IF OBJECT_ID('Merge_R_Compare.pre_OpenTargetDates_Work') IS NOT NULL DROP TABLE Merge_R_Compare.pre_OpenTargetDates_Work
 		IF OBJECT_ID('Merge_R_Compare.pre_scr_assessments_Work') IS NOT NULL DROP TABLE Merge_R_Compare.pre_scr_assessments_Work
 		IF OBJECT_ID('Merge_R_Compare.pre_scr_comments_Work') IS NOT NULL DROP TABLE Merge_R_Compare.pre_scr_comments_Work
-		IF OBJECT_ID('Merge_R_Compare.pre_scr_InterProviderTransfers_Work') IS NOT NULL DROP TABLE Merge_R_Compare.pre_scr_InterProviderTransfers_Work_Work
+		IF OBJECT_ID('Merge_R_Compare.pre_scr_InterProviderTransfers_Work') IS NOT NULL DROP TABLE Merge_R_Compare.pre_scr_InterProviderTransfers_Work
 		IF OBJECT_ID('Merge_R_Compare.pre_scr_NextActions_Work') IS NOT NULL DROP TABLE Merge_R_Compare.pre_scr_NextActions_Work
 		IF OBJECT_ID('Merge_R_Compare.pre_Workflow_Work') IS NOT NULL DROP TABLE Merge_R_Compare.pre_Workflow_Work
 
@@ -221,6 +219,20 @@ AS
 		INNER JOIN	CancerReporting_MERGE.sys.columns c
 							ON v.object_id = c.object_id
 		ORDER BY s.name, v.name, c.name
+
+		-- Add in the table names without column names to represent whole records that are lost
+		INSERT INTO	Merge_R_Compare.ReportingMergeColumns_Work
+					(SchemaName
+					,TableName
+					,ColumnOrder
+					)
+		SELECT		s.name	AS SchemaName
+					,v.name AS TableName
+					,0 AS ColumnOrder
+		FROM		CancerReporting_MERGE.sys.schemas s
+		INNER JOIN	CancerReporting_MERGE.sys.views v
+							ON s.schema_id = v.schema_id
+		WHERE		s.name = 'Merge_R_Compare'
 
 ------------------------------------------------------------------------------------------------------------------------------------------
 		
@@ -287,6 +299,15 @@ AS
 		DECLARE @SQL_InterProviderTransfers_WHERE3 VARCHAR(MAX) = '' 
 		DECLARE @SQL_NextActions_WHERE3 VARCHAR(MAX) = '' 
 		DECLARE @SQL_WorkFlow_WHERE3 VARCHAR(MAX) = '' 
+		
+		DECLARE @SQL_Ref_WHERE_All VARCHAR(MAX) = '' 
+		DECLARE @SQL_CWT_WHERE_All VARCHAR(MAX) = ''  
+		DECLARE @SQL_OpenTargetDates_WHERE_All VARCHAR(MAX) = '' 
+		DECLARE @SQL_Assessments_WHERE_All VARCHAR(MAX) = '' 
+		DECLARE @SQL_Comments_WHERE_All VARCHAR(MAX) = '' 
+		DECLARE @SQL_InterProviderTransfers_WHERE_All VARCHAR(MAX) = '' 
+		DECLARE @SQL_NextActions_WHERE_All VARCHAR(MAX) = '' 
+		DECLARE @SQL_WorkFlow_WHERE_All VARCHAR(MAX) = '' 
 
 /********************************************************************************************************************************************************************************************************************************/
 
@@ -294,6 +315,32 @@ AS
 		SELECT * INTO Merge_R_Compare.pre_scr_referrals_Work FROM Merge_R_Compare.VwSCR_Warehouse_SCR_Referrals
 
 		CREATE NONCLUSTERED INDEX ix_care_id ON Merge_R_Compare.pre_scr_referrals_Work(srcsysid ASC, care_id ASC)
+
+------------------------------------------------------------------------------------------------------------------------------------------
+
+		-- Record the number of gains and losses at record level
+		INSERT INTO Merge_R_Compare.ReportingMergeDifferences_Work (MerCare_ID, MerRecordID , PreSrcSysID , PreCare_ID , PreRecordID , ColumnIx , DiffType)
+		SELECT		mer.CARE_ID
+					,mer.CARE_ID
+					,pre.OrigSrcSysID
+					,pre.OrigCARE_ID
+					,pre.OrigCARE_ID
+					,mc.ColumnIx
+					,CASE	WHEN pre.CARE_ID IS NULL THEN 'Gained'
+							WHEN mer.CARE_ID IS NULL THEN 'Lost'
+							END AS DiffType
+		FROM		Merge_R_Compare.pre_scr_referrals_Work pre
+		FULL JOIN	CancerReporting_MERGE.Merge_R_Compare.VwSCR_Warehouse_SCR_Referrals mer
+															ON	pre.CARE_ID = mer.CARE_ID
+		CROSS JOIN	(SELECT		ColumnIx
+					FROM		Merge_R_Compare.ReportingMergeColumns_Work
+					WHERE		SchemaName = 'Merge_R_Compare'
+					AND			TableName = 'VwSCR_Warehouse_SCR_Referrals'
+					AND			ColumnOrder = 0
+								) mc
+																	
+		WHERE		pre.CARE_ID IS NULL
+		OR			mer.CARE_ID IS NULL
 
 ------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -320,7 +367,7 @@ AS
 														'			,pre.' + ColumnName + ' AS ValueBefore ' + CHAR(13) +
 														'			,mer.' + ColumnName + ' AS ValueAfter ' + CHAR(13) +
 														'FROM		Merge_R_Compare.pre_scr_referrals_Work pre' + CHAR(13) +
-														'FULL JOIN	CancerReporting_MERGE.' + CONCAT(SchemaName, '.', TableName) + ' mer ' + CHAR(13) +
+														'INNER JOIN	CancerReporting_MERGE.' + CONCAT(SchemaName, '.', TableName) + ' mer ' + CHAR(13) +
 														'													ON	pre.CARE_ID = mer.CARE_ID ' + CHAR(13)
 								,@SQL_Ref_WHERE1	=	'WHERE		pre.' + ColumnName + ' != mer.' + ColumnName + ' ' + CHAR(13)
 								,@SQL_Ref_WHERE2	=	'WHERE		(pre.' + ColumnName + ' IS NULL AND mer.' + ColumnName + ' IS NOT NULL) ' + CHAR(13)
@@ -360,6 +407,32 @@ AS
 
 ------------------------------------------------------------------------------------------------------------------------------------------
 
+		-- Record the number of gains and losses at record level
+		INSERT INTO Merge_R_Compare.ReportingMergeDifferences_Work (MerCare_ID, MerRecordID , PreSrcSysID , PreCare_ID , PreRecordID , ColumnIx , DiffType)
+		SELECT		mer.CARE_ID
+					,mer.CWT_ID
+					,pre.OrigSrcSysID
+					,pre.OrigCARE_ID
+					,pre.OrigCWT_ID
+					,mc.ColumnIx
+					,CASE	WHEN pre.CARE_ID IS NULL THEN 'Gained'
+							WHEN mer.CARE_ID IS NULL THEN 'Lost'
+							END AS DiffType
+		FROM		Merge_R_Compare.pre_scr_cwt_Work pre
+		FULL JOIN	CancerReporting_MERGE.Merge_R_Compare.VwSCR_Warehouse_SCR_CWT mer
+															ON	pre.CWT_ID = mer.CWT_ID
+		CROSS JOIN	(SELECT		ColumnIx
+					FROM		Merge_R_Compare.ReportingMergeColumns_Work
+					WHERE		SchemaName = 'Merge_R_Compare'
+					AND			TableName = 'VwSCR_Warehouse_SCR_CWT'
+					AND			ColumnOrder = 0
+								) mc
+																	
+		WHERE		pre.CWT_ID IS NULL
+		OR			mer.CWT_ID IS NULL
+
+------------------------------------------------------------------------------------------------------------------------------------------
+
 		-- Loop around each column in the SCR_CWT table and execute SQL to find differences between values in pre merge and merge databases and insert into ReportingMergeDifferences_Work table
 		WHILE @ColumnOrder <= (SELECT MAX(c.ColumnOrder) FROM Merge_R_Compare.ReportingMergeColumns_Work c WHERE C.TableName = 'VwSCR_Warehouse_SCR_CWT') 
 		BEGIN
@@ -388,13 +461,16 @@ AS
 								,@SQL_CWT_WHERE1	=	'WHERE		pre.' + ColumnName + ' != mer.' + ColumnName + ' ' + CHAR(13)
 								,@SQL_CWT_WHERE2	=	'WHERE		(pre.' + ColumnName + ' IS NULL AND mer.' + ColumnName + ' IS NOT NULL) ' + CHAR(13)
 								,@SQL_CWT_WHERE3	=	'WHERE		(pre.' + ColumnName + ' IS NOT NULL AND mer.' + ColumnName + ' IS NULL) '  + CHAR(13)
+								,@SQL_CWT_WHERE_All	=	CASE WHEN ColumnName IN ('CwtPathwayTypeId2WW','CwtPathwayTypeId28','CwtPathwayTypeId62'
+																				,'CwtPathwayTypeIdSurv','UnifyPtlStatusCode','ReportingPathwayLength') THEN '' ELSE		-- Only do a FULL JOIN on these fields
+														'AND		pre.CWT_ID IS NOT NULL AND mer.CWT_ID IS NOT NULL ' + CHAR(13) END									-- Treat all other fields like and INNER JOIN
 
 						FROM Merge_R_Compare.ReportingMergeColumns_Work WHERE TableName = 'VwSCR_Warehouse_SCR_CWT' AND ColumnOrder = @ColumnOrder
 
 						-- EXEC the 3 SQL statement variants
-						SET @SQL_CWT = @SQL_CWT_CORE + @SQL_CWT_WHERE1; EXEC (@SQL_CWT); PRINT @SQL_CWT
-						SET @SQL_CWT = @SQL_CWT_CORE + @SQL_CWT_WHERE2; EXEC (@SQL_CWT); PRINT @SQL_CWT
-						SET @SQL_CWT = @SQL_CWT_CORE + @SQL_CWT_WHERE3; EXEC (@SQL_CWT); PRINT @SQL_CWT
+						SET @SQL_CWT = @SQL_CWT_CORE + @SQL_CWT_WHERE1 + @SQL_CWT_WHERE_All; EXEC (@SQL_CWT); PRINT @SQL_CWT
+						SET @SQL_CWT = @SQL_CWT_CORE + @SQL_CWT_WHERE2 + @SQL_CWT_WHERE_All; EXEC (@SQL_CWT); PRINT @SQL_CWT
+						SET @SQL_CWT = @SQL_CWT_CORE + @SQL_CWT_WHERE3 + @SQL_CWT_WHERE_All; EXEC (@SQL_CWT); PRINT @SQL_CWT
 
 						UPDATE Merge_R_Compare.ReportingMergeColumns_Work SET ColumnComplete = GETDATE() WHERE TableName = 'VwSCR_Warehouse_SCR_CWT' AND ColumnOrder = @ColumnOrder
 
@@ -412,6 +488,32 @@ AS
 
 		-- Reset @ColumnOrder
 		SET @ColumnOrder = 1
+
+------------------------------------------------------------------------------------------------------------------------------------------
+
+		-- Record the number of gains and losses at record level
+		INSERT INTO Merge_R_Compare.ReportingMergeDifferences_Work (MerCare_ID, MerRecordID , PreSrcSysID , PreCare_ID , PreRecordID , ColumnIx , DiffType)
+		SELECT		mer.CARE_ID
+					,mer.ASSESSMENT_ID
+					,pre.OrigSrcSysID
+					,pre.OrigCARE_ID
+					,pre.OrigASSESSMENT_ID
+					,mc.ColumnIx
+					,CASE	WHEN pre.CARE_ID IS NULL THEN 'Gained'
+							WHEN mer.CARE_ID IS NULL THEN 'Lost'
+							END AS DiffType
+		FROM		Merge_R_Compare.pre_scr_assessments_Work pre
+		FULL JOIN	CancerReporting_MERGE.Merge_R_Compare.VwSCR_Warehouse_SCR_Assessments mer
+															ON	pre.ASSESSMENT_ID = mer.ASSESSMENT_ID
+		CROSS JOIN	(SELECT		ColumnIx
+					FROM		Merge_R_Compare.ReportingMergeColumns_Work
+					WHERE		SchemaName = 'Merge_R_Compare'
+					AND			TableName = 'VwSCR_Warehouse_SCR_Assessments'
+					AND			ColumnOrder = 0
+								) mc
+																	
+		WHERE		pre.ASSESSMENT_ID IS NULL
+		OR			mer.ASSESSMENT_ID IS NULL
 
 ------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -438,7 +540,7 @@ AS
 																'			,pre.' + ColumnName + ' AS ValueBefore ' + CHAR(13) +
 																'			,mer.' + ColumnName + ' AS ValueAfter ' + CHAR(13) +
 																'FROM		Merge_R_Compare.pre_scr_assessments_Work pre' + CHAR(13) +
-																'FULL JOIN	CancerReporting_MERGE.' + CONCAT(SchemaName, '.', TableName) + ' mer ' + CHAR(13) +
+																'INNER JOIN	CancerReporting_MERGE.' + CONCAT(SchemaName, '.', TableName) + ' mer ' + CHAR(13) +
 																'													ON	pre.Assessment_ID = mer.Assessment_ID ' + CHAR(13)
 								,@SQL_Assessments_WHERE1	=	'WHERE		pre.' + ColumnName + ' != mer.' + ColumnName + ' ' + CHAR(13)
 								,@SQL_Assessments_WHERE2	=	'WHERE		(pre.' + ColumnName + ' IS NULL AND mer.' + ColumnName + ' IS NOT NULL) ' + CHAR(13)
@@ -469,6 +571,33 @@ AS
 
 ------------------------------------------------------------------------------------------------------------------------------------------
 
+		-- Record the number of gains and losses at record level
+		INSERT INTO Merge_R_Compare.ReportingMergeDifferences_Work (MerCare_ID, MerRecordID , PreSrcSysID , PreCare_ID , PreRecordID , ColumnIx , DiffType)
+		SELECT		mer.CARE_ID
+					,mer.OpenTargetDatesId
+					,pre.OrigSrcSysID
+					,pre.OrigCARE_ID
+					,pre.OpenTargetDatesId
+					,mc.ColumnIx
+					,CASE	WHEN pre.CARE_ID IS NULL THEN 'Gained'
+							WHEN mer.CARE_ID IS NULL THEN 'Lost'
+							END AS DiffType
+		FROM		Merge_R_Compare.pre_OpenTargetDates_Work pre
+		FULL JOIN	CancerReporting_MERGE.Merge_R_Compare.VwSCR_Warehouse_OpenTargetDates mer
+															ON	pre.CWT_ID = mer.CWT_ID
+															AND	pre.TargetType = mer.TargetType
+		CROSS JOIN	(SELECT		ColumnIx
+					FROM		Merge_R_Compare.ReportingMergeColumns_Work
+					WHERE		SchemaName = 'Merge_R_Compare'
+					AND			TableName = 'VwSCR_Warehouse_OpenTargetDates'
+					AND			ColumnOrder = 0
+								) mc
+																	
+		WHERE		pre.CWT_ID IS NULL
+		OR			mer.CWT_ID IS NULL
+
+------------------------------------------------------------------------------------------------------------------------------------------
+
 		-- Loop around each column in the OpentTargetDates table and execute SQL to find differences between values in pre merge and merge databases and insert into ReportingMergeDifferences_Work table
 		WHILE @ColumnOrder <= (SELECT MAX(c.ColumnOrder) FROM Merge_R_Compare.ReportingMergeColumns_Work c WHERE C.TableName = 'VwSCR_Warehouse_OpenTargetDates') 
 		BEGIN
@@ -492,7 +621,7 @@ AS
 																	'			,pre.' + ColumnName + ' AS ValueBefore ' + CHAR(13) +
 																	'			,mer.' + ColumnName + ' AS ValueAfter ' + CHAR(13) +
 																	'FROM		Merge_R_Compare.pre_OpenTargetDates_Work pre' + CHAR(13) +
-																	'FULL JOIN	CancerReporting_MERGE.' + CONCAT(SchemaName, '.', TableName) + ' mer ' + CHAR(13) +
+																	'INNER JOIN	CancerReporting_MERGE.' + CONCAT(SchemaName, '.', TableName) + ' mer ' + CHAR(13) +
 																	'													ON	pre.CWT_ID = mer.CWT_ID ' + CHAR(13) +
 																	'													AND	pre.TargetType = mer.TargetType ' + CHAR(13)
 								,@SQL_OpenTargetDates_WHERE1	=	'WHERE		pre.' + ColumnName + ' != mer.' + ColumnName + ' ' + CHAR(13)
@@ -525,6 +654,34 @@ AS
 
 ------------------------------------------------------------------------------------------------------------------------------------------
 
+		-- Record the number of gains and losses at record level
+		INSERT INTO Merge_R_Compare.ReportingMergeDifferences_Work (MerCare_ID, MerRecordID , PreSrcSysID , PreCare_ID , PreRecordID , ColumnIx , DiffType)
+		SELECT		mer.CARE_ID
+					,mer.SourceRecordId
+					,pre.OrigSrcSysID
+					,pre.OrigCARE_ID
+					,pre.SourceRecordId
+					,mc.ColumnIx
+					,CASE	WHEN pre.CARE_ID IS NULL THEN 'Gained'
+							WHEN mer.CARE_ID IS NULL THEN 'Lost'
+							END AS DiffType
+		FROM		Merge_R_Compare.pre_scr_comments_Work pre
+		FULL JOIN	CancerReporting_MERGE.Merge_R_Compare.VwSCR_Warehouse_SCR_Comments mer
+																							ON	pre.SourceRecordId = mer.SourceRecordId
+																							AND	pre.SourceTableName = mer.SourceTableName
+																							AND	pre.SourceColumnName = mer.SourceColumnName
+		CROSS JOIN	(SELECT		ColumnIx
+					FROM		Merge_R_Compare.ReportingMergeColumns_Work
+					WHERE		SchemaName = 'Merge_R_Compare'
+					AND			TableName = 'VwSCR_Warehouse_SCR_Comments'
+					AND			ColumnOrder = 0
+								) mc
+																	
+		WHERE		pre.SourceRecordId IS NULL
+		OR			mer.SourceRecordId IS NULL
+
+------------------------------------------------------------------------------------------------------------------------------------------
+
 		-- Loop around each column in the SCR_Comments table and execute SQL to find differences between values in pre merge and merge databases and insert into ReportingMergeDifferences_Work table
 		WHILE @ColumnOrder <= (SELECT MAX(c.ColumnOrder) FROM Merge_R_Compare.ReportingMergeColumns_Work c WHERE C.TableName = 'VwSCR_Warehouse_SCR_Comments') 
 		BEGIN
@@ -548,7 +705,7 @@ AS
 															'			,pre.' + ColumnName + ' AS ValueBefore ' + CHAR(13) +
 															'			,mer.' + ColumnName + ' AS ValueAfter ' + CHAR(13) +
 															'FROM		Merge_R_Compare.pre_scr_comments_Work pre' + CHAR(13) +
-															'FULL JOIN	CancerReporting_MERGE.' + CONCAT(SchemaName, '.', TableName) + ' mer ' + CHAR(13) +
+															'INNER JOIN	CancerReporting_MERGE.' + CONCAT(SchemaName, '.', TableName) + ' mer ' + CHAR(13) +
 															'													ON	pre.SourceRecordId = mer.SourceRecordId ' + CHAR(13) +
 															'													AND	pre.SourceTableName = mer.SourceTableName ' + CHAR(13) +
 															'													AND	pre.SourceColumnName = mer.SourceColumnName ' + CHAR(13)
@@ -582,6 +739,33 @@ AS
 
 ------------------------------------------------------------------------------------------------------------------------------------------
 
+		-- Record the number of gains and losses at record level
+		INSERT INTO Merge_R_Compare.ReportingMergeDifferences_Work (MerCare_ID, MerRecordID , PreSrcSysID , PreCare_ID , PreRecordID , ColumnIx , DiffType)
+		SELECT		mer.CareID
+					,mer.TertiaryReferralID
+					,pre.OrigSrcSysID
+					,pre.OrigCARE_ID
+					,pre.TertiaryReferralID
+					,mc.ColumnIx
+					,CASE	WHEN pre.CareID IS NULL THEN 'Gained'
+							WHEN mer.CareID IS NULL THEN 'Lost'
+							END AS DiffType
+		FROM		Merge_R_Compare.pre_scr_InterProviderTransfers_Work pre
+		FULL JOIN	CancerReporting_MERGE.Merge_R_Compare.VwSCR_Warehouse_SCR_InterProviderTransfers mer
+																							ON	pre.TertiaryReferralID = mer.TertiaryReferralID
+																							AND	pre.SCR_IPTTypeCode = mer.SCR_IPTTypeCode
+		CROSS JOIN	(SELECT		ColumnIx
+					FROM		Merge_R_Compare.ReportingMergeColumns_Work
+					WHERE		SchemaName = 'Merge_R_Compare'
+					AND			TableName = 'VwSCR_Warehouse_SCR_InterProviderTransfers'
+					AND			ColumnOrder = 0
+								) mc
+																	
+		WHERE		pre.TertiaryReferralID IS NULL
+		OR			mer.TertiaryReferralID IS NULL
+
+------------------------------------------------------------------------------------------------------------------------------------------
+
 		-- Loop around each column in the scr_InterProviderTransfers table and execute SQL to find differences between values in pre merge and merge databases and insert into ReportingMergeDifferences_Work table
 		WHILE @ColumnOrder <= (SELECT MAX(c.ColumnOrder) FROM Merge_R_Compare.ReportingMergeColumns_Work c WHERE C.TableName = 'VwSCR_Warehouse_SCR_InterProviderTransfers') 
 		BEGIN
@@ -605,7 +789,7 @@ AS
 																		'			,pre.' + ColumnName + ' AS ValueBefore ' + CHAR(13) +
 																		'			,mer.' + ColumnName + ' AS ValueAfter ' + CHAR(13) +
 																		'FROM		Merge_R_Compare.pre_scr_InterProviderTransfers_Work pre' + CHAR(13) +
-																		'FULL JOIN	CancerReporting_MERGE.' + CONCAT(SchemaName, '.', TableName) + ' mer ' + CHAR(13) +
+																		'INNER JOIN	CancerReporting_MERGE.' + CONCAT(SchemaName, '.', TableName) + ' mer ' + CHAR(13) +
 																		'													ON	pre.TertiaryReferralID = mer.TertiaryReferralID ' + CHAR(13) +
 																		'													AND	pre.SCR_IPTTypeCode = mer.SCR_IPTTypeCode ' + CHAR(13)
 								,@SQL_InterProviderTransfers_WHERE1	=	'WHERE		pre.' + ColumnName + ' != mer.' + ColumnName + ' ' + CHAR(13)
@@ -638,6 +822,34 @@ AS
 
 ------------------------------------------------------------------------------------------------------------------------------------------
 
+		-- Record the number of gains and losses at record level
+		INSERT INTO Merge_R_Compare.ReportingMergeDifferences_Work (MerCare_ID, MerRecordID , PreSrcSysID , PreCare_ID , PreRecordID , ColumnIx , DiffType)
+		SELECT		CAST(NULL AS INT)
+					,CAST(mer.IdentityTypeId AS VARCHAR(255)) + '|' + mer.IdentityTypeRecordId + '|' + CAST(mer.WorkflowID AS VARCHAR(255))
+					,pre.OrigSrcSysID
+					,CAST(NULL AS INT)
+					,CAST(Pre.IdentityTypeId AS VARCHAR(255)) + '|' + Pre.IdentityTypeRecordId + '|' + CAST(Pre.WorkflowID AS VARCHAR(255))
+					,mc.ColumnIx
+					,CASE	WHEN pre.IdentityTypeRecordId IS NULL THEN 'Gained'
+							WHEN mer.IdentityTypeRecordId IS NULL THEN 'Lost'
+							END AS DiffType
+		FROM		Merge_R_Compare.pre_Workflow_Work pre
+		FULL JOIN	CancerReporting_MERGE.Merge_R_Compare.VwSCR_Warehouse_Workflow mer
+																							ON	pre.IdentityTypeRecordId = mer.IdentityTypeRecordId
+																							AND	pre.IdentityTypeId = mer.IdentityTypeId
+																							AND	pre.WorkflowID = mer.WorkflowID
+		CROSS JOIN	(SELECT		ColumnIx
+					FROM		Merge_R_Compare.ReportingMergeColumns_Work
+					WHERE		SchemaName = 'Merge_R_Compare'
+					AND			TableName = 'VwSCR_Warehouse_SCR_Workflow'
+					AND			ColumnOrder = 0
+								) mc
+																	
+		WHERE		pre.IdentityTypeRecordId IS NULL
+		OR			mer.IdentityTypeRecordId IS NULL
+
+------------------------------------------------------------------------------------------------------------------------------------------
+
 		-- Loop around each column in the scr_Workflow table and execute SQL to find differences between values in pre merge and merge databases and insert into ReportingMergeDifferences_Work table
 		WHILE @ColumnOrder <= (SELECT MAX(c.ColumnOrder) FROM Merge_R_Compare.ReportingMergeColumns_Work c WHERE C.TableName = 'VwSCR_Warehouse_SCR_Workflow') 
 		BEGIN
@@ -661,7 +873,7 @@ AS
 															'			,pre.' + ColumnName + ' AS ValueBefore ' + CHAR(13) +
 															'			,mer.' + ColumnName + ' AS ValueAfter ' + CHAR(13) +
 															'FROM		Merge_R_Compare.pre_Workflow_Work pre' + CHAR(13) +
-															'FULL JOIN	CancerReporting_MERGE.' + CONCAT(SchemaName, '.', TableName) + ' mer ' + CHAR(13) +
+															'INNER JOIN	CancerReporting_MERGE.' + CONCAT(SchemaName, '.', TableName) + ' mer ' + CHAR(13) +
 															'													ON	pre.IdentityTypeRecordId = mer.IdentityTypeRecordId ' + CHAR(13) +
 															'													AND	pre.IdentityTypeId = mer.IdentityTypeId ' + CHAR(13) +
 															'													AND	pre.WorkflowID = mer.WorkflowID ' + CHAR(13)
@@ -692,6 +904,32 @@ AS
 
 		-- Reset @ColumnOrder
 		SET @ColumnOrder = 1
+
+------------------------------------------------------------------------------------------------------------------------------------------
+
+		-- Record the number of gains and losses at record level
+		INSERT INTO Merge_R_Compare.ReportingMergeDifferences_Work (MerCare_ID, MerRecordID , PreSrcSysID , PreCare_ID , PreRecordID , ColumnIx , DiffType)
+		SELECT		mer.CareID
+					,mer.PathwayUpdateEventID
+					,pre.OrigSrcSysID
+					,pre.OrigCareID
+					,pre.OrigPathwayUpdateEventID
+					,mc.ColumnIx
+					,CASE	WHEN pre.PathwayUpdateEventID IS NULL THEN 'Gained'
+							WHEN mer.PathwayUpdateEventID IS NULL THEN 'Lost'
+							END AS DiffType
+		FROM		Merge_R_Compare.pre_scr_NextActions_Work pre
+		FULL JOIN	CancerReporting_MERGE.Merge_R_Compare.VwSCR_Warehouse_SCR_NextActions mer
+															ON	pre.PathwayUpdateEventID = mer.PathwayUpdateEventID
+		CROSS JOIN	(SELECT		ColumnIx
+					FROM		Merge_R_Compare.ReportingMergeColumns_Work
+					WHERE		SchemaName = 'Merge_R_Compare'
+					AND			TableName = 'VwSCR_Warehouse_SCR_NextActions'
+					AND			ColumnOrder = 0
+								) mc
+																	
+		WHERE		pre.PathwayUpdateEventID IS NULL
+		OR			mer.PathwayUpdateEventID IS NULL
 
 ------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -1142,14 +1380,230 @@ AS
 
 		-- Find all the confirmed major referrals
 		IF OBJECT_ID('tempdb..#tblMAIN_REFERRALS_tblValidatedData') IS NOT NULL DROP TABLE #tblMAIN_REFERRALS_tblValidatedData
-		SELECT		*
+		SELECT		vd_minor.SrcSys_MajorExt
+					,vd_minor.Src_UID_MajorExt
+					,vd_minor.SrcSys_Major
+					,vd_minor.Src_UID_Major
+					,vd_minor.IsValidatedMajor
+					,vd_minor.IsConfirmed
+					,vd_minor.LastUpdated
+					,vd_minor.SrcSys
+					,vd_minor.Src_UID
+					,vd_major.CARE_ID
+					,vd_major.PATIENT_ID
+					,vd_major.TEMP_ID
+					,vd_major.L_CANCER_SITE
+					,vd_major.N2_1_REFERRAL_SOURCE
+					,vd_major.N2_2_ORG_CODE_REF
+					,vd_major.N2_3_REFERRER_CODE
+					,vd_major.N2_4_PRIORITY_TYPE
+					,vd_major.N2_5_DECISION_DATE
+					,vd_major.N2_6_RECEIPT_DATE
+					,vd_major.N2_7_CONSULTANT
+					,vd_major.N2_8_SPECIALTY
+					,vd_major.N2_9_FIRST_SEEN_DATE
+					,vd_major.N1_3_ORG_CODE_SEEN
+					,vd_major.N2_10_FIRST_SEEN_DELAY
+					,vd_major.N2_12_CANCER_TYPE
+					,vd_major.N2_13_CANCER_STATUS
+					,vd_major.L_FIRST_APPOINTMENT
+					,vd_major.L_CANCELLED_DATE
+					,vd_major.N2_14_ADJ_TIME
+					,vd_major.N2_15_ADJ_REASON
+					,vd_major.L_REFERRAL_METHOD
+					,vd_major.N2_16_OP_REFERRAL
+					,vd_major.L_SPECIALIST_DATE
+					,vd_major.L_ORG_CODE_SPECIALIST
+					,vd_major.L_SPECIALIST_SEEN_DATE
+					,vd_major.N1_3_ORG_CODE_SPEC_SEEN
+					,vd_major.N_UPGRADE_DATE
+					,vd_major.N_UPGRADE_ORG_CODE
+					,vd_major.L_UPGRADE_WHEN
+					,vd_major.L_UPGRADE_WHO
+					,vd_major.N4_1_DIAGNOSIS_DATE
+					,vd_major.L_DIAGNOSIS
+					,vd_major.N4_2_DIAGNOSIS_CODE
+					,vd_major.L_ORG_CODE_DIAGNOSIS
+					,vd_major.L_PT_INFORMED_DATE
+					,vd_major.L_OTHER_DIAG_DATE
+					,vd_major.N4_3_LATERALITY
+					,vd_major.N4_4_BASIS_DIAGNOSIS
+					,vd_major.L_TOPOGRAPHY
+					,vd_major.L_HISTOLOGY_GROUP
+					,vd_major.N4_5_HISTOLOGY
+					,vd_major.N4_6_DIFFERENTIATION
+					,vd_major.ClinicalTStage
+					,vd_major.ClinicalTCertainty
+					,vd_major.ClinicalNStage
+					,vd_major.ClinicalNCertainty
+					,vd_major.ClinicalMStage
+					,vd_major.ClinicalMCertainty
+					,vd_major.ClinicalOverallCertainty
+					,vd_major.N6_9_SITE_CLASSIFICATION
+					,vd_major.PathologicalOverallCertainty
+					,vd_major.PathologicalTCertainty
+					,vd_major.PathologicalTStage
+					,vd_major.PathologicalNCertainty
+					,vd_major.PathologicalNStage
+					,vd_major.PathologicalMCertainty
+					,vd_major.PathologicalMStage
+					,vd_major.L_GP_INFORMED
+					,vd_major.L_GP_INFORMED_DATE
+					,vd_major.L_GP_NOT
+					,vd_major.L_REL_INFORMED
+					,vd_major.L_NURSE_PRESENT
+					,vd_major.L_SPEC_NURSE_DATE
+					,vd_major.L_SEEN_NURSE_DATE
+					,vd_major.N16_1_ADJ_DAYS
+					,vd_major.N16_2_ADJ_DAYS
+					,vd_major.N16_3_ADJ_DECISION_CODE
+					,vd_major.N16_4_ADJ_TREAT_CODE
+					,vd_major.N16_5_DECISION_REASON_CODE
+					,vd_major.N16_6_TREATMENT_REASON_CODE
+					,vd_major.PathologicalTNMDate
+					,vd_major.ClinicalTNMDate
+					,vd_major.L_FIRST_CONSULTANT
+					,vd_major.L_APPROPRIATE
+					,vd_major.L_TERTIARY_DATE
+					,vd_major.L_TERTIARY_TRUST
+					,vd_major.L_TERTIARY_REASON
+					,vd_major.L_INAP_REF
+					,vd_major.L_NEW_CA_SITE
+					,vd_major.L_AUTO_REF
+					,vd_major.L_SEC_DIAGNOSIS_G
+					,vd_major.L_SEC_DIAGNOSIS
+					,vd_major.L_WRONG_REF
+					,vd_major.L_WRONG_REASON
+					,vd_major.L_TUMOUR_STATUS
+					,vd_major.L_NON_CANCER
+					,vd_major.L_FIRST_APP
+					,vd_major.L_NO_APP
+					,vd_major.L_DIAG_WHO
+					,vd_major.L_RECURRENCE
+					,vd_major.L_OTHER_SYMPS
+					,vd_major.L_COMMENTS
+					,vd_major.N2_11_FIRST_SEEN_REASON
+					,vd_major.N16_7_DECISION_REASON
+					,vd_major.N16_8_TREATMENT_REASON
+					,vd_major.L_DIAGNOSIS_COMMENTS
+					,vd_major.GP_PRACTICE_CODE
+					,vd_major.ClinicalTNMGroup
+					,vd_major.PathologicalTNMGroup
+					,vd_major.L_KEY_WORKER_SEEN
+					,vd_major.L_PALLIATIVE_SPECIALIST_SEEN
+					,vd_major.GERM_CELL_NON_CNS_ID
+					,vd_major.RECURRENCE_CANCER_SITE_ID
+					,vd_major.ICD03_GROUP
+					,vd_major.ICD03
+					,vd_major.L_DATE_DIAGNOSIS_DAHNO_LUCADA
+					,vd_major.L_INDICATOR_CODE
+					,vd_major.PRIMARY_DIAGNOSIS_SUB_COMMENT
+					,vd_major.CONSULTANT_CODE_AT_DIAGNOSIS
+					,vd_major.CONSULTANT_AGE_SPECIALTY_AT_DIAGNOSIS
+					,vd_major.FETOPROTEIN
+					,vd_major.GONADOTROPIN
+					,vd_major.GONADOTROPIN_SERUM
+					,vd_major.FETOPROTEIN_SERUM
+					,vd_major.SARCOMA_TUMOUR_SITE_BONE
+					,vd_major.SARCOMA_TUMOUR_SITE_SOFT_TISSUE
+					,vd_major.SARCOMA_TUMOUR_SUBSITE_BONE
+					,vd_major.SARCOMA_TUMOUR_SUBSITE_SOFT_TISSUE
+					,vd_major.ROOT_DECISION_DATE_COMMENTS
+					,vd_major.ROOT_RECEIPT_DATE_COMMENTS
+					,vd_major.ROOT_FIRST_SEEN_DATE_COMMENTS
+					,vd_major.ROOT_DIAGNOSIS_DATE_COMMENTS
+					,vd_major.ROOT_DNA_APPT_REBOOKED_DATE_COMMENTS
+					,vd_major.ROOT_UPGRADE_COMMENTS
+					,vd_major.FIRST_APPT_TIME
+					,vd_major.TRANSFER_REASON
+					,vd_major.DATE_NEW_REFERRAL
+					,vd_major.TUMOUR_SITE_NEW
+					,vd_major.DATE_TRANSFER_ACTIONED
+					,vd_major.SOURCE_CARE_ID
+					,vd_major.ADT_REF_ID
+					,vd_major.ACTION_ID
+					,vd_major.DIAGNOSIS_ACTION_ID
+					,vd_major.ORIGINAL_SOURCE_CARE_ID
+					,vd_major.TRANSFER_DATE_COMMENTS
+					,vd_major.SPECIALIST_REFERRAL_COMMENTS
+					,vd_major.NON_CANCER_DIAGNOSIS_CHAPTER
+					,vd_major.NON_CANCER_DIAGNOSIS_GROUP
+					,vd_major.NON_CANCER_DIAGNOSIS_CODE
+					,vd_major.TNM_UNKNOWN
+					,vd_major.ReferringPractice
+					,vd_major.ReferringGP
+					,vd_major.ReferringBranch
+					,vd_major.BankedTissue
+					,vd_major.BankedTissueTumour
+					,vd_major.BankedTissueBlood
+					,vd_major.BankedTissueCSF
+					,vd_major.BankedTissueBoneMarrow
+					,vd_major.SNOMed_CT
+					,vd_major.ADT_PLACER_ID
+					,vd_major.SNOMEDCTDiagnosisID
+					,vd_major.FasterDiagnosisOrganisationID
+					,vd_major.FasterDiagnosisCancerSiteOverrideID
+					,vd_major.FasterDiagnosisExclusionDate
+					,vd_major.FasterDiagnosisExclusionReasonID
+					,vd_major.FasterDiagnosisDelayReasonID
+					,vd_major.FasterDiagnosisDelayReasonComments
+					,vd_major.FasterDiagnosisCommunicationMethodID
+					,vd_major.FasterDiagnosisInformingCareProfessionalID
+					,vd_major.FasterDiagnosisOtherCareProfessional
+					,vd_major.FasterDiagnosisOtherCommunicationMethod
+					,vd_major.NonPrimaryPathwayOptionsID
+					,vd_major.DiagnosisUncertainty
+					,vd_major.TNMOrganisation
+					,vd_major.FasterDiagnosisTargetRCComments
+					,vd_major.FasterDiagnosisEndRCComments
+					,vd_major.TNMOrganisation_Integrated
+					,vd_major.LDHValue
+					,vd_major.BankedTissueUrine
+					,vd_major.SubsiteID
+					,vd_major.PredictedBreachStatus
+					,vd_major.RMRefID
+					,vd_major.TertiaryReferralKey
+					,vd_major.ClinicalTLetter
+					,vd_major.ClinicalNLetter
+					,vd_major.ClinicalMLetter
+					,vd_major.PathologicalTLetter
+					,vd_major.PathologicalNLetter
+					,vd_major.PathologicalMLetter
+					,vd_major.FDPlannedInterval
+					,vd_major.LabReportDate
+					,vd_major.LabReportOrgID
+					,vd_major.ReferralRoute
+					,vd_major.ReferralOtherRoute
+					,vd_major.RelapseMorphology
+					,vd_major.RelapseFlow
+					,vd_major.RelapseMolecular
+					,vd_major.RelapseClinicalExamination
+					,vd_major.RelapseOther
+					,vd_major.RapidDiagnostic
+					,vd_major.PrimaryReferralFlag
+					,vd_major.OtherAssessedBy
+					,vd_major.SharedBreach
+					,vd_major.PredictedBreachYear
+					,vd_major.PredictedBreachMonth
+					,vd_major.ValidatedRecordCreatedDttm
 		INTO		#tblMAIN_REFERRALS_tblValidatedData
-		FROM		Merge_R_Compare.tblMAIN_REFERRALS_tblValidatedData
-		WHERE		IsConfirmed = 1
-		AND			IsValidatedMajor = 1
+		FROM		Merge_R_Compare.tblMAIN_REFERRALS_tblValidatedData vd_major
+		INNER JOIN	Merge_R_Compare.tblMAIN_REFERRALS_tblValidatedData vd_minor
+																			ON	vd_major.SrcSys_MajorExt = vd_minor.SrcSys_MajorExt
+																			AND	vd_major.Src_UID_MajorExt = vd_minor.Src_UID_MajorExt
+		WHERE		vd_major.IsConfirmed = 1
+		AND			vd_major.IsValidatedMajor = 1
 
 		-- Find the confirmed major refs that are different from the original ref
-		SELECT		vd.SrcSys
+		SELECT		vd.SrcSys_MajorExt
+					,vd.Src_UID_MajorExt
+					,vd.SrcSys_Major
+					,vd.Src_UID_Major
+					,vd.IsValidatedMajor
+					,vd.IsConfirmed
+					,vd.LastUpdated
+					,vd.SrcSys
+					,vd.Src_UID
 					,vd.CARE_ID
 					,vd.PATIENT_ID
 					,mainref.PATIENT_ID AS OrigPATIENT_ID
@@ -1339,7 +1793,7 @@ AS
 		FROM		#tblMAIN_REFERRALS_tblValidatedData vd
 		INNER JOIN	LocalConfig.tblMAIN_REFERRALS mainref
 														ON	vd.SrcSys = mainref.SrcSysID
-														AND	vd.CARE_ID = mainref.CARE_ID
+														AND	vd.Src_UID = mainref.CARE_ID
 		WHERE		mainref.PATIENT_ID != vd.PATIENT_ID OR (mainref.PATIENT_ID IS NULL AND vd.PATIENT_ID IS NOT NULL) OR (mainref.PATIENT_ID IS NOT NULL AND vd.PATIENT_ID IS NULL)
 		OR			mainref.TEMP_ID != vd.TEMP_ID OR (mainref.TEMP_ID IS NULL AND vd.TEMP_ID IS NOT NULL) OR (mainref.TEMP_ID IS NOT NULL AND vd.TEMP_ID IS NULL)
 		OR			mainref.L_CANCER_SITE != vd.L_CANCER_SITE OR (mainref.L_CANCER_SITE IS NULL AND vd.L_CANCER_SITE IS NOT NULL) OR (mainref.L_CANCER_SITE IS NOT NULL AND vd.L_CANCER_SITE IS NULL)
@@ -1541,8 +1995,14 @@ AS
 		-- Find all the dropped minor referrals
 		SELECT		SrcSys
 					,Src_UID AS CARE_ID
+					,SrcSys_MajorExt
+					,Src_UID_MajorExt
+					,renum_mainref.CARE_ID AS renum_CARE_ID
 		INTO		Merge_R_Compare.DedupeDroppedRefs_work
-		FROM		Merge_R_Compare.tblMAIN_REFERRALS_tblValidatedData
+		FROM		Merge_R_Compare.tblMAIN_REFERRALS_tblValidatedData vd_minor
+		INNER JOIN	Merge_R_Compare.dbo_tblMAIN_REFERRALS renum_mainref
+																		ON	vd_minor.Src_UID_MajorExt = renum_mainref.DW_SOURCE_ID
+																		AND vd_minor.SrcSys_MajorExt = renum_mainref.DW_SOURCE_SYSTEM_ID
 		WHERE		IsConfirmed = 1
 		AND			IsValidatedMajor = 0
 
@@ -1562,7 +2022,67 @@ AS
 		INNER JOIN	Merge_R_Compare.DedupeDroppedRefs_work dropped_ref
 																		ON	rmd.PreSrcSysID = dropped_ref.SrcSys
 																		AND	rmd.PreCare_ID = dropped_ref.CARE_ID
-		WHERE		rmc.TableName = 'SCR_Referrals'
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_Referrals'
+
+		-- Update any SCR CWT definitive treatment (TREAT_NO) values that should have been changed because the referral is a minor and has been deleted
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		INNER JOIN	Merge_R_Compare.DedupeDroppedRefs_Work dropped_ref
+																		ON	rmd.PreSrcSysID = dropped_ref.SrcSys
+																		AND	rmd.PreCare_ID = dropped_ref.CARE_ID
+		LEFT JOIN	Merge_R_Compare.pre_scr_cwt pre_scr_cwt
+															ON	rmd.PreSrcSysID = pre_scr_cwt.OrigSrcSysID
+															AND	rmd.PreRecordID = pre_scr_cwt.OrigCWT_ID
+															AND	pre_scr_cwt.TREAT_ID IS NULL
+															AND	pre_scr_cwt.DeftTreatmentCode IS NULL
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('DeftDefinitiveTreatment')
+		AND			(rmd.DiffType = 'Lost'			-- Lost because the referral was deleted
+		OR			(pre_scr_cwt.OrigCWT_ID IS NULL	-- Changed from a 1 (FDT) to a 2 (Sub) because there was a treatment on the minor referral
+		AND			rmd.PreValue = 1
+		AND			rmd.MerValue = 2)
+					)
+
+		-- Ignore any FDT-based CWT status code changes where we are expecting to drop the "2nd" FDT for referrals that have been merged
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		INNER JOIN	(
+					SELECT		rmd_inner.PreSrcSysID
+								,rmd_inner.PreRecordID
+					FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc_inner
+					INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd_inner
+																				ON	rmc_inner.ColumnIx = rmd_inner.ColumnIx
+					INNER JOIN	Merge_R_Compare.pre_scr_cwt pre_scr_cwt 
+																		ON	rmd_inner.PreSrcSysID = pre_scr_cwt.OrigSrcSysID
+																		AND	rmd_inner.PreRecordID = pre_scr_cwt.OrigCWT_ID
+																		AND	pre_scr_cwt.DeftDefinitiveTreatment = 1
+					INNER JOIN	CancerReporting_MERGE.SCR_Warehouse.SCR_CWT post_scr_cwt
+																		ON	rmd_inner.MerCare_ID = post_scr_cwt.CARE_ID
+																		AND	post_scr_cwt.DeftDefinitiveTreatment = 1
+																		AND	post_scr_cwt.TREAT_ID IS NOT NULL
+																		AND	post_scr_cwt.DeftTreatmentCode IS NOT NULL
+					WHERE		rmc_inner.TableName = 'VwSCR_Warehouse_SCR_CWT'
+					AND			rmc_inner.ColumnName IN ('DeftDefinitiveTreatment')	-- with a DEFT TREAT_NO
+					AND			rmd_inner.PreValue = 1								-- that Kevin has renumbered from a 1 to a 2
+					AND			rmd_inner.MerValue = 2								-- that Kevin has renumbered from a 1 to a 2
+					AND			((pre_scr_cwt.TREAT_ID IS NULL							-- has been demoted to TREAT_NO=2 because there was no treatment on their original FDT (TREAT_NO=1) record
+					AND			pre_scr_cwt.DeftTreatmentCode IS NULL)					-- has been demoted to TREAT_NO=2 because there was no treatment on their original FDT (TREAT_NO=1) record
+					OR			(post_scr_cwt.CARE_ID IS NOT NULL))						-- has been demoted to TREAT_NO=2 because there was another higher priority treatment on another merged definitive treatment (TREAT_NO=1) record
+					GROUP BY	rmd_inner.PreSrcSysID
+								,rmd_inner.PreRecordID
+								) ToBeDroppedFDTs
+												ON	rmd.PreSrcSysID = ToBeDroppedFDTs.PreSrcSysID
+												AND	rmd.PreRecordID = ToBeDroppedFDTs.PreRecordID
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('CWTStatusCode2WW','CWTStatusCode28','CWTStatusCode62')
+		AND			rmd.PreValue != 38
+		AND			rmd.MerValue = 38
 
 		-- Update any cwtFlag62 / cwtReason62 values that may have been changed because an underlying component of the calculation has changed
 		UPDATE		rmd
@@ -1597,23 +2117,161 @@ AS
 																	ON	rmc.ColumnIx = rmd.ColumnIx
 		LEFT JOIN	Merge_R_Compare.DedupeChangedRefs_work changed_ref
 																		ON	rmd.PreSrcSysID = changed_ref.SrcSys
-																		AND	rmd.PreCare_ID = changed_ref.CARE_ID
+																		AND	rmd.PreCare_ID = changed_ref.Src_UID
 		LEFT JOIN	LocalConfig.tblMAIN_REFERRALS mainref
 														ON	rmd.PreSrcSysID = mainref.SrcSysID
 														AND	rmd.PreCare_ID = mainref.CARE_ID
 		LEFT JOIN	Merge_R_Compare.DedupeChangedDemographics_work changed_dem
 																			ON	mainref.SrcSysID = changed_dem.SrcSysID
 																			AND	mainref.PATIENT_ID = changed_dem.PATIENT_ID
+		LEFT JOIN	Merge_R_Compare.DedupeDroppedRefs_work dropped_ref
+																		ON	rmd.PreSrcSysID = dropped_ref.SrcSys
+																		AND	rmd.PreCare_ID = dropped_ref.CARE_ID
 																			
 		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
-		AND			rmc.ColumnName IN ('cwtType62')
+		AND			rmc.ColumnName IN ('cwtType62','Pathway')
 		AND			(changed_ref.N2_16_OP_REFERRAL_Diff = 1
 		OR			changed_ref.N_UPGRADE_DATE_Diff = 1
 		OR			changed_ref.N2_12_CANCER_TYPE_Diff = 1
 		OR			changed_dem.N1_10_DATE_BIRTH_Diff = 1
 		OR			changed_ref.N2_6_RECEIPT_DATE_Diff = 1
 		OR			changed_ref.N4_2_DIAGNOSIS_CODE_Diff = 1
-		OR			changed_ref.N2_4_PRIORITY_TYPE_Diff = 1)
+		OR			changed_ref.N2_4_PRIORITY_TYPE_Diff = 1
+		OR			dropped_ref.SrcSys IS NOT NULL)
+
+		-- Update any cwtStatusCode28 values that may have been changed because an underlying component of the calculation has changed
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		LEFT JOIN	Merge_R_Compare.DedupeChangedRefs_work changed_ref
+																		ON	rmd.PreSrcSysID = changed_ref.SrcSys
+																		AND	rmd.PreCare_ID = changed_ref.Src_UID
+		LEFT JOIN	(SELECT		OrigSrcSysID
+								,OrigCARE_ID
+								,MIN(pre_scr_cwt.DeftDateDecisionTreat) AS MinDeftDateDecisionTreat
+					FROM		Merge_R_Compare.pre_scr_cwt 
+					GROUP BY	OrigSrcSysID
+								,OrigCARE_ID
+								) pre_scr_cwt_minor
+												ON	rmd.PreSrcSysID = pre_scr_cwt_minor.OrigSrcSysID
+												AND	rmd.PreCare_ID = pre_scr_cwt_minor.OrigCARE_ID
+		LEFT JOIN	(SELECT		SrcSysID
+								,CARE_ID
+								,MIN(pre_scr_cwt.DeftDateDecisionTreat) AS MinDeftDateDecisionTreat
+					FROM		Merge_R_Compare.pre_scr_cwt 
+					GROUP BY	SrcSysID
+								,CARE_ID
+								) pre_scr_cwt_major
+												ON	rmd.MerCare_ID = pre_scr_cwt_major.CARE_ID
+		WHERE		((rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('cwtStatusCode28'))
+		OR			(rmc.TableName = 'VwSCR_Warehouse_SCR_Referrals'
+		AND			rmc.ColumnName IN ('FastDiagEndReasonID')))
+		AND			(changed_ref.FasterDiagnosisExclusionDate_Diff = 1
+		OR			changed_ref.L_PT_INFORMED_DATE_Diff = 1
+		OR			changed_ref.L_Diagnosis_Diff = 1
+		OR			changed_ref.SNOMed_CT_Diff = 1
+		OR			changed_ref.N4_5_HISTOLOGY_Diff = 1
+		OR			changed_ref.N2_13_CANCER_STATUS_Diff = 1
+		OR			changed_ref.FDPlannedInterval_Diff = 1
+		OR			changed_ref.L_TUMOUR_STATUS_Diff = 1
+		OR			changed_ref.N4_2_DIAGNOSIS_CODE_Diff = 1
+		OR			pre_scr_cwt_minor.MinDeftDateDecisionTreat != pre_scr_cwt_major.MinDeftDateDecisionTreat
+		OR			(pre_scr_cwt_minor.MinDeftDateDecisionTreat IS NULL AND pre_scr_cwt_major.MinDeftDateDecisionTreat IS NOT NULL)
+		OR			(pre_scr_cwt_minor.MinDeftDateDecisionTreat IS NOT NULL AND pre_scr_cwt_major.MinDeftDateDecisionTreat IS NULL))
+
+
+		-- Update any cwtStatusCode62 values that may have been changed because an underlying component of the calculation has changed
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		LEFT JOIN	Merge_R_Compare.DedupeChangedRefs_Work changed_ref
+																		ON	rmd.PreSrcSysID = changed_ref.SrcSys
+																		AND	rmd.PreCare_ID = changed_ref.Src_UID
+		LEFT JOIN	CancerReporting_PREMERGE.SCR_Warehouse.SCR_Referrals pre_scr_ref
+																ON	rmd.PreSrcSysID = pre_scr_ref.SrcSysID
+																AND	rmd.PreCare_ID = pre_scr_ref.CARE_ID
+		LEFT JOIN	CancerReporting_MERGE.SCR_Warehouse.SCR_Referrals post_scr_ref
+																				ON rmd.MerCare_ID = post_scr_ref.CARE_ID
+		LEFT JOIN	(SELECT		rmd_inner.PreSrcSysID, rmd_inner.PreRecordID
+					FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc_inner INNER JOIN Merge_R_Compare.ReportingMergeDifferences_Work rmd_inner ON rmc_inner.ColumnIx = rmd_inner.ColumnIx 
+					WHERE		rmc_inner.TableName = 'VwSCR_Warehouse_SCR_CWT'
+					AND			rmc_inner.ColumnName IN ('DeftOrgCodeTreatment','DeftDateTreatment','cwtFlag2WW','cwtFlag62','TargetDate62','ReportDate','cwtFlag28','cwtType62','Pathway','ReportingPathwayLength')
+					GROUP BY	rmd_inner.PreSrcSysID, rmd_inner.PreRecordID
+								) changed_wh_cwt
+											ON	rmd.PreSrcSysID = changed_wh_cwt.PreSrcSysID
+											AND	rmd.PreRecordID = changed_wh_cwt.PreRecordID
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('cwtStatusCode62')
+		AND			(changed_ref.N2_13_CANCER_STATUS_Diff = 1
+		OR			changed_ref.N4_1_DIAGNOSIS_DATE_Diff = 1
+		OR			changed_ref.N2_9_FIRST_SEEN_DATE_Diff = 1
+		OR			changed_ref.L_Diagnosis_Diff = 1
+		OR			changed_ref.SNOMed_CT_Diff = 1
+		OR			changed_ref.N4_5_HISTOLOGY_Diff = 1
+		OR			changed_ref.L_FIRST_APP_Diff = 1
+		OR			changed_ref.N2_6_RECEIPT_DATE_Diff = 1
+		OR			changed_ref.L_CANCER_SITE_Diff = 1
+		OR			changed_ref.N2_12_CANCER_TYPE_Diff = 1
+		OR			changed_ref.N2_7_CONSULTANT_Diff = 1
+		OR			changed_ref.N_UPGRADE_DATE_Diff = 1
+		OR			changed_ref.N2_16_OP_REFERRAL_Diff = 1
+		OR			changed_ref.N2_4_PRIORITY_TYPE_Diff = 1
+		OR			changed_ref.L_NO_APP_Diff = 1
+		OR			changed_ref.FasterDiagnosisOrganisationID_Diff = 1
+		OR			changed_ref.N1_3_ORG_CODE_SEEN_Diff = 1
+		OR			(pre_scr_ref.DateDeath != post_scr_ref.DateDeath)
+		OR			(pre_scr_ref.DateDeath IS NULL AND post_scr_ref.DateDeath IS NOT NULL)
+		OR			(pre_scr_ref.DateDeath IS NOT NULL AND post_scr_ref.DateDeath IS NULL)
+		OR			changed_wh_cwt.PreSrcSysID IS NOT NULL)
+
+
+		-- Update any UnifyPtlStatusCode values that may have been changed because an underlying component of the calculation has changed
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		LEFT JOIN	Merge_R_Compare.DedupeChangedRefs_Work changed_ref
+																		ON	rmd.PreSrcSysID = changed_ref.SrcSys
+																		AND	rmd.PreCare_ID = changed_ref.Src_UID
+		--LEFT JOIN	CancerReporting_PREMERGE.SCR_Warehouse.SCR_Referrals pre_scr_ref
+		--														ON	rmd.PreSrcSysID = pre_scr_ref.SrcSysID
+		--														AND	rmd.PreCare_ID = pre_scr_ref.CARE_ID
+		--LEFT JOIN	CancerReporting_MERGE.SCR_Warehouse.SCR_Referrals post_scr_ref
+		--																		ON rmd.MerCare_ID = post_scr_ref.CARE_ID
+		LEFT JOIN	(SELECT		rmd_inner.PreSrcSysID, rmd_inner.PreRecordID
+					FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc_inner INNER JOIN Merge_R_Compare.ReportingMergeDifferences_Work rmd_inner ON rmc_inner.ColumnIx = rmd_inner.ColumnIx 
+					WHERE		rmc_inner.TableName = 'VwSCR_Warehouse_SCR_CWT'
+					AND			rmc_inner.ColumnName IN ('DeftDateTreatment','CwtPathwayTypeDesc62','cwtType62','Pathway','CWTStatusCode62','DeftDateDecisionTreat')
+					AND			rmd_inner.DiffType = 'Different'
+					GROUP BY	rmd_inner.PreSrcSysID, rmd_inner.PreRecordID
+								) changed_wh_cwt
+											ON	rmd.PreSrcSysID = changed_wh_cwt.PreSrcSysID
+											AND	rmd.PreRecordID = changed_wh_cwt.PreRecordID
+		LEFT JOIN	(SELECT		rmd_inner2.PreSrcSysID, rmd_inner2.MerCare_ID
+					FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc_inner2 INNER JOIN Merge_R_Compare.ReportingMergeDifferences_Work rmd_inner2 ON rmc_inner2.ColumnIx = rmd_inner2.ColumnIx 
+					WHERE		rmc_inner2.TableName = 'VwSCR_Warehouse_SCR_InterProviderTransfers'
+					AND			rmc_inner2.ColumnName IN ('CareID')
+					AND			rmd_inner2.DiffType = 'Different'
+					GROUP BY	rmd_inner2.PreSrcSysID, rmd_inner2.MerCare_ID
+								) changed_wh_ipt
+											ON	rmd.MerCare_ID = changed_wh_ipt.MerCare_ID
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('UnifyPtlStatusCode')
+		AND			(changed_ref.N2_10_FIRST_SEEN_DELAY_Diff = 1
+		OR			changed_ref.L_CANCELLED_DATE_Diff = 1
+		OR			changed_ref.N_UPGRADE_DATE_Diff = 1
+		OR			changed_ref.N2_6_RECEIPT_DATE_Diff = 1
+		OR			changed_ref.L_CANCER_SITE_Diff = 1
+		OR			changed_ref.N2_12_CANCER_TYPE_Diff = 1
+		OR			changed_wh_cwt.PreSrcSysID IS NOT NULL/*
+		OR			changed_wh_ipt.PreSrcSysID IS NOT NULL*/)
+
 
 		-- Update any cwtFlagSurv values that may have been changed because a later treatment was added
 		UPDATE		rmd
@@ -1644,13 +2302,503 @@ AS
 														ON	vd_major.SrcSys = cwt_major.OrigSrcSysID
 														AND	vd_major.Src_UID = cwt_major.OrigCARE_ID
 		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
-		AND			rmc.ColumnName IN ('cwtFlagSurv')
+		AND			rmc.ColumnName IN ('cwtFlagSurv','ClockStartDateSurv','WaitingtimeSurv','CWTStatusCodeSurv','CWTStatusDescSurv','CwtPathwayTypeIdSurv','CwtPathwayTypeDescSurv','DefaultShowSurv')
 		AND			(cwt_major.DeftDefinitiveTreatment != cwt_minor.DeftDefinitiveTreatment
 		OR			cwt_major.DeftDateTreatment != cwt_minor.DeftDateTreatment
 		OR			(cwt_major.DeftDateTreatment IS NOT NULL AND cwt_minor.DeftDateTreatment IS NULL)
 		OR			(cwt_major.DeftDateTreatment IS NULL AND cwt_minor.DeftDateTreatment IS NOT NULL)
 		OR			vd_major.MajorCount > 1
 					)
+
+		-- Update any SCR CWT table values that will have been changed because the deft record has been designated as a subsequent treatment
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		INNER JOIN	Merge_R_Compare.DedupeDroppedRefs_Work dropped_ref
+																ON	rmd.PreSrcSysID = dropped_ref.SrcSys
+																AND	rmd.PreCare_ID = dropped_ref.CARE_ID
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd_fdt_to_sub
+																					ON	rmd.PreSrcSysID = rmd_fdt_to_sub.PreSrcSysID
+																					AND	rmd.PreRecordID = rmd_fdt_to_sub.PreRecordID
+																					AND	rmd_fdt_to_sub.PreValue = 1
+																					AND	rmd_fdt_to_sub.MerValue = 2
+		INNER JOIN	Merge_R_Compare.ReportingMergeColumns_Work rmc_fdt_to_sub
+																				ON	rmd_fdt_to_sub.ColumnIx = rmc_fdt_to_sub.ColumnIx
+																				AND	rmc_fdt_to_sub.TableName = 'VwSCR_Warehouse_SCR_CWT'
+																				AND	rmc_fdt_to_sub.ColumnName IN ('DeftDefinitiveTreatment')
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('cwtFlag2WW','cwtFlag28','cwtFlag62','ReportingPathwayLength')
+		AND			rmd.PreValue != 4
+		AND			rmd.MerValue = 4
+
+		-- Update any SCR CWT table values that will have been changed because the referral record has been re-assigned to a 2WW
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		--INNER JOIN	Merge_R_Compare.DedupeDroppedRefs_Work dropped_ref
+		--														ON	rmd.PreSrcSysID = dropped_ref.SrcSys
+		--														AND	rmd.PreCare_ID = dropped_ref.CARE_ID
+		INNER JOIN	Merge_R_Compare.DedupeChangedRefs_Work changed_ref
+																ON	rmd.PreSrcSysID = changed_ref.SrcSys
+																AND	rmd.PreCare_ID = changed_ref.Src_UID
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('cwtFlag2WW','ReportingPathwayLength')
+		AND			rmd.PreValue = 4
+		AND			rmd.MerValue != 4
+		AND			changed_ref.N2_4_PRIORITY_TYPE_Diff = 1
+
+		-- Update any SCR CWT table values that will have been changed because the deft record has been designated as a subsequent treatment
+		UPDATE		rmd
+		SET			rmd.IsDedupeDrop = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		INNER JOIN	Merge_R_Compare.DedupeDroppedRefs_Work dropped_ref
+																ON	rmd.PreSrcSysID = dropped_ref.SrcSys
+																AND	rmd.PreCare_ID = dropped_ref.CARE_ID
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd_fdt_to_sub
+																					ON	rmd.PreSrcSysID = rmd_fdt_to_sub.PreSrcSysID
+																					AND	rmd.PreRecordID = rmd_fdt_to_sub.PreRecordID
+																					AND	rmd_fdt_to_sub.PreValue = 1
+																					AND	rmd_fdt_to_sub.MerValue = 2
+		INNER JOIN	Merge_R_Compare.ReportingMergeColumns_Work rmc_fdt_to_sub
+																				ON	rmd_fdt_to_sub.ColumnIx = rmc_fdt_to_sub.ColumnIx
+																				AND	rmc_fdt_to_sub.TableName = 'VwSCR_Warehouse_SCR_CWT'
+																				AND	rmc_fdt_to_sub.ColumnName IN ('DeftDefinitiveTreatment')
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('cwtReason2WW','cwtReason28','cwtReason62')
+		AND			rmd.PreValue IS NOT NULL
+		AND			rmd.MerValue IS NULL
+
+		-- Update any SCR CWT table values that will have been changed because the referral record has been re-assigned to a 2WW
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		--INNER JOIN	Merge_R_Compare.DedupeDroppedRefs_Work dropped_ref
+		--														ON	rmd.PreSrcSysID = dropped_ref.SrcSys
+		--														AND	rmd.PreCare_ID = dropped_ref.CARE_ID
+		INNER JOIN	Merge_R_Compare.DedupeChangedRefs_Work changed_ref
+																ON	rmd.PreSrcSysID = changed_ref.SrcSys
+																AND	rmd.PreCare_ID = changed_ref.Src_UID
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('cwtReason2WW')
+		AND			(changed_ref.N2_4_PRIORITY_TYPE_Diff = 1
+		OR			changed_ref.TRANSFER_REASON_Diff = 1
+		OR			changed_ref.L_INAP_REF_Diff = 1
+		OR			changed_ref.N2_9_FIRST_SEEN_DATE_Diff = 1
+		OR			changed_ref.N2_13_CANCER_STATUS_Diff = 1
+		OR			changed_ref.L_FIRST_APP_Diff = 1
+		OR			changed_ref.L_TUMOUR_STATUS_Diff = 1
+					)
+
+		-- Update any SCR CWT table values that will have been changed because the referral record has been re-assigned to a 2WW
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		LEFT JOIN	Merge_R_Compare.DedupeDroppedRefs_Work dropped_ref
+																ON	rmd.PreSrcSysID = dropped_ref.SrcSys
+																AND	rmd.PreCare_ID = dropped_ref.CARE_ID
+		INNER JOIN	Merge_R_Compare.DedupeChangedRefs_Work changed_ref
+																ON	rmd.PreSrcSysID = changed_ref.SrcSys
+																AND	rmd.PreCare_ID = changed_ref.Src_UID
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('cwtType2WW','cwtReason2WW','Pathway')
+		AND			(changed_ref.N2_4_PRIORITY_TYPE_Diff = 1
+		OR			changed_ref.N2_12_CANCER_TYPE_Diff = 1
+		OR			dropped_ref.SrcSys IS NOT NULL
+					)
+
+		-- Update any SCR CWT table values that will have been changed because the referral record has changed
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		INNER JOIN	Merge_R_Compare.DedupeChangedRefs_Work changed_ref
+																ON	rmd.PreSrcSysID = changed_ref.SrcSys
+																AND	rmd.PreCare_ID = changed_ref.Src_UID
+		LEFT JOIN	Merge_R_Compare.DedupeDroppedRefs_Work dropped_ref
+																ON	rmd.PreSrcSysID = dropped_ref.SrcSys
+																AND	rmd.PreCare_ID = dropped_ref.CARE_ID
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('cwtType28','cwtFlag28','cwtReason28')
+		AND			(changed_ref.N2_4_PRIORITY_TYPE_Diff = 1
+		OR			changed_ref.N2_12_CANCER_TYPE_Diff = 1
+		OR			changed_ref.N2_1_REFERRAL_SOURCE_Diff = 1
+		OR			changed_ref.N_UPGRADE_DATE_Diff = 1
+		OR			changed_ref.N2_6_RECEIPT_DATE_Diff = 1
+		OR			dropped_ref.SrcSys IS NOT NULL
+					)
+
+		-- Update any SCR CWT table values that will have been changed because the referral record has changed
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		INNER JOIN	Merge_R_Compare.DedupeChangedRefs_Work changed_ref
+																ON	rmd.PreSrcSysID = changed_ref.SrcSys
+																AND	rmd.PreCare_ID = changed_ref.Src_UID
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('cwtFlag28','cwtReason28')
+		AND			(changed_ref.N2_4_PRIORITY_TYPE_Diff = 1
+		OR			changed_ref.N2_12_CANCER_TYPE_Diff = 1
+		OR			changed_ref.N2_1_REFERRAL_SOURCE_Diff = 1
+		OR			changed_ref.N_UPGRADE_DATE_Diff = 1
+		OR			changed_ref.N2_6_RECEIPT_DATE_Diff = 1
+		OR			changed_ref.TRANSFER_REASON_Diff = 1
+		OR			changed_ref.L_INAP_REF_Diff = 1
+		OR			changed_ref.N2_13_CANCER_STATUS_Diff = 1
+		OR			changed_ref.L_FIRST_APP_Diff = 1
+		OR			changed_ref.L_TUMOUR_STATUS_Diff = 1
+		OR			changed_ref.FasterDiagnosisExclusionDate_Diff = 1
+		OR			changed_ref.FasterDiagnosisExclusionReasonID_Diff = 1
+		OR			changed_ref.L_PT_INFORMED_DATE_Diff = 1
+		OR			changed_ref.FDPlannedInterval_Diff = 1
+		OR			changed_ref.SNOMed_CT_Diff = 1
+		OR			changed_ref.N4_2_DIAGNOSIS_CODE_Diff = 1
+					)
+
+		-- Update any SCR CWT table values that will have been changed because the referral record has changed
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		INNER JOIN	Merge_R_Compare.DedupeChangedRefs_Work changed_ref
+																ON	rmd.PreSrcSysID = changed_ref.SrcSys
+																AND	rmd.PreCare_ID = changed_ref.Src_UID
+		LEFT JOIN	Merge_R_Compare.DedupeDroppedRefs_Work dropped_ref
+																ON	rmd.PreSrcSysID = dropped_ref.SrcSys
+																AND	rmd.PreCare_ID = dropped_ref.CARE_ID
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('ClockStartDate2WW','ClockStartDate28','ClockStartDate62'
+										,'TargetDate2WW','TargetDate28','TargetDate62'
+										,'DaysTo2WWBreach','DaysTo28DayBreach','DaysTo62DayBreach'
+										,'Breach2WW','Breach28','Breach62'
+										,'WillBeBreach2WW','WillBeBreach28','WillBeBreach62')
+		AND			(changed_ref.N2_6_RECEIPT_DATE_Diff = 1
+		OR			changed_ref.N_UPGRADE_DATE_Diff = 1
+		OR			dropped_ref.SrcSys IS NOT NULL
+					)
+
+		-- Update any SCR CWT table values that will have been changed because the referral record has changed
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		INNER JOIN	Merge_R_Compare.DedupeChangedRefs_Work changed_ref
+																ON	rmd.PreSrcSysID = changed_ref.SrcSys
+																AND	rmd.PreCare_ID = changed_ref.Src_UID
+		LEFT JOIN	Merge_R_Compare.DedupeDroppedRefs_Work dropped_ref
+																ON	rmd.PreSrcSysID = dropped_ref.SrcSys
+																AND	rmd.PreCare_ID = dropped_ref.CARE_ID
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('DaysTo2WWBreach','DaysTo28DayBreach','DaysTo62DayBreach'
+										,'WillBeBreach2WW','WillBeBreach28','WillBeBreach62')
+		AND			(changed_ref.N2_4_PRIORITY_TYPE_Diff = 1
+		OR			dropped_ref.SrcSys IS NOT NULL
+					)
+
+		-- Update any SCR CWT table values that will have been changed because the referral record has changed
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		--INNER JOIN	Merge_R_Compare.DedupeDroppedRefs_Work dropped_ref
+		--														ON	rmd.PreSrcSysID = dropped_ref.SrcSys
+		--														AND	rmd.PreCare_ID = dropped_ref.CARE_ID
+		INNER JOIN	Merge_R_Compare.DedupeChangedRefs_Work changed_ref
+																ON	rmd.PreSrcSysID = changed_ref.SrcSys
+																AND	rmd.PreCare_ID = changed_ref.Src_UID
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('WillBeClockStopDate2WW','ClockStopDate2WW','DaysTo2WWBreach'
+										,'Breach2WW'
+										,'WillBeBreach2WW')
+
+		-- Update any SCR CWT table values that will have been changed because the referral record has changed
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		--INNER JOIN	Merge_R_Compare.DedupeDroppedRefs_Work dropped_ref
+		--														ON	rmd.PreSrcSysID = dropped_ref.SrcSys
+		--														AND	rmd.PreCare_ID = dropped_ref.CARE_ID
+		INNER JOIN	Merge_R_Compare.DedupeChangedRefs_Work changed_ref
+																ON	rmd.PreSrcSysID = changed_ref.SrcSys
+																AND	rmd.PreCare_ID = changed_ref.Src_UID
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('Waitingtime2WW','WaitingTime28','WaitingTime62'
+										,'WillBeWaitingtime2WW','WillBeWaitingTime28','WillBeWaitingTime62'
+										,'ReportingPathwayLength')
+		AND			(changed_ref.N2_9_FIRST_SEEN_DATE_Diff = 1
+		OR			changed_ref.N2_6_RECEIPT_DATE_Diff = 1
+		OR			changed_ref.N_UPGRADE_DATE_Diff = 1
+					)
+
+		-- Update any SCR CWT table values that will have been changed because the deft record has been designated as a subsequent treatment
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd_fdt_to_sub
+																					ON	rmd.MerCare_ID = rmd_fdt_to_sub.MerCare_ID
+																					AND	rmd_fdt_to_sub.PreValue = 1
+																					AND	rmd_fdt_to_sub.MerValue = 2
+		INNER JOIN	Merge_R_Compare.ReportingMergeColumns_Work rmc_fdt_to_sub
+																				ON	rmd_fdt_to_sub.ColumnIx = rmc_fdt_to_sub.ColumnIx
+																				AND	rmc_fdt_to_sub.TableName = 'VwSCR_Warehouse_SCR_CWT'
+																				AND	rmc_fdt_to_sub.ColumnName IN ('DeftDefinitiveTreatment')
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('Waitingtime2WW','WaitingTime28','WaitingTime62'
+										,'WillBeWaitingtime2WW','WillBeWaitingTime28','WillBeWaitingTime62'
+										,'ReportingPathwayLength')
+
+		-- Update any SCR CWT table values that will have been changed because the deft record has been re-designated as an eligible 2WW
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd_fdt_to_sub
+																					ON	rmd.MerCare_ID = rmd_fdt_to_sub.MerCare_ID
+																					AND	rmd_fdt_to_sub.PreValue = 4
+																					AND	rmd_fdt_to_sub.MerValue != 4
+		INNER JOIN	Merge_R_Compare.ReportingMergeColumns_Work rmc_fdt_to_sub
+																				ON	rmd_fdt_to_sub.ColumnIx = rmc_fdt_to_sub.ColumnIx
+																				AND	rmc_fdt_to_sub.TableName = 'VwSCR_Warehouse_SCR_CWT'
+																				AND	rmc_fdt_to_sub.ColumnName IN ('cwtFlag2WW')
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('TargetDate2WW')
+
+		-- Update any SCR CWT table values that will have been changed because the deft record has been re-designated as an eligible FDS
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd_fdt_to_sub
+																					ON	rmd.MerCare_ID = rmd_fdt_to_sub.MerCare_ID
+																					AND	rmd_fdt_to_sub.PreValue = 4
+																					AND	rmd_fdt_to_sub.MerValue != 4
+		INNER JOIN	Merge_R_Compare.ReportingMergeColumns_Work rmc_fdt_to_sub
+																				ON	rmd_fdt_to_sub.ColumnIx = rmc_fdt_to_sub.ColumnIx
+																				AND	rmc_fdt_to_sub.TableName = 'VwSCR_Warehouse_SCR_CWT'
+																				AND	rmc_fdt_to_sub.ColumnName IN ('cwtFlag28')
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('TargetDate28')
+
+		-- Update any SCR CWT table values that will have been changed because the deft record has been re-designated as an eligible 62D treatment
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd_fdt_to_sub
+																					ON	rmd.MerCare_ID = rmd_fdt_to_sub.MerCare_ID
+																					AND	rmd_fdt_to_sub.PreValue = 4
+																					AND	rmd_fdt_to_sub.MerValue != 4
+		INNER JOIN	Merge_R_Compare.ReportingMergeColumns_Work rmc_fdt_to_sub
+																				ON	rmd_fdt_to_sub.ColumnIx = rmc_fdt_to_sub.ColumnIx
+																				AND	rmc_fdt_to_sub.TableName = 'VwSCR_Warehouse_SCR_CWT'
+																				AND	rmc_fdt_to_sub.ColumnName IN ('cwtFlag62')
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('TargetDate62')
+
+		-- Update any SCR CWT table values that will have been changed because the referral record has been dropped
+		UPDATE		rmd
+		SET			rmd.IsDedupeDrop = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		LEFT JOIN	Merge_R_Compare.DedupeDroppedRefs_Work dropped_ref
+																ON	rmd.PreSrcSysID = dropped_ref.SrcSys
+																AND	rmd.PreCare_ID = dropped_ref.CARE_ID
+		LEFT JOIN	Merge_R_Compare.DedupeChangedRefs_Work changed_ref
+																ON	rmd.PreSrcSysID = changed_ref.SrcSys
+																AND	rmd.PreCare_ID = changed_ref.Src_UID
+		LEFT JOIN	(SELECT		OrigSrcSysID
+								,OrigCARE_ID
+								,MIN(pre_scr_cwt.DeftDateDecisionTreat) AS MinDeftDateDecisionTreat
+					FROM		Merge_R_Compare.pre_scr_cwt 
+					GROUP BY	OrigSrcSysID
+								,OrigCARE_ID
+								) pre_scr_cwt_minor
+												ON	rmd.PreSrcSysID = pre_scr_cwt_minor.OrigSrcSysID
+												AND	rmd.PreCare_ID = pre_scr_cwt_minor.OrigCARE_ID
+		LEFT JOIN	(SELECT		SrcSysID
+								,CARE_ID
+								,MIN(pre_scr_cwt.DeftDateDecisionTreat) AS MinDeftDateDecisionTreat
+					FROM		Merge_R_Compare.pre_scr_cwt 
+					GROUP BY	SrcSysID
+								,CARE_ID
+								) pre_scr_cwt_major
+												ON	rmd.MerCare_ID = pre_scr_cwt_major.CARE_ID
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('WillBeClockStopDate28','ClockStopDate28','DaysTo28DayBreach'
+										,'Breach28'
+										,'WillBeBreach28')
+		AND			(dropped_ref.SrcSys IS NOT NULL
+		OR			changed_ref.FasterDiagnosisExclusionDate_Diff = 1
+		OR			changed_ref.FasterDiagnosisExclusionReasonID_Diff = 1
+		OR			changed_ref.L_PT_INFORMED_DATE_Diff = 1
+		OR			changed_ref.FDPlannedInterval_Diff = 1
+		OR			changed_ref.SNOMed_CT_Diff = 1
+		OR			changed_ref.N4_2_DIAGNOSIS_CODE_Diff = 1
+		OR			pre_scr_cwt_minor.MinDeftDateDecisionTreat != pre_scr_cwt_major.MinDeftDateDecisionTreat
+		OR			(pre_scr_cwt_minor.MinDeftDateDecisionTreat IS NULL AND pre_scr_cwt_major.MinDeftDateDecisionTreat IS NOT NULL)
+		OR			(pre_scr_cwt_minor.MinDeftDateDecisionTreat IS NOT NULL AND pre_scr_cwt_major.MinDeftDateDecisionTreat IS NULL))
+
+		-- Update any SCR CWT table values that will have been changed because the referral record has been dropped
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		INNER JOIN	Merge_R_Compare.DedupeDroppedRefs_Work dropped_ref
+																ON	rmd.PreSrcSysID = dropped_ref.SrcSys
+																AND	rmd.PreCare_ID = dropped_ref.CARE_ID
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('WillBeClockStopDate31','ClockStopDate31'
+										,'WillBeClockStopDate62','ClockStopDate62','DaysTo62DayBreach'
+										,'Breach31','Breach62'
+										,'WillBeBreach31','WillBeBreach62')
+
+		-- Update any cwtFlag62 / cwtReason62 values that may have been changed because an underlying component of the calculation has changed
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		LEFT JOIN	Merge_R_Compare.DedupeChangedRefs_work changed_ref
+																		ON	rmd.PreSrcSysID = changed_ref.SrcSys
+																		AND	rmd.PreCare_ID = changed_ref.Src_UID
+																			
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('AdjTime2WW','AdjTime28'
+										,'TargetDate2WW','TargetDate28'
+										,'Waitingtime2WW','WaitingTime28'
+										,'WillBeWaitingtime2WW','WillBeWaitingTime28'
+										,'Breach2WW','Breach28'
+										,'WillBeBreach2WW','WillBeBreach28'
+										,'ReportingPathwayLength')
+		AND			(changed_ref.N2_15_ADJ_REASON_Diff = 1
+		OR			changed_ref.L_CANCELLED_DATE_Diff = 1)
+
+		-- Update any cwtFlag62 / cwtReason62 values that may have been changed because an underlying component of the calculation has changed
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		LEFT JOIN	Merge_R_Compare.DedupeDroppedRefs_Work dropped_ref
+																ON	rmd.PreSrcSysID = dropped_ref.SrcSys
+																AND	rmd.PreCare_ID = dropped_ref.CARE_ID
+		LEFT JOIN	Merge_R_Compare.DedupeChangedRefs_work changed_ref
+																		ON	rmd.PreSrcSysID = changed_ref.SrcSys
+																		AND	rmd.PreCare_ID = changed_ref.Src_UID
+																			
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('AdjTime62','TargetDate62','WaitingTime62','Breach62','WillBeBreach62','ReportingPathwayLength')
+		AND			(dropped_ref.SrcSys IS NOT NULL
+		OR			changed_ref.N16_4_ADJ_TREAT_CODE_Diff = 1)
+
+		-- Update any cwtFlag62 / cwtReason62 values that may have been changed because an underlying component of the calculation has changed
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		INNER JOIN	Merge_R_Compare.DedupeDroppedRefs_Work dropped_ref
+																ON	rmd.PreSrcSysID = dropped_ref.SrcSys
+																AND	rmd.PreCare_ID = dropped_ref.CARE_ID
+																			
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('AdjTime31','TargetDate31','Breach31','WillBeBreach31')
+
+
+		-- Update any PatientPathwayID values that may have been changed because an underlying component of the calculation has changed
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		INNER JOIN	Merge_R_Compare.tblMAIN_REFERRALS_tblValidatedData merged_ref
+																		ON	rmd.PreSrcSysID = merged_ref.SrcSys
+																		AND	rmd.PreCare_ID = merged_ref.Src_UID
+																		AND	merged_ref.IsConfirmed = 1
+																			
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_Referrals'
+		AND			rmc.ColumnName IN ('PatientPathwayID','PatientPathwayIdIssuer')
+
+		-- Update any DemographicsActionId values that haven't mapped because the demographic record was changed
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		INNER JOIN	SCR_Warehouse.SCR_Referrals pre_ref
+																		ON	rmd.PreSrcSysID = pre_ref.SrcSysID
+																		AND	rmd.PreCare_ID = pre_ref.CARE_ID
+		INNER JOIN	CancerReporting_MERGE.SCR_Warehouse.SCR_Referrals post_ref
+																		ON	rmd.MerCare_ID = post_ref.CARE_ID
+		INNER JOIN	Merge_R_Compare.DedupeChangedDemographics_Work changed_dem
+																				ON	pre_ref.SrcSysID = changed_dem.SrcSysID
+																				AND	pre_ref.PATIENT_ID = changed_dem.PATIENT_ID
+																			
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_Referrals'
+		AND			rmc.ColumnName IN ('DemographicsActionId')
+		AND			pre_ref.DemographicsActionId = post_ref.DemographicsActionId
+
+		-- Ignore any nhs number status codes that have been changed from NULL to 03 - this is a backstop default value in the merge process
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+																			
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_Referrals'
+		AND			rmc.ColumnName IN ('NHSNumberStatusCode')
+		AND			rmd.PreValue IS NULL
+		AND			rmd.MerValue = '03'
+
+		-- Treat a death status of 0 and NULL as being the same
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+																			
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_Referrals'
+		AND			rmc.ColumnName IN ('DeathStatus')
+		AND			rmd.PreValue = 0
+		AND			rmd.MerValue IS NULL
+
+		-- We're only worried about InappropriateRef when the value changes to or from 1 (this impacts cwtFlag logic
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+																			
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_Referrals'
+		AND			rmc.ColumnName IN ('InappropriateRef')
+		AND			ISNULL(rmd.PreValue, 0) != 1
+		AND			ISNULL(rmd.MerValue, 0) != 1
+
+
 
 /********************************************************************************************************************************************************************************************************************************/
 -- Swap out the _work tables for the final persisted tables
