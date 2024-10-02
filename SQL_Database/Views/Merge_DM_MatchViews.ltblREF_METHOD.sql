@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the ltblREF_METHOD SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[ltblREF_METHOD] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblREF_METHOD 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblREF_METHOD
+
+CREATE VIEW [Merge_DM_MatchViews].[ltblREF_METHOD] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblREF_METHOD 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblREF_METHOD
 GO

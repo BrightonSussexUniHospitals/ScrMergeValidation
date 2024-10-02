@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the tblPALLIATIVE_CARE SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[tblPALLIATIVE_CARE] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.tblPALLIATIVE_CARE 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.tblPALLIATIVE_CARE
+
+CREATE VIEW [Merge_DM_MatchViews].[tblPALLIATIVE_CARE] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.tblPALLIATIVE_CARE 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.tblPALLIATIVE_CARE
 GO

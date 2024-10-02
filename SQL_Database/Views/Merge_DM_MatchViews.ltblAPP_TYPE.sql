@@ -43,7 +43,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,TYPE_DESC = TYPE_DESC COLLATE DATABASE_DEFAULT
 			,DEPRECATED_22_01_CA_SITE
 			,IsDeleted 
-	FROM  [WSHT_Deduplication]..ltblAPP_TYPE
+	FROM  [CancerRegister_WSHT]..ltblAPP_TYPE
 
 		UNION ALL 
 
@@ -53,5 +53,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,TYPE_DESC = TYPE_DESC COLLATE DATABASE_DEFAULT
 			,DEPRECATED_22_01_CA_SITE
 			,IsDeleted 
-	FROM  [BSUH_Deduplication]..ltblAPP_TYPE
+	FROM  [CancerRegister_BSUH]..ltblAPP_TYPE
 GO

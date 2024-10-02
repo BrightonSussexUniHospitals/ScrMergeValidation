@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the expMDT_ATTENDED_TEMP SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[expMDT_ATTENDED_TEMP] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.expMDT_ATTENDED_TEMP 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.expMDT_ATTENDED_TEMP
+
+CREATE VIEW [Merge_DM_MatchViews].[expMDT_ATTENDED_TEMP] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.expMDT_ATTENDED_TEMP 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.expMDT_ATTENDED_TEMP
 GO

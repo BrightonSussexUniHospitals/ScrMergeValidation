@@ -42,7 +42,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,ID
 			,CancerSiteID
 			,Description = Description COLLATE DATABASE_DEFAULT
-	FROM  [WSHT_Deduplication]..CancerReferralSubsites
+	FROM  [CancerRegister_WSHT]..CancerReferralSubsites
 
 		UNION ALL 
 
@@ -51,5 +51,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,ID
 			,CancerSiteID
 			,Description = Description COLLATE DATABASE_DEFAULT
-	FROM  [BSUH_Deduplication]..CancerReferralSubsites
+	FROM  [CancerRegister_BSUH]..CancerReferralSubsites
 GO

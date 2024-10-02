@@ -52,7 +52,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,IsPalliativeCareCode
 			,IsBCC
 			,IsNonCancer
-	FROM  [WSHT_Deduplication]..ltblDIAGNOSIS
+	FROM  [CancerRegister_WSHT]..ltblDIAGNOSIS
 
 		UNION ALL 
 
@@ -71,5 +71,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,IsPalliativeCareCode
 			,IsBCC
 			,IsNonCancer
-	FROM  [BSUH_Deduplication]..ltblDIAGNOSIS
+	FROM  [CancerRegister_BSUH]..ltblDIAGNOSIS
 GO

@@ -46,7 +46,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,TABLE_NAME = TABLE_NAME COLLATE DATABASE_DEFAULT
 			,CARE_ID
 			,RECORD_ID
-	FROM  [WSHT_Deduplication]..tblAUDIT
+	FROM  [CancerRegister_WSHT]..tblAUDIT
 
 		UNION ALL 
 
@@ -59,5 +59,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,TABLE_NAME = TABLE_NAME COLLATE DATABASE_DEFAULT
 			,CARE_ID
 			,RECORD_ID
-	FROM  [BSUH_Deduplication]..tblAUDIT
+	FROM  [CancerRegister_BSUH]..tblAUDIT
 GO

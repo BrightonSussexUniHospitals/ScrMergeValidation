@@ -42,7 +42,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,CANCELLED_CODE
 			,CANCELLED_DESC = CANCELLED_DESC COLLATE DATABASE_DEFAULT
 			,LIVE
-	FROM  [WSHT_Deduplication]..ltblCANCELLATION
+	FROM  [CancerRegister_WSHT]..ltblCANCELLATION
 
 		UNION ALL 
 
@@ -51,5 +51,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,CANCELLED_CODE
 			,CANCELLED_DESC = CANCELLED_DESC COLLATE DATABASE_DEFAULT
 			,LIVE
-	FROM  [BSUH_Deduplication]..ltblCANCELLATION
+	FROM  [CancerRegister_BSUH]..ltblCANCELLATION
 GO

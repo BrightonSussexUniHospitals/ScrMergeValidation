@@ -42,7 +42,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,SET_CODE = SET_CODE COLLATE DATABASE_DEFAULT
 			,SET_DESC = SET_DESC COLLATE DATABASE_DEFAULT
 			,IsAdmission
-	FROM  [WSHT_Deduplication]..ltblTREATMENT_SETTING
+	FROM  [CancerRegister_WSHT]..ltblTREATMENT_SETTING
 
 		UNION ALL 
 
@@ -51,5 +51,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,SET_CODE = SET_CODE COLLATE DATABASE_DEFAULT
 			,SET_DESC = SET_DESC COLLATE DATABASE_DEFAULT
 			,IsAdmission
-	FROM  [BSUH_Deduplication]..ltblTREATMENT_SETTING
+	FROM  [CancerRegister_BSUH]..ltblTREATMENT_SETTING
 GO

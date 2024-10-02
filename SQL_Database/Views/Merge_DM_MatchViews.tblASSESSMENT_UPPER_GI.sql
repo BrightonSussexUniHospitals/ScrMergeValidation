@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the tblASSESSMENT_UPPER_GI SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[tblASSESSMENT_UPPER_GI] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.tblASSESSMENT_UPPER_GI 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.tblASSESSMENT_UPPER_GI
+
+CREATE VIEW [Merge_DM_MatchViews].[tblASSESSMENT_UPPER_GI] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.tblASSESSMENT_UPPER_GI 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.tblASSESSMENT_UPPER_GI
 GO

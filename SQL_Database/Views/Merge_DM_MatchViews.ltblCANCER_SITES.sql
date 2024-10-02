@@ -9,7 +9,7 @@ CREATE VIEW [Merge_DM_MatchViews].[ltblCANCER_SITES] AS
 
  
 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblCANCER_SITES
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblCANCER_SITES
 
  
 
@@ -17,5 +17,5 @@ UNION ALL
 
  
 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblCANCER_SITES
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblCANCER_SITES
 GO

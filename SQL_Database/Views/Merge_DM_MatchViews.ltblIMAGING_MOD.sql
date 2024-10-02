@@ -46,7 +46,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,MOD_GROUP_ID = MOD_GROUP_ID
 			,IS_STAGING = IS_STAGING
 			,HANACodeID = HANACodeID
-	FROM	[WSHT_Deduplication]..ltblIMAGING_MOD
+	FROM	[CancerRegister_WSHT]..ltblIMAGING_MOD
 
 		UNION ALL 
 
@@ -59,5 +59,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,MOD_GROUP_ID = MOD_GROUP_ID
 			,IS_STAGING = IS_STAGING
 			,HANACodeID = HANACodeID
-	FROM	[BSUH_Deduplication]..ltblIMAGING_MOD
+	FROM	[CancerRegister_BSUH]..ltblIMAGING_MOD
 GO

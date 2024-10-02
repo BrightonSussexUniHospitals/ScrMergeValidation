@@ -129,7 +129,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,ACTION_ID
 			,StratifiedFollowupType 
 
-	 FROM [WSHT_Deduplication]..tblMAIN_ASSESSMENT
+	 FROM [CancerRegister_WSHT]..tblMAIN_ASSESSMENT
 
 		UNION ALL 
 
@@ -225,5 +225,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,ACTION_ID
 			,StratifiedFollowupType 
 
-	 FROM [BSUH_Deduplication]..tblMAIN_ASSESSMENT
+	 FROM [CancerRegister_BSUH]..tblMAIN_ASSESSMENT
 GO

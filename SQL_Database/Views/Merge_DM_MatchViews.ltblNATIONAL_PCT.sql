@@ -41,7 +41,7 @@ Description:				Create a local config view to point at the place where the SCR
 	SELECT  CAST(1 AS tinyint) AS SrcSysID
 			,PCT_CODE = PCT_CODE COLLATE DATABASE_DEFAULT
 			,PCT_DESC = PCT_DESC COLLATE DATABASE_DEFAULT
-	FROM  [WSHT_Deduplication]..ltblNATIONAL_PCT
+	FROM  [CancerRegister_WSHT]..ltblNATIONAL_PCT
 
 		UNION ALL 
 
@@ -49,5 +49,5 @@ Description:				Create a local config view to point at the place where the SCR
 	SELECT  CAST(2 AS tinyint) AS SrcSysID
 			,PCT_CODE = PCT_CODE COLLATE DATABASE_DEFAULT
 			,PCT_DESC = PCT_DESC COLLATE DATABASE_DEFAULT
-	FROM  [BSUH_Deduplication]..ltblNATIONAL_PCT
+	FROM  [CancerRegister_BSUH]..ltblNATIONAL_PCT
 GO

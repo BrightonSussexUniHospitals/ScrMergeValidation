@@ -43,7 +43,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,ADJ_REASON_DESC = ADJ_REASON_DESC COLLATE DATABASE_DEFAULT
 			,LIVE
 			,CWTCode
-	FROM  [WSHT_Deduplication]..ltblADJ_TREATMENT
+	FROM  [CancerRegister_WSHT]..ltblADJ_TREATMENT
 
 		UNION ALL 
 
@@ -53,5 +53,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,ADJ_REASON_DESC = ADJ_REASON_DESC COLLATE DATABASE_DEFAULT
 			,LIVE
 			,CWTCode
-	FROM  [BSUH_Deduplication]..ltblADJ_TREATMENT
+	FROM  [CancerRegister_BSUH]..ltblADJ_TREATMENT
 GO

@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the ltblBONE_MARROW_KARYOTYPE SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[ltblBONE_MARROW_KARYOTYPE] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblBONE_MARROW_KARYOTYPE 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblBONE_MARROW_KARYOTYPE
+
+CREATE VIEW [Merge_DM_MatchViews].[ltblBONE_MARROW_KARYOTYPE] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblBONE_MARROW_KARYOTYPE 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblBONE_MARROW_KARYOTYPE
 GO

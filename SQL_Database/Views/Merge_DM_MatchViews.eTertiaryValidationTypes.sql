@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the eTertiaryValidationTypes SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[eTertiaryValidationTypes] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.eTertiaryValidationTypes 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.eTertiaryValidationTypes
+
+CREATE VIEW [Merge_DM_MatchViews].[eTertiaryValidationTypes] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.eTertiaryValidationTypes 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.eTertiaryValidationTypes
 GO

@@ -289,6 +289,19 @@ BEGIN
 					,SrcSysID
 		HAVING		COUNT(*) > 1
 
+		-- Prepare the #MDupeAdtRefID subquery data 
+		DECLARE @MDupeAdtRefID TABLE
+					(ADT_REF_ID VARCHAR(50) NOT NULL
+					,PRIMARY KEY (ADT_REF_ID)
+					)
+
+		INSERT INTO	@MDupeAdtRefID
+		SELECT		ADT_REF_ID
+		FROM		Merge_DM_MatchViews.tblMAIN_REFERRALS
+		WHERE		ADT_REF_ID IS NOT NULL
+		GROUP BY	ADT_REF_ID
+		HAVING		COUNT(*) > 1
+
 		-- Prepare the #dem_val_maj subquery data (get the hospital number and NHS number from the major record)
 		DECLARE @dem_val_maj TABLE
 					(SrcSys TINYINT NOT NULL
@@ -562,7 +575,7 @@ BEGIN
 							AND			ISNULL(mainref.L_INAP_REF,'') != '1'
 							AND			ISNULL(mainref.TRANSFER_REASON,'') != '1'
 							AND			ISNULL(mainref.L_TUMOUR_STATUS,'') NOT IN ('7') --not  OtherTumourSite
-							AND NOT (	ISNULL(mainref.L_TUMOUR_STATUS,'')  IN ('1') AND MayBeEmptyRef.SrcSysID IS NULL) -- exclude Unknown TumourStatus only when no link to MayBeEmptyRef table
+							AND NOT (	ISNULL(mainref.L_TUMOUR_STATUS,'')  IN ('1') AND MayBeEmptyRef.SrcSysID IS NULL AND DupeAdtRefID.ADT_REF_ID IS NULL) -- exclude Unknown TumourStatus only when no link to MayBeEmptyRef table
 							THEN 1
 							ELSE 0 
 							END AS MatchingFilter
@@ -596,6 +609,9 @@ BEGIN
 		LEFT JOIN	@MayBeEmptyRef MayBeEmptyRef
 												ON mainref.ADT_REF_ID = MayBeEmptyRef.ADT_REF_ID
 												AND mainref.SrcSysID = MayBeEmptyRef.SrcSysID
+
+		LEFT JOIN	@MDupeAdtRefID DupeAdtRefID
+												ON	mainref.ADT_REF_ID = DupeAdtRefID.ADT_REF_ID
 											
 
 		-- Return the data

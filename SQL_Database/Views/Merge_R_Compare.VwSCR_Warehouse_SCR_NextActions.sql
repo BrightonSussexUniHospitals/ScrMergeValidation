@@ -6,6 +6,7 @@ GO
 
 
 
+
 CREATE VIEW [Merge_R_Compare].[VwSCR_Warehouse_SCR_NextActions]
 AS
 
@@ -34,7 +35,7 @@ SELECT		 pre.PathwayUpdateEventID AS OrigPathwayUpdateEventID
 			,pre.SrcSysID AS OrigSrcSysID
 			,5 AS SrcSysID
 			,pre.CareID AS OrigCareID
-			,dwref.CARE_ID AS CareID
+			,renum_mainref_major.CARE_ID AS CareID
 			,pre.NextActionID --mapping
 			,pre.NextActionDesc
 			,pre.NextActionSpecificID --mapping?
@@ -53,7 +54,7 @@ SELECT		 pre.PathwayUpdateEventID AS OrigPathwayUpdateEventID
 			,pre.InsertedBy
 			,aud.ACTION_ID -- ACTION_ID mapped
 			,pre.LastUpdated
-			,pre.LastUpdatedBy
+			,LEFT(CAST(dwusers.FullName + ' {.' + dwusers.UserName + '.}' AS VARCHAR(4000)),50) AS LastUpdatedBy 
 			,pre.CareIdIx
 			,pre.CareIdRevIx 
 			,pre.CareIdIncompleteIx
@@ -70,6 +71,12 @@ LEFT JOIN	SCR_DW.SCR.dbo_tblPathwayUpdateEvents dwpue
 LEFT JOIN	SCR_DW.SCR.dbo_tblMAIN_REFERRALS dwref
 											ON	pre.CareID = dwref.DW_SOURCE_ID
 											AND pre.SrcSysID = dwref.DW_SOURCE_SYSTEM_ID
+LEFT JOIN	SCR_ETL.map.tblMAIN_REFERRALS_tblValidatedData ref_vd_minor
+																			ON	pre.SrcSysId = ref_vd_minor.SrcSys
+																			AND	pre.CareID = ref_vd_minor.Src_UID
+INNER JOIN	SCR_DW.SCR.dbo_tblMAIN_REFERRALS renum_mainref_major
+																ON	ref_vd_minor.Src_UID_MajorExt = renum_mainref_major.DW_SOURCE_ID
+																AND ref_vd_minor.SrcSys_MajorExt = renum_mainref_major.DW_SOURCE_SYSTEM_ID
 
 LEFT JOIN	OrganisationSites dworg_na
 									ON pre.OrganisationID = dworg_na.DW_SOURCE_ID 
@@ -78,5 +85,11 @@ LEFT JOIN	OrganisationSites dworg_na
 LEFT JOIN	SCR_DW.SCR.dbo_tblAUDIT aud
 									ON	pre.SrcSysID = aud.DW_SOURCE_SYSTEM_ID
 									AND	pre.ACTION_ID = aud.DW_SOURCE_ID
+LEFT JOIN	CancerReporting_PREMERGE.LocalConfig.tblAUDIT user_aud
+														ON pre.ACTION_ID = user_aud.ACTION_ID
+														AND pre.SrcSysID = user_aud.SrcSysID
+LEFT JOIN	SCR_DW.SCR.dbo_AspNetUsers dwusers
+										ON	user_aud.SrcSysID = dwusers.DW_SOURCE_SYSTEM_ID
+										AND	LOWER(user_aud.USER_ID) = dwusers.DW_SOURCE_ID
 
 GO

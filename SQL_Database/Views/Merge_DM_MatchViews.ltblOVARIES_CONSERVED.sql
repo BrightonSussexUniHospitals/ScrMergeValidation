@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the ltblOVARIES_CONSERVED SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[ltblOVARIES_CONSERVED] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblOVARIES_CONSERVED 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblOVARIES_CONSERVED
+
+CREATE VIEW [Merge_DM_MatchViews].[ltblOVARIES_CONSERVED] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblOVARIES_CONSERVED 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblOVARIES_CONSERVED
 GO

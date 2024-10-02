@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the ltblPHOTOTHERAPY SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[ltblPHOTOTHERAPY] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblPHOTOTHERAPY 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblPHOTOTHERAPY
+
+CREATE VIEW [Merge_DM_MatchViews].[ltblPHOTOTHERAPY] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblPHOTOTHERAPY 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblPHOTOTHERAPY
 GO

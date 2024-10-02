@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the tblPATHOLOGY_BRAIN SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[tblPATHOLOGY_BRAIN] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.tblPATHOLOGY_BRAIN 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.tblPATHOLOGY_BRAIN
+
+CREATE VIEW [Merge_DM_MatchViews].[tblPATHOLOGY_BRAIN] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.tblPATHOLOGY_BRAIN 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.tblPATHOLOGY_BRAIN
 GO

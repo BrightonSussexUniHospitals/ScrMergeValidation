@@ -73,15 +73,17 @@ Description:				A stored procedure to update the tblDEMOGRAPHICS data used in th
 		SELECT @CurrentDttm = GETDATE(); EXEC Merge_DM_MatchAudit.uspProcessAudit @IsUpdate = 1, @SessionID = @@SPID, @UserID = @CurrentUser, @ProcName = @ProcIdName, @Section = @CurrentSection, @StartDttm = NULL, @EndDttm = @CurrentDttm, @Success = NULL, @ErrorMessage = NULL
 		SELECT @CurrentDttm = GETDATE(), @CurrentSection = 'update existing records'; EXEC Merge_DM_MatchAudit.uspProcessAudit @IsUpdate = 0, @SessionID = @@SPID, @UserID = @CurrentUser, @ProcName = @ProcIdName, @Section = @CurrentSection, @StartDttm = @CurrentDttm, @EndDttm = NULL, @Success = NULL, @ErrorMessage = NULL
 
-		-- Update existing match control records where a change has been detected
+		-- Update existing match control records where a change has been detected (or the record has reappeared)
 		UPDATE		mc
 		SET			mc.HashBytesValue = uh.HashBytesValue
 					,mc.ChangeLastDetected = GETDATE()
+					,mc.DeletedDttm = NULL
 		FROM		Merge_DM_Match.tblDEMOGRAPHICS_Match_Control mc
 		INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH uh
 											ON	mc.SrcSys = uh.SrcSys
 											AND	mc.Src_UID = uh.Src_UID
 		WHERE		mc.HashBytesValue != uh.HashBytesValue
+		OR			mc.DeletedDttm IS NOT NULL
 
 		SELECT @CurrentDttm = GETDATE(); EXEC Merge_DM_MatchAudit.uspProcessAudit @IsUpdate = 1, @SessionID = @@SPID, @UserID = @CurrentUser, @ProcName = @ProcIdName, @Section = @CurrentSection, @StartDttm = NULL, @EndDttm = @CurrentDttm, @Success = NULL, @ErrorMessage = NULL
 		SELECT @CurrentDttm = GETDATE(), @CurrentSection = 'deleted records'; EXEC Merge_DM_MatchAudit.uspProcessAudit @IsUpdate = 0, @SessionID = @@SPID, @UserID = @CurrentUser, @ProcName = @ProcIdName, @Section = @CurrentSection, @StartDttm = @CurrentDttm, @EndDttm = NULL, @Success = NULL, @ErrorMessage = NULL

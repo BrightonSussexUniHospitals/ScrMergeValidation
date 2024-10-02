@@ -63,7 +63,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,AdminUserID
 			,AssociatedCNSId
 			,LastLockoutDate
-  FROM [WSHT_Deduplication]..AspNetUsers
+  FROM [CancerRegister_WSHT]..AspNetUsers
 
 		UNION ALL 
 
@@ -93,5 +93,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,AdminUserID
 			,AssociatedCNSId
 			,LastLockoutDate
-  FROM [BSUH_Deduplication]..AspNetUsers
+  FROM [CancerRegister_BSUH]..AspNetUsers
 GO

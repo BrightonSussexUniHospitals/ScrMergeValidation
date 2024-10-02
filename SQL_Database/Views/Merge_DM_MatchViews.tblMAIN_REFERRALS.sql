@@ -237,7 +237,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,SharedBreach
 			,PredictedBreachYear
 			,PredictedBreachMonth
-	FROM [WSHT_Deduplication]..tblMAIN_REFERRALS
+	FROM [CancerRegister_WSHT]..tblMAIN_REFERRALS
 
 		UNION ALL 
 
@@ -441,5 +441,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,SharedBreach
 			,PredictedBreachYear
 			,PredictedBreachMonth
-	FROM [BSUH_Deduplication]..tblMAIN_REFERRALS
+	FROM [CancerRegister_BSUH]..tblMAIN_REFERRALS
 GO

@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the ltblEWINGS_CYTOGENETICS SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[ltblEWINGS_CYTOGENETICS] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblEWINGS_CYTOGENETICS 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblEWINGS_CYTOGENETICS
+
+CREATE VIEW [Merge_DM_MatchViews].[ltblEWINGS_CYTOGENETICS] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblEWINGS_CYTOGENETICS 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblEWINGS_CYTOGENETICS
 GO

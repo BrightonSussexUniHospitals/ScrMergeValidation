@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the ltblREASON_CNS_NOT_PRESENT SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[ltblREASON_CNS_NOT_PRESENT] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblREASON_CNS_NOT_PRESENT 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblREASON_CNS_NOT_PRESENT
+
+CREATE VIEW [Merge_DM_MatchViews].[ltblREASON_CNS_NOT_PRESENT] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblREASON_CNS_NOT_PRESENT 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblREASON_CNS_NOT_PRESENT
 GO

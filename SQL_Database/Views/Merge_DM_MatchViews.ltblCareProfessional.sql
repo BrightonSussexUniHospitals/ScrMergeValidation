@@ -43,7 +43,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,Description = Description COLLATE DATABASE_DEFAULT
 			,DataDictionaryCode = DataDictionaryCode COLLATE DATABASE_DEFAULT
 			,IsFasterDiagnosis
-	FROM  [WSHT_Deduplication]..ltblCareProfessional
+	FROM  [CancerRegister_WSHT]..ltblCareProfessional
 
 		UNION ALL 
 
@@ -53,5 +53,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,Description = Description COLLATE DATABASE_DEFAULT
 			,DataDictionaryCode = DataDictionaryCode COLLATE DATABASE_DEFAULT
 			,IsFasterDiagnosis
-	FROM  [BSUH_Deduplication]..ltblCareProfessional
+	FROM  [CancerRegister_BSUH]..ltblCareProfessional
 GO

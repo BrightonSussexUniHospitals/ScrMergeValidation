@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the ltblCOLORECTAL_INTRA_COMP SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[ltblCOLORECTAL_INTRA_COMP] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblCOLORECTAL_INTRA_COMP 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblCOLORECTAL_INTRA_COMP
+
+CREATE VIEW [Merge_DM_MatchViews].[ltblCOLORECTAL_INTRA_COMP] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblCOLORECTAL_INTRA_COMP 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblCOLORECTAL_INTRA_COMP
 GO

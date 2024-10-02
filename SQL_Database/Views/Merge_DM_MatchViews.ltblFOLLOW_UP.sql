@@ -42,7 +42,7 @@ Description:				Create a local config view to point at the place where the SCR
 	SELECT  CAST(1 AS tinyint) AS SrcSysID
 			,FOLLOWUP_CODE
 			,FOLLOWUP_DESC  = FOLLOWUP_DESC COLLATE DATABASE_DEFAULT
-	FROM	[WSHT_Deduplication]..ltblFOLLOW_UP
+	FROM	[CancerRegister_WSHT]..ltblFOLLOW_UP
 
 		UNION ALL 
 
@@ -51,5 +51,5 @@ Description:				Create a local config view to point at the place where the SCR
 	SELECT  CAST(2 AS tinyint) AS SrcSysID
 			,FOLLOWUP_CODE
 			,FOLLOWUP_DESC  = FOLLOWUP_DESC COLLATE DATABASE_DEFAULT
-	FROM	[BSUH_Deduplication]..ltblFOLLOW_UP
+	FROM	[CancerRegister_BSUH]..ltblFOLLOW_UP
 GO

@@ -52,7 +52,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,R_FIGO_STAGINGTYPE = R_FIGO_STAGINGTYPE COLLATE DATABASE_DEFAULT
 			,StageGynaeReportDate
 			,StageGynaeOrgID
-	FROM  [WSHT_Deduplication]..tblREFERRAL_GYNAECOLOGY
+	FROM  [CancerRegister_WSHT]..tblREFERRAL_GYNAECOLOGY
 
 		UNION ALL 
 
@@ -71,5 +71,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,R_FIGO_STAGINGTYPE = R_FIGO_STAGINGTYPE COLLATE DATABASE_DEFAULT
 			,StageGynaeReportDate
 			,StageGynaeOrgID
-	FROM  [BSUH_Deduplication]..tblREFERRAL_GYNAECOLOGY
+	FROM  [CancerRegister_BSUH]..tblREFERRAL_GYNAECOLOGY
 GO

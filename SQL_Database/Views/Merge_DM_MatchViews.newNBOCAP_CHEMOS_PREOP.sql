@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the newNBOCAP_CHEMOS_PREOP SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[newNBOCAP_CHEMOS_PREOP] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.newNBOCAP_CHEMOS_PREOP 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.newNBOCAP_CHEMOS_PREOP
+
+CREATE VIEW [Merge_DM_MatchViews].[newNBOCAP_CHEMOS_PREOP] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.newNBOCAP_CHEMOS_PREOP 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.newNBOCAP_CHEMOS_PREOP
 GO

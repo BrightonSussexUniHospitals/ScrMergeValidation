@@ -60,7 +60,7 @@ Description:				Create a local config view to point at the place where the SCR
 				,MDTLeadID					
 				,CTX						
 				,MDTDiscussionType			
-	FROM		[WSHT_Deduplication]..tblMDT_LIST
+	FROM		[CancerRegister_WSHT]..tblMDT_LIST
 
 		UNION ALL 
 
@@ -87,5 +87,5 @@ Description:				Create a local config view to point at the place where the SCR
 				,MDTLeadID					
 				,CTX						
 				,MDTDiscussionType			
-	FROM		[BSUH_Deduplication]..tblMDT_LIST
+	FROM		[CancerRegister_BSUH]..tblMDT_LIST
 GO

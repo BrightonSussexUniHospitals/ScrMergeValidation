@@ -1833,6 +1833,300 @@ Description:				A stored procedure to return the validated DM matching data for 
 				INTO		Merge_DM_Match.tblMAIN_REFERRALS_tblValidatedData
 				FROM		#ValidatedData
 
+				-- Create the unmapped copy of the persisted table
+				IF OBJECT_ID('Merge_DM_Match.tblMAIN_REFERRALS_tblValidatedData_Unmapped') IS NOT NULL DROP TABLE Merge_DM_Match.tblMAIN_REFERRALS_tblValidatedData_Unmapped
+				SELECT * INTO Merge_DM_Match.tblMAIN_REFERRALS_tblValidatedData_Unmapped FROM Merge_DM_Match.tblMAIN_REFERRALS_tblValidatedData
+
+				--	IF OBJECT_ID('Merge_DM_Match.tblMAIN_REFERRALS_tblValidatedData') IS NOT NULL DROP TABLE Merge_DM_Match.tblMAIN_REFERRALS_tblValidatedData
+				--	SELECT * INTO Merge_DM_Match.tblMAIN_REFERRALS_tblValidatedData FROM Merge_DM_Match.tblMAIN_REFERRALS_tblValidatedData_Unmapped
+
+
+				/***************************************************************************************************************************************************************************************************************/
+				-- Get column names and FK details of the persisted table
+				/***************************************************************************************************************************************************************************************************************/
+
+				-- Get a list of column names in the tblMAIN_REFERRALS table with any FK details
+				IF OBJECT_ID('tempdb..#ColumnValueChanges') IS NOT NULL DROP TABLE #ColumnValueChanges
+				SELECT		C.column_id
+							,c.name AS ColumnName
+							,c_type.name AS TypeName
+							,OBJECT_NAME(fkc.constraint_object_id) AS FK_Name
+							,OBJECT_NAME(fkc.referenced_object_id) AS FK_Table
+							,CAST(NULL AS BIT) AS HasValueChanges
+				INTO		#ColumnValueChanges
+				FROM		CancerRegister_BSUH.sys.schemas s
+				INNER JOIN	CancerRegister_BSUH.sys.tables t
+										ON	s.schema_id = t.schema_id
+				INNER JOIN	CancerRegister_BSUH.sys.columns c
+										ON	t.object_id = c.object_id
+				INNER JOIN	CancerRegister_BSUH.sys.types c_type
+											ON	c.user_type_id = c_type.user_type_id
+				LEFT JOIN	CancerRegister_BSUH.sys.foreign_key_columns fkc
+													ON	c.column_id = fkc.parent_column_id
+													AND	t.object_id = fkc.parent_object_id
+				WHERE		s.name = 'dbo'
+				AND			t.name = 'tblMAIN_REFERRALS'
+				AND			c_type.name NOT IN ('smalldatetime','datetime','text','bit','decimal')
+				ORDER BY	c.column_id
+
+
+				/***************************************************************************************************************************************************************************************************************/
+				-- Find columns that have changed in the standard mapping process and assign foreign key tables to them too
+				/***************************************************************************************************************************************************************************************************************/
+
+				-- Loop through each column in the tblMAIN_REFERRALS table to see which values have mappings in the SCR_DW merged version
+				-- These are the columns that will need mapping
+				DECLARE @Column_id INT = 1
+				DECLARE @SQL VARCHAR(MAX)
+
+				WHILE @Column_id <= (SELECT MAX(column_id) FROM #ColumnValueChanges)
+				BEGIN
+						-- Create and execute the dynamic SQL for each column in the #ColumnValueChanges table
+						SELECT		@SQL = 
+											'UPDATE		cvc ' + CHAR(13) +
+											'SET			cvc.HasValueChanges =	(SELECT		CAST(COUNT(*) AS BIT) ' + CHAR(13) +
+											'									FROM		CancerRegister_BSUH.dbo.tblMAIN_REFERRALS pre_ref ' + CHAR(13) +
+											'									INNER JOIN	SCR_DW.SCR.dbo_tblMAIN_REFERRALS dw_ref ' + CHAR(13) +
+											'																						ON	pre_ref.CARE_ID = dw_ref.DW_SOURCE_ID ' + CHAR(13) +
+											'																						AND	dw_ref.DW_SOURCE_SYSTEM_ID = 2 ' + CHAR(13) +
+											'									WHERE		pre_ref.' + cvc.ColumnName + ' != dw_ref.' + cvc.ColumnName + ') ' + CHAR(13) +
+											'FROM		#ColumnValueChanges cvc ' + CHAR(13) +
+											'WHERE		cvc.column_id = ' + CAST(cvc.column_id AS VARCHAR(255)) + ' ' + CHAR(13) + CHAR(13)
+						FROM		#ColumnValueChanges cvc
+						WHERE		cvc.column_id = @Column_id
+
+						PRINT @SQL
+						EXEC (@SQL)
+
+						-- Increment the @Column_id counter
+						SET @Column_id += 1
+
+				END
+
+				-- Update FK table name for CARE_ID
+				UPDATE		cvc
+				SET			cvc.FK_Table = 'tblMAIN_REFERRALS'
+				FROM		#ColumnValueChanges cvc
+				WHERE		cvc.ColumnName = 'CARE_ID'
+
+				-- Update FK table name for SOURCE_CARE_ID
+				UPDATE		cvc
+				SET			cvc.FK_Table = 'tblMAIN_REFERRALS'
+				FROM		#ColumnValueChanges cvc
+				WHERE		cvc.ColumnName = 'SOURCE_CARE_ID'
+
+				-- Update FK table name for PATIENT_ID
+				UPDATE		cvc
+				SET			cvc.FK_Table = 'tblDEMOGRAPHICS'
+				FROM		#ColumnValueChanges cvc
+				WHERE		cvc.ColumnName = 'PATIENT_ID'
+
+				-- Update FK table name for ReferringGP
+				UPDATE		cvc
+				SET			cvc.FK_Table = 'GP'
+				FROM		#ColumnValueChanges cvc
+				WHERE		cvc.ColumnName = 'ReferringGP'
+
+				-- Update FK table name for ReferringPractice
+				UPDATE		cvc
+				SET			cvc.FK_Table = 'Practice'
+				FROM		#ColumnValueChanges cvc
+				WHERE		cvc.ColumnName = 'ReferringPractice'
+
+				-- Update FK table name for ACTION_ID
+				UPDATE		cvc
+				SET			cvc.FK_Table = 'tblAUDIT'
+				FROM		#ColumnValueChanges cvc
+				WHERE		cvc.ColumnName = 'ACTION_ID'
+
+				-- Update FK table name for DIAGNOSIS_ACTION_ID
+				UPDATE		cvc
+				SET			cvc.FK_Table = 'tblAUDIT'
+				FROM		#ColumnValueChanges cvc
+				WHERE		cvc.ColumnName = 'DIAGNOSIS_ACTION_ID'
+
+				-- Update FK table name for ORIGINAL_SOURCE_CARE_ID
+				UPDATE		cvc
+				SET			cvc.FK_Table = 'tblMAIN_REFERRALS'
+				FROM		#ColumnValueChanges cvc
+				WHERE		cvc.ColumnName = 'ORIGINAL_SOURCE_CARE_ID'
+
+				-- Update FK table name for TNMOrganisation
+				UPDATE		cvc
+				SET			cvc.FK_Table = 'OrganisationSites'
+				FROM		#ColumnValueChanges cvc
+				WHERE		cvc.ColumnName = 'TNMOrganisation'
+
+				-- Update FK table name for TNMOrganisation_Integrated
+				UPDATE		cvc
+				SET			cvc.FK_Table = 'OrganisationSites'
+				FROM		#ColumnValueChanges cvc
+				WHERE		cvc.ColumnName = 'TNMOrganisation_Integrated'
+
+				-- Update FK table name for FasterDiagnosisOrganisationID
+				UPDATE		cvc
+				SET			cvc.FK_Table = 'OrganisationSites'
+				FROM		#ColumnValueChanges cvc
+				WHERE		cvc.ColumnName = 'FasterDiagnosisOrganisationID'
+
+				-- Update FK table name for LabReportOrgID
+				UPDATE		cvc
+				SET			cvc.FK_Table = 'OrganisationSites'
+				FROM		#ColumnValueChanges cvc
+				WHERE		cvc.ColumnName = 'LabReportOrgID'
+
+
+				/***************************************************************************************************************************************************************************************************************/
+				-- Look at the value range for the remaining unassigned columns
+				/***************************************************************************************************************************************************************************************************************/
+				/*
+				
+				SELECT * FROM #ColumnValueChanges WHERE HasValueChanges = 1 ORDER BY Column_id
+				
+				-- Check the value range for columns not assigned to a foreign key
+				IF OBJECT_ID('tempdb..#UnassignedColumnCheck') IS NOT NULL DROP TABLE #UnassignedColumnCheck
+				SELECT		IDENTITY(INT,1,1) AS UnassignedColumnCheck_id
+							,cvc.ColumnName
+				INTO		#UnassignedColumnCheck
+				FROM		#ColumnValueChanges cvc
+				WHERE		cvc.FK_Table IS NULL
+				--WHERE		cvc.HasValueChanges = 1
+				--OR			cvc.FK_Table IS NOT NULL
+				ORDER BY	cvc.column_id
+
+				-- Loop through each column in the tblMAIN_REFERRALS table to see the value range for unassigned columns
+				DECLARE @UnassignedColumnCheck_id INT = 1
+				DECLARE @SQL_UnassignedColumnCheck VARCHAR(MAX)
+
+				WHILE @UnassignedColumnCheck_id <= (SELECT MAX(UnassignedColumnCheck_id) FROM #UnassignedColumnCheck)
+				BEGIN
+						-- Create and execute the dynamic SQL for each column in the #ColumnValueChanges table
+						SELECT		@SQL_UnassignedColumnCheck = 'SELECT DISTINCT ''' + ucc.ColumnName + ''' AS ColumnName, ' + ucc.ColumnName + ' FROM CancerRegister_BSUH.dbo.tblMAIN_REFERRALS '
+						FROM		#UnassignedColumnCheck ucc
+						WHERE		ucc.UnassignedColumnCheck_id = @UnassignedColumnCheck_id
+
+						PRINT @SQL_UnassignedColumnCheck
+						EXEC (@SQL_UnassignedColumnCheck)
+
+						-- Increment the @Column_id counter
+						SET @UnassignedColumnCheck_id += 1
+
+				END
+				*/
+
+
+				/***************************************************************************************************************************************************************************************************************/
+				-- Prepare temporary versions of the tables we want to map to
+				/***************************************************************************************************************************************************************************************************************/
+
+
+				IF OBJECT_ID('tempdb..#tblMAIN_REFERRALS') IS NOT NULL DROP TABLE #tblMAIN_REFERRALS
+				IF OBJECT_ID('tempdb..#tblAUDIT') IS NOT NULL DROP TABLE #tblAUDIT
+				IF OBJECT_ID('tempdb..#tblDEMOGRAPHICS') IS NOT NULL DROP TABLE #tblDEMOGRAPHICS
+				IF OBJECT_ID('tempdb..#Practice') IS NOT NULL DROP TABLE #Practice
+				IF OBJECT_ID('tempdb..#GP') IS NOT NULL DROP TABLE #GP
+				IF OBJECT_ID('tempdb..#OrganisationSites') IS NOT NULL DROP TABLE #OrganisationSites
+
+				SELECT		ISNULL(DW_SOURCE_PATIENT_ID, DW_SOURCE_ID) AS DW_SOURCE_ID
+							,CARE_ID
+							,CARE_ID AS SOURCE_CARE_ID
+							,CARE_ID AS ORIGINAL_SOURCE_CARE_ID
+				INTO		#tblMAIN_REFERRALS
+				FROM		SCR_DW.SCR.dbo_tblMAIN_REFERRALS
+				WHERE		(DW_SOURCE_ID != DW_SOURCE_PATIENT_ID
+				AND			DW_SOURCE_SYSTEM_ID = 1)
+				OR			DW_SOURCE_SYSTEM_ID = 2
+
+				SELECT		ISNULL(DW_SOURCE_PATIENT_ID, DW_SOURCE_ID) AS DW_SOURCE_ID
+							,ACTION_ID
+							,ACTION_ID AS DIAGNOSIS_ACTION_ID
+				INTO		#tblAUDIT
+				FROM		SCR_DW.SCR.dbo_tblAUDIT
+				WHERE		(DW_SOURCE_ID != DW_SOURCE_PATIENT_ID
+				AND			DW_SOURCE_SYSTEM_ID = 1)
+				OR			DW_SOURCE_SYSTEM_ID = 2
+
+
+				SELECT		ISNULL(DW_SOURCE_PATIENT_ID, DW_SOURCE_ID) AS DW_SOURCE_ID
+							,PATIENT_ID
+				INTO		#tblDEMOGRAPHICS
+				FROM		SCR_DW.SCR.dbo_tblDEMOGRAPHICS
+				WHERE		(DW_SOURCE_ID != DW_SOURCE_PATIENT_ID
+				AND			DW_SOURCE_SYSTEM_ID = 1)
+				OR			DW_SOURCE_SYSTEM_ID = 2
+
+
+				SELECT		ISNULL(DW_SOURCE_PATIENT_ID, DW_SOURCE_ID) AS DW_SOURCE_ID
+							,ID AS ReferringPractice
+				INTO		#Practice
+				FROM		SCR_DW.SCR.dbo_Practice
+				WHERE		(DW_SOURCE_ID != DW_SOURCE_PATIENT_ID
+				AND			DW_SOURCE_SYSTEM_ID = 1)
+				OR			DW_SOURCE_SYSTEM_ID = 2
+
+
+				SELECT		ISNULL(DW_SOURCE_PATIENT_ID, DW_SOURCE_ID) AS DW_SOURCE_ID
+							,ID AS ReferringGP
+				INTO		#GP
+				FROM		SCR_DW.SCR.dbo_GP
+				WHERE		(DW_SOURCE_ID != DW_SOURCE_PATIENT_ID
+				AND			DW_SOURCE_SYSTEM_ID = 1)
+				OR			DW_SOURCE_SYSTEM_ID = 2
+
+
+				SELECT		ISNULL(DW_SOURCE_PATIENT_ID, DW_SOURCE_ID) AS DW_SOURCE_ID
+							,ID AS FasterDiagnosisOrganisationID
+							,ID AS TNMOrganisation
+							,ID AS TNMOrganisation_Integrated
+							,ID AS LabReportOrgID
+				INTO		#OrganisationSites
+				FROM		SCR_DW.SCR.dbo_OrganisationSites
+				WHERE		(DW_SOURCE_ID != DW_SOURCE_PATIENT_ID
+				AND			DW_SOURCE_SYSTEM_ID = 1)
+				OR			DW_SOURCE_SYSTEM_ID = 2
+
+
+				/***************************************************************************************************************************************************************************************************************/
+				-- Run the mapping
+				/***************************************************************************************************************************************************************************************************************/
+
+				IF OBJECT_ID('tempdb..#ColumnMapping') IS NOT NULL DROP TABLE #ColumnMapping
+				SELECT		IDENTITY(INT,1,1) AS ColumnMappingID
+							,cvc.ColumnName
+							,cvc.FK_Table
+				INTO		#ColumnMapping
+				FROM		#ColumnValueChanges cvc
+				WHERE		cvc.HasValueChanges = 1
+				ORDER BY	cvc.column_id
+
+
+				-- Loop through each column in the tblMAIN_REFERRALS table that needs column value mapping
+				DECLARE @ColumnMappingID INT = 1
+				DECLARE @SQL_ColumnMapping VARCHAR(MAX)
+
+				WHILE @ColumnMappingID <= (SELECT MAX(ColumnMappingID) FROM #ColumnMapping)
+				BEGIN
+						-- Create and execute the dynamic SQL for each column in the #ColumnValueChanges table
+						SELECT		@SQL_ColumnMapping = 
+										'UPDATE		ref_vd ' + CHAR(13) +
+										'SET			' + cm.ColumnName + ' = dw_map.' + cm.ColumnName + ' ' + CHAR(13) +
+										'FROM		Merge_DM_Match.tblMAIN_REFERRALS_tblValidatedData ref_vd ' + CHAR(13) +
+										'INNER JOIN	#' + cm.FK_Table + ' dw_map ' + CHAR(13) +
+										'													ON	ref_vd.' + cm.ColumnName + ' = dw_map.DW_SOURCE_ID ' + CHAR(13) +
+										'WHERE		ref_vd.SrcSys = 2 ' + CHAR(13) + CHAR(13)
+						FROM		#ColumnMapping cm
+						WHERE		cm.ColumnMappingID = @ColumnMappingID
+
+						PRINT @SQL_ColumnMapping
+						EXEC (@SQL_ColumnMapping)
+
+						-- Increment the @Column_id counter
+						SET @ColumnMappingID += 1
+
+				END
+
+
+
 		END
 
 		-- Output the table dataset

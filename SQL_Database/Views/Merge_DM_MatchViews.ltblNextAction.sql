@@ -42,7 +42,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,ID
 			,Description = Description COLLATE DATABASE_DEFAULT
 			,IsDeleted
-	FROM  [WSHT_Deduplication]..ltblNextAction
+	FROM  [CancerRegister_WSHT]..ltblNextAction
 
 		UNION ALL 
 
@@ -51,5 +51,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,ID
 			,Description = Description COLLATE DATABASE_DEFAULT
 			,IsDeleted
-	FROM  [BSUH_Deduplication]..ltblNextAction
+	FROM  [CancerRegister_BSUH]..ltblNextAction
 GO

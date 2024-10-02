@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the tblASSESSMENT_UROLOGY SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[tblASSESSMENT_UROLOGY] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.tblASSESSMENT_UROLOGY 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.tblASSESSMENT_UROLOGY
+
+CREATE VIEW [Merge_DM_MatchViews].[tblASSESSMENT_UROLOGY] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.tblASSESSMENT_UROLOGY 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.tblASSESSMENT_UROLOGY
 GO

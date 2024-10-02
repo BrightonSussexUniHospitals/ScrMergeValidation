@@ -44,7 +44,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,ORDER_BY
 			,EventTumourType = EventTumourType COLLATE DATABASE_DEFAULT
 			,IsFirstTreatment
-	FROM  [WSHT_Deduplication]..ltblTREATMENT_EVENT
+	FROM  [CancerRegister_WSHT]..ltblTREATMENT_EVENT
 
 		UNION ALL 
 
@@ -55,5 +55,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,ORDER_BY
 			,EventTumourType = EventTumourType COLLATE DATABASE_DEFAULT
 			,IsFirstTreatment
-	FROM  [BSUH_Deduplication]..ltblTREATMENT_EVENT
+	FROM  [CancerRegister_BSUH]..ltblTREATMENT_EVENT
 GO

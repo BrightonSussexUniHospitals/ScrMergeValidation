@@ -41,7 +41,7 @@ Description:				Create a local config view to point at the place where the SCR
 	SELECT  CAST(1 AS tinyint) AS SrcSysID
 			,TRANSFER_CODE
 			,TRANSFER_DESC = TRANSFER_DESC COLLATE DATABASE_DEFAULT
-	FROM  [WSHT_Deduplication]..ltblTRANSFER_REASON
+	FROM  [CancerRegister_WSHT]..ltblTRANSFER_REASON
 
 		UNION ALL 
 
@@ -49,5 +49,5 @@ Description:				Create a local config view to point at the place where the SCR
 	SELECT  CAST(2 AS tinyint) AS SrcSysID
 			,TRANSFER_CODE
 			,TRANSFER_DESC = TRANSFER_DESC COLLATE DATABASE_DEFAULT
-	FROM  [BSUH_Deduplication]..ltblTRANSFER_REASON
+	FROM  [CancerRegister_BSUH]..ltblTRANSFER_REASON
 GO

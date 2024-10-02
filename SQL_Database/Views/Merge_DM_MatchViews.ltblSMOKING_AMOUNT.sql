@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the ltblSMOKING_AMOUNT SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[ltblSMOKING_AMOUNT] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblSMOKING_AMOUNT 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblSMOKING_AMOUNT
+
+CREATE VIEW [Merge_DM_MatchViews].[ltblSMOKING_AMOUNT] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblSMOKING_AMOUNT 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblSMOKING_AMOUNT
 GO

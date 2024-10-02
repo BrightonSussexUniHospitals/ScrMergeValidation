@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the ltblCYTOGENETIC_RISK_CODE SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[ltblCYTOGENETIC_RISK_CODE] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblCYTOGENETIC_RISK_CODE 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblCYTOGENETIC_RISK_CODE
+
+CREATE VIEW [Merge_DM_MatchViews].[ltblCYTOGENETIC_RISK_CODE] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblCYTOGENETIC_RISK_CODE 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblCYTOGENETIC_RISK_CODE
 GO

@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the tblRDCClinicalTriageDiagnosticTesting SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[tblRDCClinicalTriageDiagnosticTesting] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.tblRDCClinicalTriageDiagnosticTesting 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.tblRDCClinicalTriageDiagnosticTesting
+
+CREATE VIEW [Merge_DM_MatchViews].[tblRDCClinicalTriageDiagnosticTesting] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.tblRDCClinicalTriageDiagnosticTesting 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.tblRDCClinicalTriageDiagnosticTesting
 GO

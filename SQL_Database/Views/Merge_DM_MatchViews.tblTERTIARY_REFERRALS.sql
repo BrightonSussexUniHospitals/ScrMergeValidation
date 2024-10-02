@@ -48,7 +48,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,ACTION_ID
 			,IsTransferOfCare
 			,PayloadID
-	FROM	[WSHT_Deduplication]..tblTERTIARY_REFERRALS
+	FROM	[CancerRegister_WSHT]..tblTERTIARY_REFERRALS
 
 		UNION ALL 
 
@@ -63,5 +63,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,ACTION_ID
 			,IsTransferOfCare
 			,PayloadID
-	FROM	[BSUH_Deduplication]..tblTERTIARY_REFERRALS
+	FROM	[CancerRegister_BSUH]..tblTERTIARY_REFERRALS
 GO

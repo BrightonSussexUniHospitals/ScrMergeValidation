@@ -43,7 +43,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,REASON_DESC = REASON_DESC COLLATE DATABASE_DEFAULT
 			,CWTCode = CWTCode COLLATE DATABASE_DEFAULT
 			,IsDeleted
-	FROM  [WSHT_Deduplication]..ltblTERTIARY_REASON
+	FROM  [CancerRegister_WSHT]..ltblTERTIARY_REASON
 
 		UNION ALL 
 
@@ -53,5 +53,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,REASON_DESC = REASON_DESC COLLATE DATABASE_DEFAULT
 			,CWTCode = CWTCode COLLATE DATABASE_DEFAULT
 			,IsDeleted
-	FROM  [BSUH_Deduplication]..ltblTERTIARY_REASON
+	FROM  [CancerRegister_BSUH]..ltblTERTIARY_REASON
 GO

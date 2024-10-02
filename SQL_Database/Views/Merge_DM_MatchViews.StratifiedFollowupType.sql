@@ -42,7 +42,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,ID
 			,Description = Description COLLATE DATABASE_DEFAULT
 			,IsProfessional
-	FROM	[WSHT_Deduplication]..StratifiedFollowupType
+	FROM	[CancerRegister_WSHT]..StratifiedFollowupType
 
 		UNION ALL 
 
@@ -51,5 +51,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,ID
 			,Description = Description COLLATE DATABASE_DEFAULT
 			,IsProfessional
-	FROM	[BSUH_Deduplication]..StratifiedFollowupType
+	FROM	[CancerRegister_BSUH]..StratifiedFollowupType
 GO

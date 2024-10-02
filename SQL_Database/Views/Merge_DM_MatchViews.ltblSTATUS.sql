@@ -49,7 +49,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,NoTreatment
 			,SuspectedRecurrence
 			,NoSubsequentTreatmentPlanned
-	FROM  [WSHT_Deduplication]..ltblSTATUS
+	FROM  [CancerRegister_WSHT]..ltblSTATUS
 
 		UNION ALL 
 
@@ -65,5 +65,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,NoTreatment
 			,SuspectedRecurrence
 			,NoSubsequentTreatmentPlanned
-	FROM  [BSUH_Deduplication]..ltblSTATUS
+	FROM  [CancerRegister_BSUH]..ltblSTATUS
 GO

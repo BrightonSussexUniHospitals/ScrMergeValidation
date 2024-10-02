@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the ltblBRAIN_IMAGING_TYPE SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[ltblBRAIN_IMAGING_TYPE] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblBRAIN_IMAGING_TYPE 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblBRAIN_IMAGING_TYPE
+
+CREATE VIEW [Merge_DM_MatchViews].[ltblBRAIN_IMAGING_TYPE] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblBRAIN_IMAGING_TYPE 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblBRAIN_IMAGING_TYPE
 GO

@@ -42,7 +42,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,STAGE_CODE
 			,STAGE_DESC = STAGE_DESC COLLATE DATABASE_DEFAULT
 			,STAGE_VALUE = STAGE_VALUE COLLATE DATABASE_DEFAULT
-	FROM  [WSHT_Deduplication]..ltblHAEM_BINET
+	FROM  [CancerRegister_WSHT]..ltblHAEM_BINET
 
 		UNION ALL 
 
@@ -51,5 +51,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,STAGE_CODE
 			,STAGE_DESC = STAGE_DESC COLLATE DATABASE_DEFAULT
 			,STAGE_VALUE = STAGE_VALUE COLLATE DATABASE_DEFAULT
-	FROM  [BSUH_Deduplication]..ltblHAEM_BINET
+	FROM  [CancerRegister_BSUH]..ltblHAEM_BINET
 GO

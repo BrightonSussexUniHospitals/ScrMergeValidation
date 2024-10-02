@@ -60,7 +60,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,ForPTLDiscuss
 			,DateActionCompleted
 
-	FROM	[WSHT_Deduplication]..tblPathwayUpdateEvents
+	FROM	[CancerRegister_WSHT]..tblPathwayUpdateEvents
 
 		UNION ALL 
 
@@ -87,5 +87,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,ForPTLDiscuss
 			,DateActionCompleted
 
-	FROM	[BSUH_Deduplication]..tblPathwayUpdateEvents
+	FROM	[CancerRegister_BSUH]..tblPathwayUpdateEvents
 GO

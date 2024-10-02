@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the NOGCANutritionalSupportonDischarge SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[NOGCANutritionalSupportonDischarge] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.NOGCANutritionalSupportonDischarge 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.NOGCANutritionalSupportonDischarge
+
+CREATE VIEW [Merge_DM_MatchViews].[NOGCANutritionalSupportonDischarge] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.NOGCANutritionalSupportonDischarge 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.NOGCANutritionalSupportonDischarge
 GO

@@ -52,7 +52,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,IS_DELETED
 			,UNKNOWN
 			,ProfessionalRegistrationBody
-	FROM  [WSHT_Deduplication]..ltblCONSULTANTS
+	FROM  [CancerRegister_WSHT]..ltblCONSULTANTS
 
 		UNION ALL 
 
@@ -71,5 +71,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,IS_DELETED
 			,UNKNOWN
 			,ProfessionalRegistrationBody
-	FROM  [BSUH_Deduplication]..ltblCONSULTANTS
+	FROM  [CancerRegister_BSUH]..ltblCONSULTANTS
 GO

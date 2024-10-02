@@ -158,7 +158,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,RegisteredPractice
 			,RegisteredGP
 			,PersonSexualOrientation
-	FROM  [WSHT_Deduplication]..tblDEMOGRAPHICS
+	FROM  [CancerRegister_WSHT]..tblDEMOGRAPHICS
 
 		UNION ALL 
 
@@ -283,5 +283,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,RegisteredPractice
 			,RegisteredGP
 			,PersonSexualOrientation
-	FROM  [BSUH_Deduplication]..tblDEMOGRAPHICS
+	FROM  [CancerRegister_BSUH]..tblDEMOGRAPHICS
 GO

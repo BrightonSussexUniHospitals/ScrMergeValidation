@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the ltblPAL_PREV_SPEC_SUPPORT SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[ltblPAL_PREV_SPEC_SUPPORT] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblPAL_PREV_SPEC_SUPPORT 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblPAL_PREV_SPEC_SUPPORT
+
+CREATE VIEW [Merge_DM_MatchViews].[ltblPAL_PREV_SPEC_SUPPORT] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblPAL_PREV_SPEC_SUPPORT 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblPAL_PREV_SPEC_SUPPORT
 GO

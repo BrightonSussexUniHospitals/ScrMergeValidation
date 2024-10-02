@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the tmpCOSD_CORE_DATA SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[tmpCOSD_CORE_DATA] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.tmpCOSD_CORE_DATA 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.tmpCOSD_CORE_DATA
+
+CREATE VIEW [Merge_DM_MatchViews].[tmpCOSD_CORE_DATA] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.tmpCOSD_CORE_DATA 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.tmpCOSD_CORE_DATA
 GO

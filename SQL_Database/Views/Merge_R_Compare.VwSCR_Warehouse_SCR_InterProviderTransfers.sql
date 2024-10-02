@@ -10,6 +10,7 @@ GO
 
 
 
+
 CREATE VIEW [Merge_R_Compare].[VwSCR_Warehouse_SCR_InterProviderTransfers]
 AS
 
@@ -43,7 +44,7 @@ SELECT		 pre.SrcSysID AS OrigSrcSysID
 			,pre.TertiaryReferralID AS OrigTertiaryReferralID
 			,dwtr.TertiaryReferralID
 			,pre.CareID AS OrigCARE_ID
-			,dwref.CARE_ID AS CareID
+			,renum_mainref_major.CARE_ID AS CareID
 			,ipt_aud.ACTION_ID 
 			,pre.SCR_IPTTypeCode
 			,pre.SCR_IPTTypeDesc
@@ -77,6 +78,12 @@ FROM		SCR_Warehouse.SCR_InterProviderTransfers pre
 LEFT JOIN	SCR_DW.SCR.dbo_tblMAIN_REFERRALS dwref
 											ON	pre.CareID = dwref.DW_SOURCE_ID
 											AND pre.SrcSysID = dwref.DW_SOURCE_SYSTEM_ID
+LEFT JOIN	SCR_ETL.map.tblMAIN_REFERRALS_tblValidatedData ref_vd_minor
+																			ON	pre.SrcSysId = ref_vd_minor.SrcSys
+																			AND	pre.CareID = ref_vd_minor.Src_UID
+INNER JOIN	SCR_DW.SCR.dbo_tblMAIN_REFERRALS renum_mainref_major
+																ON	ref_vd_minor.Src_UID_MajorExt = renum_mainref_major.DW_SOURCE_ID
+																AND ref_vd_minor.SrcSys_MajorExt = renum_mainref_major.DW_SOURCE_SYSTEM_ID
 
 LEFT JOIN 	SCR_DW.SCR.dbo_tblTERTIARY_REFERRALS dwtr
 											ON pre.TertiaryReferralID = dwtr.DW_SOURCE_ID
@@ -94,6 +101,7 @@ LEFT JOIN	CancerReporting_PREMERGE.LocalConfig.tblAUDIT user_aud
 														ON pre.ACTION_ID = user_aud.ACTION_ID
 														AND pre.SrcSysID = user_aud.SrcSysID
 LEFT JOIN	SCR_DW.SCR.dbo_AspNetUsers dwusers
-										ON LOWER(user_aud.USER_ID) = dwusers.UserName
-										
+										ON	user_aud.SrcSysID = dwusers.DW_SOURCE_SYSTEM_ID
+										AND	LOWER(user_aud.USER_ID) = dwusers.DW_SOURCE_ID
+
 GO

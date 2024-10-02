@@ -278,7 +278,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,L_ALP_TEST_RESULT = L_ALP_TEST_RESULT COLLATE DATABASE_DEFAULT
 			,PiradsCategoryId
 			,LikertScoreId
-	FROM	[WSHT_Deduplication]..tblMAIN_IMAGING
+	FROM	[CancerRegister_WSHT]..tblMAIN_IMAGING
 
 		UNION ALL 
 
@@ -523,5 +523,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,L_ALP_TEST_RESULT = L_ALP_TEST_RESULT COLLATE DATABASE_DEFAULT
 			,PiradsCategoryId
 			,LikertScoreId
-	FROM	[BSUH_Deduplication]..tblMAIN_IMAGING
+	FROM	[CancerRegister_BSUH]..tblMAIN_IMAGING
 GO

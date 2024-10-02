@@ -49,7 +49,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,DATE_BIRTH
 			,CANCER_SITE = CANCER_SITE COLLATE DATABASE_DEFAULT
 			,SECTION_DELETED = SECTION_DELETED COLLATE DATABASE_DEFAULT
-	FROM  [WSHT_Deduplication]..tblAUDIT_DELETIONS
+	FROM  [CancerRegister_WSHT]..tblAUDIT_DELETIONS
 
 		UNION ALL 
 
@@ -65,5 +65,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,DATE_BIRTH
 			,CANCER_SITE = CANCER_SITE COLLATE DATABASE_DEFAULT
 			,SECTION_DELETED = SECTION_DELETED COLLATE DATABASE_DEFAULT
-	FROM  [BSUH_Deduplication]..tblAUDIT_DELETIONS
+	FROM  [CancerRegister_BSUH]..tblAUDIT_DELETIONS
 GO

@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the ltblCOMORBIDITY_INDEX SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[ltblCOMORBIDITY_INDEX] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblCOMORBIDITY_INDEX 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblCOMORBIDITY_INDEX
+
+CREATE VIEW [Merge_DM_MatchViews].[ltblCOMORBIDITY_INDEX] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblCOMORBIDITY_INDEX 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblCOMORBIDITY_INDEX
 GO

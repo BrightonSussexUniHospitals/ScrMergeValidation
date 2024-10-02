@@ -42,7 +42,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,TertiaryReferralID
 			,DateSent
 			,RootCauseSentComments = RootCauseSentComments COLLATE DATABASE_DEFAULT
-	FROM	[WSHT_Deduplication]..tblTERTIARY_REFERRALS_SENT
+	FROM	[CancerRegister_WSHT]..tblTERTIARY_REFERRALS_SENT
 
 		UNION ALL 
 
@@ -51,5 +51,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,TertiaryReferralID
 			,DateSent
 			,RootCauseSentComments = RootCauseSentComments COLLATE DATABASE_DEFAULT
-	FROM	[BSUH_Deduplication]..tblTERTIARY_REFERRALS_SENT
+	FROM	[CancerRegister_BSUH]..tblTERTIARY_REFERRALS_SENT
 GO

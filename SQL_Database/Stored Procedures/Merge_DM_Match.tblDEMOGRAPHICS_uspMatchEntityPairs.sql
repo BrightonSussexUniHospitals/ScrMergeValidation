@@ -1517,6 +1517,328 @@ Description:				A stored procedure to match tblDEMOGRAPHICS records from differe
 				
 						/*########################################################################################################################################################################################################################*/
 
+						/* Match type 13 ##########################################################################################################################################################################################################*/
+
+						-- Refresh the match variables and set the columns we want to match
+						SELECT	@MatchIntention = NULL, @MatchType = NULL, @SQL = NULL, @IsMostRecent = NULL, @OriginalNhsNo = NULL, @NhsNumber = NULL, @OriginalPasId = NULL, @PasId = NULL, @CasenoteId = NULL, @DoB = NULL, @DoD = NULL, @Surname = NULL
+								, @Forename = NULL, @Postcode = NULL, @Sex = NULL, @Address1 = NULL, @Address2 = NULL, @Address3 = NULL, @Address4 = NULL, @Address5 = NULL, @DeathStatus = NULL, @Title = NULL, @Ethnicity = NULL, @ReligionCode = NULL
+
+						SELECT	-- Required variables
+								@MatchIntention = 'Validation'
+								,@MatchType = 13
+								-- Only set the variables for columns you want to match
+								,@OriginalPasId	= Merge_DM_Match.tblDEMOGRAPHICS_fnCompare('OriginalPasId',1,NULL,NULL)
+								,@OriginalNhsNo	= Merge_DM_Match.tblDEMOGRAPHICS_fnCompare('OriginalNhsNo',1,NULL,NULL)
+
+
+						SET @SQL =								'SELECT		A.IsSCR ' + CHAR(13) +
+																'			,A.SrcSys ' + CHAR(13) +
+																'			,A.Src_UID ' + CHAR(13) +
+																'			,B.IsSCR ' + CHAR(13) +
+																'			,B.SrcSys ' + CHAR(13) +
+																'			,B.Src_UID ' + CHAR(13) +
+																'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
+																'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
+																'FROM		#tblDEMOGRAPHICS_Incremental A ' + CHAR(13) +
+																'INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH B ' + CHAR(13) +
+																'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + CHAR(13) + -- Don't self join
+						CASE WHEN @LoopCounter > 1		THEN	'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
+						CASE WHEN @IsMostRecent = 1		THEN	'									AND A.IsMostRecent	= B.IsMostRecent ' + CHAR(13) ELSE '' END +
+						CASE WHEN @NhsNumber = 1		THEN	'									AND A.NhsNumber		= B.NhsNumber ' + CHAR(13) ELSE '' END +
+						CASE WHEN @OriginalNhsNo = 1	THEN	'									AND A.OriginalNhsNo	= B.OriginalNhsNo ' + CHAR(13) ELSE '' END +
+						CASE WHEN @OriginalPasId = 1	THEN	'									AND A.OriginalPasId	= B.OriginalPasId ' + CHAR(13) ELSE '' END +
+						CASE WHEN @PasId = 1			THEN	'									AND A.PasId			= B.PasId ' + CHAR(13) ELSE '' END +
+						CASE WHEN @CasenoteId = 1		THEN	'									AND A.CasenoteId	= B.CasenoteId ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DoB = 1				THEN	'									AND A.DoB			= B.DoB ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DoD = 1				THEN	'									AND A.DoD			= B.DoD ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Surname = 1			THEN	'									AND A.Surname		= B.Surname ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Forename = 1			THEN	'									AND A.Forename		= B.Forename ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Postcode = 1			THEN	'									AND A.Postcode		= B.Postcode ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Sex = 1				THEN	'									AND A.Sex			= B.Sex ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address1 = 1			THEN	'									AND A.Address1		= B.Address1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address2 = 1			THEN	'									AND A.Address2		= B.Address2 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address3 = 1			THEN	'									AND A.Address3		= B.Address3 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address4 = 1			THEN	'									AND A.Address4		= B.Address4 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address5 = 1			THEN	'									AND A.Address5		= B.Address5 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DeathStatus = 1		THEN	'									AND A.DeathStatus	= B.DeathStatus ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Title = 1			THEN	'									AND A.Title			= B.Title ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Ethnicity = 1		THEN	'									AND A.Ethnicity		= B.Ethnicity ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ReligionCode = 1		THEN	'									AND A.ReligionCode	= B.ReligionCode ' + CHAR(13) ELSE '' END +
+
+																'WHERE		1 = 1 ' + CHAR(13) +
+						CASE WHEN @NhsNumber > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''NhsNumber''		,0, A.NhsNumber		, B.NhsNumber		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @IsMostRecent > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''IsMostRecent''	,0, A.IsMostRecent	, B.IsMostRecent	) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @OriginalNhsNo > 1	THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''OriginalNhsNo''	,0, A.OriginalNhsNo	, B.OriginalNhsNo	) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @OriginalPasId > 1	THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''OriginalPasId''	,0, A.OriginalPasId	, B.OriginalPasId	) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @PasId > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''PasId''			,0, A.PasId			, B.PasId			) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @CasenoteId > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''CasenoteId''		,0, A.CasenoteId	, B.CasenoteId		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DoB > 1				THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''DoB''			,0, A.DoB			, B.DoB				) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DoD > 1				THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''DoD''			,0, A.DoD			, B.DoD				) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Surname > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Surname''		,0, A.Surname		, B.Surname			) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Forename > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Forename''		,0, A.Forename		, B.Forename		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Postcode > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Postcode''		,0, A.Postcode		, B.Postcode		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Sex > 1				THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Sex''			,0, A.Sex			, B.Sex				) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address1 > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Address1''		,0, A.Address1		, B.Address1		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address2 > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Address2''		,0, A.Address2		, B.Address2		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address3 > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Address3''		,0, A.Address3		, B.Address3		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address4 > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Address4''		,0, A.Address4		, B.Address4		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address5 > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Address5''		,0, A.Address5		, B.Address5		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DeathStatus > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''DeathStatus''	,0, A.DeathStatus	, B.DeathStatus		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Title > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Title''			,0, A.Title			, B.Title			) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Ethnicity > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Ethnicity''		,0, A.Ethnicity		, B.Ethnicity		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ReligionCode > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''ReligionCode''	,0, A.ReligionCode	, B.ReligionCode	) = 1 ' + CHAR(13) ELSE '' END
+
+						-- Debug dynamic SQL
+						-- PRINT @SQL
+		
+						-- Find all the matching entity pairs
+						INSERT INTO	#tblDEMOGRAPHICS_Match_EntityPairs_All (IsSCR_A, SrcSys_A, Src_UID_A, IsSCR_B, SrcSys_B, Src_UID_B, MatchType, MatchIntention)
+						EXEC (@SQL)
+				
+						/*########################################################################################################################################################################################################################*/
+
+						/* Match type 14 ##########################################################################################################################################################################################################*/
+
+						-- Refresh the match variables and set the columns we want to match
+						SELECT	@MatchIntention = NULL, @MatchType = NULL, @SQL = NULL, @IsMostRecent = NULL, @OriginalNhsNo = NULL, @NhsNumber = NULL, @OriginalPasId = NULL, @PasId = NULL, @CasenoteId = NULL, @DoB = NULL, @DoD = NULL, @Surname = NULL
+								, @Forename = NULL, @Postcode = NULL, @Sex = NULL, @Address1 = NULL, @Address2 = NULL, @Address3 = NULL, @Address4 = NULL, @Address5 = NULL, @DeathStatus = NULL, @Title = NULL, @Ethnicity = NULL, @ReligionCode = NULL
+
+						SELECT	-- Required variables
+								@MatchIntention = 'Validation'
+								,@MatchType = 14
+								-- Only set the variables for columns you want to match
+								,@PasId			= Merge_DM_Match.tblDEMOGRAPHICS_fnCompare('PasId',1,NULL,NULL)
+								,@NhsNumber		= Merge_DM_Match.tblDEMOGRAPHICS_fnCompare('NhsNumber',1,NULL,NULL)
+
+
+						SET @SQL =								'SELECT		A.IsSCR ' + CHAR(13) +
+																'			,A.SrcSys ' + CHAR(13) +
+																'			,A.Src_UID ' + CHAR(13) +
+																'			,B.IsSCR ' + CHAR(13) +
+																'			,B.SrcSys ' + CHAR(13) +
+																'			,B.Src_UID ' + CHAR(13) +
+																'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
+																'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
+																'FROM		#tblDEMOGRAPHICS_Incremental A ' + CHAR(13) +
+																'INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH B ' + CHAR(13) +
+																'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + CHAR(13) + -- Don't self join
+						CASE WHEN @LoopCounter > 1		THEN	'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
+						CASE WHEN @IsMostRecent = 1		THEN	'									AND A.IsMostRecent	= B.IsMostRecent ' + CHAR(13) ELSE '' END +
+						CASE WHEN @NhsNumber = 1		THEN	'									AND A.NhsNumber		= B.NhsNumber ' + CHAR(13) ELSE '' END +
+						CASE WHEN @OriginalNhsNo = 1	THEN	'									AND A.OriginalNhsNo	= B.OriginalNhsNo ' + CHAR(13) ELSE '' END +
+						CASE WHEN @OriginalPasId = 1	THEN	'									AND A.OriginalPasId	= B.OriginalPasId ' + CHAR(13) ELSE '' END +
+						CASE WHEN @PasId = 1			THEN	'									AND A.PasId			= B.PasId ' + CHAR(13) ELSE '' END +
+						CASE WHEN @CasenoteId = 1		THEN	'									AND A.CasenoteId	= B.CasenoteId ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DoB = 1				THEN	'									AND A.DoB			= B.DoB ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DoD = 1				THEN	'									AND A.DoD			= B.DoD ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Surname = 1			THEN	'									AND A.Surname		= B.Surname ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Forename = 1			THEN	'									AND A.Forename		= B.Forename ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Postcode = 1			THEN	'									AND A.Postcode		= B.Postcode ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Sex = 1				THEN	'									AND A.Sex			= B.Sex ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address1 = 1			THEN	'									AND A.Address1		= B.Address1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address2 = 1			THEN	'									AND A.Address2		= B.Address2 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address3 = 1			THEN	'									AND A.Address3		= B.Address3 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address4 = 1			THEN	'									AND A.Address4		= B.Address4 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address5 = 1			THEN	'									AND A.Address5		= B.Address5 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DeathStatus = 1		THEN	'									AND A.DeathStatus	= B.DeathStatus ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Title = 1			THEN	'									AND A.Title			= B.Title ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Ethnicity = 1		THEN	'									AND A.Ethnicity		= B.Ethnicity ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ReligionCode = 1		THEN	'									AND A.ReligionCode	= B.ReligionCode ' + CHAR(13) ELSE '' END +
+
+																'WHERE		1 = 1 ' + CHAR(13) +
+						CASE WHEN @NhsNumber > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''NhsNumber''		,0, A.NhsNumber		, B.NhsNumber		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @IsMostRecent > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''IsMostRecent''	,0, A.IsMostRecent	, B.IsMostRecent	) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @OriginalNhsNo > 1	THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''OriginalNhsNo''	,0, A.OriginalNhsNo	, B.OriginalNhsNo	) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @OriginalPasId > 1	THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''OriginalPasId''	,0, A.OriginalPasId	, B.OriginalPasId	) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @PasId > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''PasId''			,0, A.PasId			, B.PasId			) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @CasenoteId > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''CasenoteId''		,0, A.CasenoteId	, B.CasenoteId		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DoB > 1				THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''DoB''			,0, A.DoB			, B.DoB				) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DoD > 1				THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''DoD''			,0, A.DoD			, B.DoD				) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Surname > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Surname''		,0, A.Surname		, B.Surname			) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Forename > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Forename''		,0, A.Forename		, B.Forename		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Postcode > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Postcode''		,0, A.Postcode		, B.Postcode		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Sex > 1				THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Sex''			,0, A.Sex			, B.Sex				) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address1 > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Address1''		,0, A.Address1		, B.Address1		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address2 > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Address2''		,0, A.Address2		, B.Address2		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address3 > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Address3''		,0, A.Address3		, B.Address3		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address4 > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Address4''		,0, A.Address4		, B.Address4		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address5 > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Address5''		,0, A.Address5		, B.Address5		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DeathStatus > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''DeathStatus''	,0, A.DeathStatus	, B.DeathStatus		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Title > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Title''			,0, A.Title			, B.Title			) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Ethnicity > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Ethnicity''		,0, A.Ethnicity		, B.Ethnicity		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ReligionCode > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''ReligionCode''	,0, A.ReligionCode	, B.ReligionCode	) = 1 ' + CHAR(13) ELSE '' END
+
+						-- Debug dynamic SQL
+						-- PRINT @SQL
+		
+						-- Find all the matching entity pairs
+						INSERT INTO	#tblDEMOGRAPHICS_Match_EntityPairs_All (IsSCR_A, SrcSys_A, Src_UID_A, IsSCR_B, SrcSys_B, Src_UID_B, MatchType, MatchIntention)
+						EXEC (@SQL)
+				
+						/*########################################################################################################################################################################################################################*/
+
+						/* Match type 15 ##########################################################################################################################################################################################################*/
+
+						-- Refresh the match variables and set the columns we want to match
+						SELECT	@MatchIntention = NULL, @MatchType = NULL, @SQL = NULL, @IsMostRecent = NULL, @OriginalNhsNo = NULL, @NhsNumber = NULL, @OriginalPasId = NULL, @PasId = NULL, @CasenoteId = NULL, @DoB = NULL, @DoD = NULL, @Surname = NULL
+								, @Forename = NULL, @Postcode = NULL, @Sex = NULL, @Address1 = NULL, @Address2 = NULL, @Address3 = NULL, @Address4 = NULL, @Address5 = NULL, @DeathStatus = NULL, @Title = NULL, @Ethnicity = NULL, @ReligionCode = NULL
+
+						SELECT	-- Required variables
+								@MatchIntention = 'Validation'
+								,@MatchType = 15
+								-- Only set the variables for columns you want to match
+								,@OriginalNhsNo	= Merge_DM_Match.tblDEMOGRAPHICS_fnCompare('OriginalNhsNo',1,NULL,NULL)
+								,@Surname		= Merge_DM_Match.tblDEMOGRAPHICS_fnCompare('Surname',1,NULL,NULL)
+								,@Postcode			= Merge_DM_Match.tblDEMOGRAPHICS_fnCompare('Postcode',1,NULL,NULL)
+
+
+						SET @SQL =								'SELECT		A.IsSCR ' + CHAR(13) +
+																'			,A.SrcSys ' + CHAR(13) +
+																'			,A.Src_UID ' + CHAR(13) +
+																'			,B.IsSCR ' + CHAR(13) +
+																'			,B.SrcSys ' + CHAR(13) +
+																'			,B.Src_UID ' + CHAR(13) +
+																'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
+																'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
+																'FROM		#tblDEMOGRAPHICS_Incremental A ' + CHAR(13) +
+																'INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH B ' + CHAR(13) +
+																'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + CHAR(13) + -- Don't self join
+						CASE WHEN @LoopCounter > 1		THEN	'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
+						CASE WHEN @IsMostRecent = 1		THEN	'									AND A.IsMostRecent	= B.IsMostRecent ' + CHAR(13) ELSE '' END +
+						CASE WHEN @NhsNumber = 1		THEN	'									AND A.NhsNumber		= B.NhsNumber ' + CHAR(13) ELSE '' END +
+						CASE WHEN @OriginalNhsNo = 1	THEN	'									AND A.OriginalNhsNo	= B.OriginalNhsNo ' + CHAR(13) ELSE '' END +
+						CASE WHEN @OriginalPasId = 1	THEN	'									AND A.OriginalPasId	= B.OriginalPasId ' + CHAR(13) ELSE '' END +
+						CASE WHEN @PasId = 1			THEN	'									AND A.PasId			= B.PasId ' + CHAR(13) ELSE '' END +
+						CASE WHEN @CasenoteId = 1		THEN	'									AND A.CasenoteId	= B.CasenoteId ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DoB = 1				THEN	'									AND A.DoB			= B.DoB ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DoD = 1				THEN	'									AND A.DoD			= B.DoD ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Surname = 1			THEN	'									AND A.Surname		= B.Surname ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Forename = 1			THEN	'									AND A.Forename		= B.Forename ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Postcode = 1			THEN	'									AND A.Postcode		= B.Postcode ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Sex = 1				THEN	'									AND A.Sex			= B.Sex ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address1 = 1			THEN	'									AND A.Address1		= B.Address1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address2 = 1			THEN	'									AND A.Address2		= B.Address2 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address3 = 1			THEN	'									AND A.Address3		= B.Address3 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address4 = 1			THEN	'									AND A.Address4		= B.Address4 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address5 = 1			THEN	'									AND A.Address5		= B.Address5 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DeathStatus = 1		THEN	'									AND A.DeathStatus	= B.DeathStatus ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Title = 1			THEN	'									AND A.Title			= B.Title ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Ethnicity = 1		THEN	'									AND A.Ethnicity		= B.Ethnicity ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ReligionCode = 1		THEN	'									AND A.ReligionCode	= B.ReligionCode ' + CHAR(13) ELSE '' END +
+
+																'WHERE		1 = 1 ' + CHAR(13) +
+						CASE WHEN @NhsNumber > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''NhsNumber''		,0, A.NhsNumber		, B.NhsNumber		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @IsMostRecent > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''IsMostRecent''	,0, A.IsMostRecent	, B.IsMostRecent	) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @OriginalNhsNo > 1	THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''OriginalNhsNo''	,0, A.OriginalNhsNo	, B.OriginalNhsNo	) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @OriginalPasId > 1	THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''OriginalPasId''	,0, A.OriginalPasId	, B.OriginalPasId	) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @PasId > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''PasId''			,0, A.PasId			, B.PasId			) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @CasenoteId > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''CasenoteId''		,0, A.CasenoteId	, B.CasenoteId		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DoB > 1				THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''DoB''			,0, A.DoB			, B.DoB				) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DoD > 1				THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''DoD''			,0, A.DoD			, B.DoD				) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Surname > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Surname''		,0, A.Surname		, B.Surname			) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Forename > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Forename''		,0, A.Forename		, B.Forename		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Postcode > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Postcode''		,0, A.Postcode		, B.Postcode		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Sex > 1				THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Sex''			,0, A.Sex			, B.Sex				) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address1 > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Address1''		,0, A.Address1		, B.Address1		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address2 > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Address2''		,0, A.Address2		, B.Address2		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address3 > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Address3''		,0, A.Address3		, B.Address3		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address4 > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Address4''		,0, A.Address4		, B.Address4		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address5 > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Address5''		,0, A.Address5		, B.Address5		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DeathStatus > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''DeathStatus''	,0, A.DeathStatus	, B.DeathStatus		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Title > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Title''			,0, A.Title			, B.Title			) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Ethnicity > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Ethnicity''		,0, A.Ethnicity		, B.Ethnicity		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ReligionCode > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''ReligionCode''	,0, A.ReligionCode	, B.ReligionCode	) = 1 ' + CHAR(13) ELSE '' END
+
+						-- Debug dynamic SQL
+						-- PRINT @SQL
+		
+						-- Find all the matching entity pairs
+						INSERT INTO	#tblDEMOGRAPHICS_Match_EntityPairs_All (IsSCR_A, SrcSys_A, Src_UID_A, IsSCR_B, SrcSys_B, Src_UID_B, MatchType, MatchIntention)
+						EXEC (@SQL)
+				
+						/*########################################################################################################################################################################################################################*/
+
+						/* Match type 16 ##########################################################################################################################################################################################################*/
+
+						-- Refresh the match variables and set the columns we want to match
+						SELECT	@MatchIntention = NULL, @MatchType = NULL, @SQL = NULL, @IsMostRecent = NULL, @OriginalNhsNo = NULL, @NhsNumber = NULL, @OriginalPasId = NULL, @PasId = NULL, @CasenoteId = NULL, @DoB = NULL, @DoD = NULL, @Surname = NULL
+								, @Forename = NULL, @Postcode = NULL, @Sex = NULL, @Address1 = NULL, @Address2 = NULL, @Address3 = NULL, @Address4 = NULL, @Address5 = NULL, @DeathStatus = NULL, @Title = NULL, @Ethnicity = NULL, @ReligionCode = NULL
+
+						SELECT	-- Required variables
+								@MatchIntention = 'Validation'
+								,@MatchType = 16
+								-- Only set the variables for columns you want to match
+								,@NhsNumber		= Merge_DM_Match.tblDEMOGRAPHICS_fnCompare('NhsNumber',1,NULL,NULL)
+								,@Surname		= Merge_DM_Match.tblDEMOGRAPHICS_fnCompare('Surname',1,NULL,NULL)
+								,@Postcode			= Merge_DM_Match.tblDEMOGRAPHICS_fnCompare('Postcode',1,NULL,NULL)
+
+
+						SET @SQL =								'SELECT		A.IsSCR ' + CHAR(13) +
+																'			,A.SrcSys ' + CHAR(13) +
+																'			,A.Src_UID ' + CHAR(13) +
+																'			,B.IsSCR ' + CHAR(13) +
+																'			,B.SrcSys ' + CHAR(13) +
+																'			,B.Src_UID ' + CHAR(13) +
+																'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
+																'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
+																'FROM		#tblDEMOGRAPHICS_Incremental A ' + CHAR(13) +
+																'INNER JOIN	Merge_DM_Match.tblDEMOGRAPHICS_mvw_UH B ' + CHAR(13) +
+																'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + CHAR(13) + -- Don't self join
+						CASE WHEN @LoopCounter > 1		THEN	'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
+						CASE WHEN @IsMostRecent = 1		THEN	'									AND A.IsMostRecent	= B.IsMostRecent ' + CHAR(13) ELSE '' END +
+						CASE WHEN @NhsNumber = 1		THEN	'									AND A.NhsNumber		= B.NhsNumber ' + CHAR(13) ELSE '' END +
+						CASE WHEN @OriginalNhsNo = 1	THEN	'									AND A.OriginalNhsNo	= B.OriginalNhsNo ' + CHAR(13) ELSE '' END +
+						CASE WHEN @OriginalPasId = 1	THEN	'									AND A.OriginalPasId	= B.OriginalPasId ' + CHAR(13) ELSE '' END +
+						CASE WHEN @PasId = 1			THEN	'									AND A.PasId			= B.PasId ' + CHAR(13) ELSE '' END +
+						CASE WHEN @CasenoteId = 1		THEN	'									AND A.CasenoteId	= B.CasenoteId ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DoB = 1				THEN	'									AND A.DoB			= B.DoB ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DoD = 1				THEN	'									AND A.DoD			= B.DoD ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Surname = 1			THEN	'									AND A.Surname		= B.Surname ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Forename = 1			THEN	'									AND A.Forename		= B.Forename ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Postcode = 1			THEN	'									AND A.Postcode		= B.Postcode ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Sex = 1				THEN	'									AND A.Sex			= B.Sex ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address1 = 1			THEN	'									AND A.Address1		= B.Address1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address2 = 1			THEN	'									AND A.Address2		= B.Address2 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address3 = 1			THEN	'									AND A.Address3		= B.Address3 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address4 = 1			THEN	'									AND A.Address4		= B.Address4 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address5 = 1			THEN	'									AND A.Address5		= B.Address5 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DeathStatus = 1		THEN	'									AND A.DeathStatus	= B.DeathStatus ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Title = 1			THEN	'									AND A.Title			= B.Title ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Ethnicity = 1		THEN	'									AND A.Ethnicity		= B.Ethnicity ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ReligionCode = 1		THEN	'									AND A.ReligionCode	= B.ReligionCode ' + CHAR(13) ELSE '' END +
+
+																'WHERE		1 = 1 ' + CHAR(13) +
+						CASE WHEN @NhsNumber > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''NhsNumber''		,0, A.NhsNumber		, B.NhsNumber		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @IsMostRecent > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''IsMostRecent''	,0, A.IsMostRecent	, B.IsMostRecent	) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @OriginalNhsNo > 1	THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''OriginalNhsNo''	,0, A.OriginalNhsNo	, B.OriginalNhsNo	) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @OriginalPasId > 1	THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''OriginalPasId''	,0, A.OriginalPasId	, B.OriginalPasId	) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @PasId > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''PasId''			,0, A.PasId			, B.PasId			) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @CasenoteId > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''CasenoteId''		,0, A.CasenoteId	, B.CasenoteId		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DoB > 1				THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''DoB''			,0, A.DoB			, B.DoB				) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DoD > 1				THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''DoD''			,0, A.DoD			, B.DoD				) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Surname > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Surname''		,0, A.Surname		, B.Surname			) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Forename > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Forename''		,0, A.Forename		, B.Forename		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Postcode > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Postcode''		,0, A.Postcode		, B.Postcode		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Sex > 1				THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Sex''			,0, A.Sex			, B.Sex				) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address1 > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Address1''		,0, A.Address1		, B.Address1		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address2 > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Address2''		,0, A.Address2		, B.Address2		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address3 > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Address3''		,0, A.Address3		, B.Address3		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address4 > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Address4''		,0, A.Address4		, B.Address4		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Address5 > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Address5''		,0, A.Address5		, B.Address5		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @DeathStatus > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''DeathStatus''	,0, A.DeathStatus	, B.DeathStatus		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Title > 1			THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Title''			,0, A.Title			, B.Title			) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Ethnicity > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''Ethnicity''		,0, A.Ethnicity		, B.Ethnicity		) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ReligionCode > 1		THEN	'AND		Merge_DM_Match.tblDEMOGRAPHICS_fnCompare(''ReligionCode''	,0, A.ReligionCode	, B.ReligionCode	) = 1 ' + CHAR(13) ELSE '' END
+
+						-- Debug dynamic SQL
+						-- PRINT @SQL
+		
+						-- Find all the matching entity pairs
+						INSERT INTO	#tblDEMOGRAPHICS_Match_EntityPairs_All (IsSCR_A, SrcSys_A, Src_UID_A, IsSCR_B, SrcSys_B, Src_UID_B, MatchType, MatchIntention)
+						EXEC (@SQL)
+				
+						/*########################################################################################################################################################################################################################*/
+
 						/**************************************************************************************************************************************************************************************************************************/
 						-- Post-match cleanup of #tblDEMOGRAPHICS_Match_EntityPairs_All and preparation of #Incremental for the next loop (if there is one)
 						/**************************************************************************************************************************************************************************************************************************/

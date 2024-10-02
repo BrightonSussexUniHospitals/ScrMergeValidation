@@ -43,7 +43,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,Description = Description COLLATE DATABASE_DEFAULT
 			,CWTCode = CWTCode COLLATE DATABASE_DEFAULT
 			,IsDeleted
-	FROM  [WSHT_Deduplication]..ltblFasterDiagnosisExclusionReason
+	FROM  [CancerRegister_WSHT]..ltblFasterDiagnosisExclusionReason
 
 		UNION ALL 
 
@@ -53,5 +53,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,Description = Description COLLATE DATABASE_DEFAULT
 			,CWTCode = CWTCode COLLATE DATABASE_DEFAULT
 			,IsDeleted
-	FROM  [BSUH_Deduplication]..ltblFasterDiagnosisExclusionReason
+	FROM  [CancerRegister_BSUH]..ltblFasterDiagnosisExclusionReason
 GO

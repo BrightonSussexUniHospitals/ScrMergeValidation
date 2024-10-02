@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the CurrentPhysicalActivity SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[CurrentPhysicalActivity] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.CurrentPhysicalActivity 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.CurrentPhysicalActivity
+
+CREATE VIEW [Merge_DM_MatchViews].[CurrentPhysicalActivity] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.CurrentPhysicalActivity 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.CurrentPhysicalActivity
 GO

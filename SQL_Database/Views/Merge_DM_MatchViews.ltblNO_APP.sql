@@ -42,7 +42,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,APP_CODE
 			,APP_DESC = APP_DESC COLLATE DATABASE_DEFAULT
 			,IS_DELETED
-	FROM  [WSHT_Deduplication]..ltblNO_APP
+	FROM  [CancerRegister_WSHT]..ltblNO_APP
 
 		UNION ALL 
 
@@ -51,5 +51,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,APP_CODE
 			,APP_DESC = APP_DESC COLLATE DATABASE_DEFAULT
 			,IS_DELETED
-	FROM  [BSUH_Deduplication]..ltblNO_APP
+	FROM  [CancerRegister_BSUH]..ltblNO_APP
 GO

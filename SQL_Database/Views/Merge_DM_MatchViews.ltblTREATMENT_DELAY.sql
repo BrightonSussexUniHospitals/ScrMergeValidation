@@ -50,7 +50,7 @@ Description:				Create a local config view to point at the place where the SCR
 					,DECISION_TREAT_TO_TREAT_NAC
 					,CWTValue = CWTValue COLLATE DATABASE_DEFAULT
 					,IS_DELETED
-		FROM		[WSHT_Deduplication]..ltblTREATMENT_DELAY
+		FROM		[CancerRegister_WSHT]..ltblTREATMENT_DELAY
 
 		UNION ALL 
 
@@ -67,5 +67,5 @@ Description:				Create a local config view to point at the place where the SCR
 					,DECISION_TREAT_TO_TREAT_NAC
 					,CWTValue = CWTValue COLLATE DATABASE_DEFAULT
 					,IS_DELETED
-		FROM		[BSUH_Deduplication]..ltblTREATMENT_DELAY
+		FROM		[CancerRegister_BSUH]..ltblTREATMENT_DELAY
 GO

@@ -41,7 +41,7 @@ Description:				Create a local config view to point at the place where the SCR
 	SELECT  CAST(1 AS tinyint) AS SrcSysID
 			,LAT_CODE = LAT_CODE COLLATE DATABASE_DEFAULT
 			,LAT_DESC = LAT_DESC COLLATE DATABASE_DEFAULT
-	FROM  [WSHT_Deduplication]..ltblLATERALITY
+	FROM  [CancerRegister_WSHT]..ltblLATERALITY
 
 		UNION ALL 
 
@@ -49,5 +49,5 @@ Description:				Create a local config view to point at the place where the SCR
 	SELECT  CAST(2 AS tinyint) AS SrcSysID
 			,LAT_CODE = LAT_CODE COLLATE DATABASE_DEFAULT
 			,LAT_DESC = LAT_DESC COLLATE DATABASE_DEFAULT
-	FROM  [BSUH_Deduplication]..ltblLATERALITY
+	FROM  [CancerRegister_BSUH]..ltblLATERALITY
 GO

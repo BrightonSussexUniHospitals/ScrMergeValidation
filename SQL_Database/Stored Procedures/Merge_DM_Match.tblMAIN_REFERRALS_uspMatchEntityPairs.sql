@@ -385,6 +385,8 @@ Description:				A template stored procedure to match records from different sour
 						,@FasterDiagnosisOrganisationCode TINYINT
 						,@FasterDiagnosisExclusionReasonCode TINYINT
 						,@NotRecurrence TINYINT
+						,@ADT_REF_ID TINYINT
+						,@ADT_PLACER_ID TINYINT
 				
 				WHILE @NoFurtherMatchesFound = 0
 				BEGIN
@@ -424,6 +426,8 @@ Description:				A template stored procedure to match records from different sour
 									,uh.FasterDiagnosisOrganisationCode
 									,uh.FasterDiagnosisExclusionReasonCode
 									,uh.NotRecurrence 
+									,uh.ADT_REF_ID
+									,uh.ADT_PLACER_ID
 						INTO		#tblMAIN_REFERRALS_Incremental
 						FROM		Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH uh
 						INNER JOIN	#Incremental inc 
@@ -473,7 +477,7 @@ Description:				A template stored procedure to match records from different sour
 						SELECT	@Srcsys = NULL, @Not_Srcsys = NULL, @Not_linkedcareID = NULL, @PatientPathwayID = NULL,@HospitalNumber = NULL,@NHSNumber = NULL,@L_CANCER_SITE = NULL,@N2_4_PRIORITY_TYPE = NULL,@N2_6_RECEIPT_DATE = NULL,@ADT_REF_ID_SameSys = NULL,@ADT_PLACER_ID_SameSys = NULL
 								,@N2_1_REFERRAL_SOURCE = NULL,@N2_12_CANCER_TYPE = NULL,@N2_13_CANCER_STATUS = NULL,@N2_9_FIRST_SEEN_DATE = NULL,@N1_3_ORG_CODE_SEEN = NULL,@L_OTHER_DIAG_DATE = NULL,@N_UPGRADE_DATE = NULL
 								,@N_UPGRADE_ORG_CODE = NULL,@N4_1_DIAGNOSIS_DATE = NULL,@L_DIAGNOSIS = NULL,@L_ORG_CODE_DIAGNOSIS = NULL,@N4_2_DIAGNOSIS_CODE = NULL, @N4_3_LATERALITY = NULL, @L_PT_INFORMED_DATE = NULL,@FasterDiagnosisOrganisationCode = NULL
-								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL
+								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL, @ADT_REF_ID = NULL, @ADT_PLACER_ID = NULL
 
 						SELECT	-- Required variables
 								@MatchIntention = 'Algorithmic'
@@ -525,6 +529,8 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @FasterDiagnosisOrganisationCode = 1 THEN		'									AND	A.FasterDiagnosisOrganisationCode = B.FasterDiagnosisOrganisationCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode = 1 THEN	'									AND	A.FasterDiagnosisExclusionReasonCode = B.FasterDiagnosisExclusionReasonCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @NotRecurrence = 1	THEN					'									AND	A.NotRecurrence = B.NotRecurrence ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID = 1	THEN						'									AND	A.ADT_REF_ID = B.ADT_REF_ID ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID = 1	THEN					'									AND	A.ADT_PLACER_ID = B.ADT_PLACER_ID ' + CHAR(13) ELSE '' END +
 																				'WHERE		1 = 1 ' + CHAR(13) +
 						CASE WHEN @Not_Srcsys >1 THEN							'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 0 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @Srcsys >1 THEN								'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 1 ' + CHAR(13) ELSE '' END +
@@ -554,7 +560,9 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @L_PT_INFORMED_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_PT_INFORMED_DATE'', 0, A.L_PT_INFORMED_DATE, B.L_PT_INFORMED_DATE) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisOrganisationCode > 1	THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisOrganisationCode'', 0, A.FasterDiagnosisOrganisationCode, B.FasterDiagnosisOrganisationCode) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode > 1 THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisExclusionReasonCode'', 0, A.FasterDiagnosisExclusionReasonCode, B.FasterDiagnosisExclusionReasonCode) = 1 ' + CHAR(13) ELSE '' END +
-						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END
+						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID'', 0, A.ADT_REF_ID, B.ADT_REF_ID) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID'', 0, A.ADT_PLACER_ID, B.ADT_PLACER_ID) = 1 ' + CHAR(13) ELSE '' END
 
 						-- Debug dynamic SQL
 						PRINT @SQL
@@ -575,7 +583,7 @@ Description:				A template stored procedure to match records from different sour
 						SELECT	@Srcsys = NULL,@Not_Srcsys = NULL, @Not_linkedcareID = NULL,@PatientPathwayID = NULL,@HospitalNumber = NULL,@NHSNumber = NULL,@L_CANCER_SITE = NULL,@N2_4_PRIORITY_TYPE = NULL,@N2_6_RECEIPT_DATE = NULL,@ADT_REF_ID_SameSys = NULL,@ADT_PLACER_ID_SameSys = NULL
 								,@N2_1_REFERRAL_SOURCE = NULL,@N2_12_CANCER_TYPE = NULL,@N2_13_CANCER_STATUS = NULL,@N2_9_FIRST_SEEN_DATE = NULL,@N1_3_ORG_CODE_SEEN = NULL,@L_OTHER_DIAG_DATE = NULL,@N_UPGRADE_DATE = NULL
 								,@N_UPGRADE_ORG_CODE = NULL,@N4_1_DIAGNOSIS_DATE = NULL,@L_DIAGNOSIS = NULL,@L_ORG_CODE_DIAGNOSIS = NULL,@N4_2_DIAGNOSIS_CODE = NULL, @N4_3_LATERALITY = NULL,@L_PT_INFORMED_DATE = NULL,@FasterDiagnosisOrganisationCode = NULL
-								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL
+								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL, @ADT_REF_ID = NULL, @ADT_PLACER_ID = NULL
 
 						SELECT	-- Required variables
 								@MatchIntention = 'Algorithmic'
@@ -627,6 +635,8 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @FasterDiagnosisOrganisationCode = 1 THEN		'									AND	A.FasterDiagnosisOrganisationCode = B.FasterDiagnosisOrganisationCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode = 1 THEN	'									AND	A.FasterDiagnosisExclusionReasonCode = B.FasterDiagnosisExclusionReasonCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @NotRecurrence = 1	THEN					'									AND	A.NotRecurrence = B.NotRecurrence ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID = 1	THEN						'									AND	A.ADT_REF_ID = B.ADT_REF_ID ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID = 1	THEN					'									AND	A.ADT_PLACER_ID = B.ADT_PLACER_ID ' + CHAR(13) ELSE '' END +
 																				'WHERE		1 = 1 ' + CHAR(13) +
 						CASE WHEN @Not_Srcsys >1 THEN							'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 0 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @Srcsys >1 THEN								'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 1 ' + CHAR(13) ELSE '' END +
@@ -656,7 +666,9 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @L_PT_INFORMED_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_PT_INFORMED_DATE'', 0, A.L_PT_INFORMED_DATE, B.L_PT_INFORMED_DATE) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisOrganisationCode > 1	THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisOrganisationCode'', 0, A.FasterDiagnosisOrganisationCode, B.FasterDiagnosisOrganisationCode) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode > 1 THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisExclusionReasonCode'', 0, A.FasterDiagnosisExclusionReasonCode, B.FasterDiagnosisExclusionReasonCode) = 1 ' + CHAR(13) ELSE '' END +
-						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END
+						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID'', 0, A.ADT_REF_ID, B.ADT_REF_ID) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID'', 0, A.ADT_PLACER_ID, B.ADT_PLACER_ID) = 1 ' + CHAR(13) ELSE '' END
 
 						-- Debug dynamic SQL
 						PRINT @SQL
@@ -677,7 +689,7 @@ Description:				A template stored procedure to match records from different sour
 						SELECT	@Srcsys = NULL,@Not_Srcsys = NULL, @Not_linkedcareID = NULL,@PatientPathwayID = NULL,@HospitalNumber = NULL,@NHSNumber = NULL,@L_CANCER_SITE = NULL,@N2_4_PRIORITY_TYPE = NULL,@N2_6_RECEIPT_DATE = NULL,@ADT_REF_ID_SameSys = NULL,@ADT_PLACER_ID_SameSys = NULL
 								,@N2_1_REFERRAL_SOURCE = NULL,@N2_12_CANCER_TYPE = NULL,@N2_13_CANCER_STATUS = NULL,@N2_9_FIRST_SEEN_DATE = NULL,@N1_3_ORG_CODE_SEEN = NULL,@L_OTHER_DIAG_DATE = NULL,@N_UPGRADE_DATE = NULL
 								,@N_UPGRADE_ORG_CODE = NULL,@N4_1_DIAGNOSIS_DATE = NULL,@L_DIAGNOSIS = NULL,@L_ORG_CODE_DIAGNOSIS = NULL,@N4_2_DIAGNOSIS_CODE = NULL, @N4_3_LATERALITY = NULL,@L_PT_INFORMED_DATE = NULL,@FasterDiagnosisOrganisationCode = NULL
-								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL
+								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL, @ADT_REF_ID = NULL, @ADT_PLACER_ID = NULL
 
 						SELECT	-- Required variables
 								@MatchIntention = 'Algorithmic'
@@ -731,6 +743,8 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @FasterDiagnosisOrganisationCode = 1 THEN		'									AND	A.FasterDiagnosisOrganisationCode = B.FasterDiagnosisOrganisationCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode = 1 THEN	'									AND	A.FasterDiagnosisExclusionReasonCode = B.FasterDiagnosisExclusionReasonCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @NotRecurrence = 1	THEN					'									AND	A.NotRecurrence = B.NotRecurrence ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID = 1	THEN						'									AND	A.ADT_REF_ID = B.ADT_REF_ID ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID = 1	THEN					'									AND	A.ADT_PLACER_ID = B.ADT_PLACER_ID ' + CHAR(13) ELSE '' END +
 																				'WHERE		1 = 1 ' + CHAR(13) +
 						CASE WHEN @Not_Srcsys >1 THEN							'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 0 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @Srcsys >1 THEN								'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 1 ' + CHAR(13) ELSE '' END +
@@ -760,7 +774,9 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @L_PT_INFORMED_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_PT_INFORMED_DATE'', 0, A.L_PT_INFORMED_DATE, B.L_PT_INFORMED_DATE) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisOrganisationCode > 1	THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisOrganisationCode'', 0, A.FasterDiagnosisOrganisationCode, B.FasterDiagnosisOrganisationCode) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode > 1 THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisExclusionReasonCode'', 0, A.FasterDiagnosisExclusionReasonCode, B.FasterDiagnosisExclusionReasonCode) = 1 ' + CHAR(13) ELSE '' END +
-						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END
+						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID'', 0, A.ADT_REF_ID, B.ADT_REF_ID) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID'', 0, A.ADT_PLACER_ID, B.ADT_PLACER_ID) = 1 ' + CHAR(13) ELSE '' END
 
 						-- Debug dynamic SQL
 						PRINT @SQL
@@ -784,7 +800,7 @@ Description:				A template stored procedure to match records from different sour
 						SELECT	@Srcsys = NULL, @Not_Srcsys = NULL,@Not_linkedcareID = NULL,@PatientPathwayID = NULL,@HospitalNumber = NULL,@NHSNumber = NULL,@L_CANCER_SITE = NULL,@N2_4_PRIORITY_TYPE = NULL,@N2_6_RECEIPT_DATE = NULL,@ADT_REF_ID_SameSys = NULL,@ADT_PLACER_ID_SameSys = NULL
 								,@N2_1_REFERRAL_SOURCE = NULL,@N2_12_CANCER_TYPE = NULL,@N2_13_CANCER_STATUS = NULL,@N2_9_FIRST_SEEN_DATE = NULL,@N1_3_ORG_CODE_SEEN = NULL,@L_OTHER_DIAG_DATE = NULL,@N_UPGRADE_DATE = NULL
 								,@N_UPGRADE_ORG_CODE = NULL,@N4_1_DIAGNOSIS_DATE = NULL,@L_DIAGNOSIS = NULL,@L_ORG_CODE_DIAGNOSIS = NULL,@N4_2_DIAGNOSIS_CODE = NULL, @N4_3_LATERALITY = NULL,@L_PT_INFORMED_DATE = NULL,@FasterDiagnosisOrganisationCode = NULL
-								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL
+								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL,         ,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL, @ADT_REF_ID = NULL, @ADT_PLACER_ID = NULL
 
 						SELECT	-- Required variables
 								@MatchIntention = 'Validation'
@@ -834,6 +850,8 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @FasterDiagnosisOrganisationCode = 1 THEN		'									AND	A.FasterDiagnosisOrganisationCode = B.FasterDiagnosisOrganisationCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode = 1 THEN	'									AND	A.FasterDiagnosisExclusionReasonCode = B.FasterDiagnosisExclusionReasonCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @NotRecurrence = 1	THEN					'									AND	A.NotRecurrence = B.NotRecurrence ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID = 1	THEN						'									AND	A.ADT_REF_ID = B.ADT_REF_ID ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID = 1	THEN					'									AND	A.ADT_PLACER_ID = B.ADT_PLACER_ID ' + CHAR(13) ELSE '' END +
 																				'WHERE		1 = 1 ' + CHAR(13) +
 						CASE WHEN @Not_Srcsys >1 THEN							'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 0 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @Srcsys >1 THEN								'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 1 ' + CHAR(13) ELSE '' END +
@@ -863,7 +881,9 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @L_PT_INFORMED_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_PT_INFORMED_DATE'', 0, A.L_PT_INFORMED_DATE, B.L_PT_INFORMED_DATE) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisOrganisationCode > 1	THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisOrganisationCode'', 0, A.FasterDiagnosisOrganisationCode, B.FasterDiagnosisOrganisationCode) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode > 1 THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisExclusionReasonCode'', 0, A.FasterDiagnosisExclusionReasonCode, B.FasterDiagnosisExclusionReasonCode) = 1 ' + CHAR(13) ELSE '' END +
-						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END
+						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID'', 0, A.ADT_REF_ID, B.ADT_REF_ID) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID'', 0, A.ADT_PLACER_ID, B.ADT_PLACER_ID) = 1 ' + CHAR(13) ELSE '' END
 
 						-- Debug dynamic SQL
 						PRINT @SQL
@@ -885,7 +905,7 @@ Description:				A template stored procedure to match records from different sour
 						SELECT	@Srcsys = NULL,@Not_Srcsys = NULL, @Not_linkedcareID = NULL,@PatientPathwayID = NULL,@HospitalNumber = NULL,@NHSNumber = NULL,@L_CANCER_SITE = NULL,@N2_4_PRIORITY_TYPE = NULL,@N2_6_RECEIPT_DATE = NULL,@ADT_REF_ID_SameSys = NULL,@ADT_PLACER_ID_SameSys = NULL
 								,@N2_1_REFERRAL_SOURCE = NULL,@N2_12_CANCER_TYPE = NULL,@N2_13_CANCER_STATUS = NULL,@N2_9_FIRST_SEEN_DATE = NULL,@N1_3_ORG_CODE_SEEN = NULL,@L_OTHER_DIAG_DATE = NULL,@N_UPGRADE_DATE = NULL
 								,@N_UPGRADE_ORG_CODE = NULL,@N4_1_DIAGNOSIS_DATE = NULL,@L_DIAGNOSIS = NULL,@L_ORG_CODE_DIAGNOSIS = NULL,@N4_2_DIAGNOSIS_CODE = NULL, @N4_3_LATERALITY = NULL,@L_PT_INFORMED_DATE = NULL,@FasterDiagnosisOrganisationCode = NULL
-								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL
+								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL, @ADT_REF_ID = NULL, @ADT_PLACER_ID = NULL
 
 						SELECT	-- Required variables
 								@MatchIntention = 'Algorithmic'
@@ -934,6 +954,8 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @FasterDiagnosisOrganisationCode = 1 THEN		'									AND	A.FasterDiagnosisOrganisationCode = B.FasterDiagnosisOrganisationCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode = 1 THEN	'									AND	A.FasterDiagnosisExclusionReasonCode = B.FasterDiagnosisExclusionReasonCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @NotRecurrence = 1	THEN					'									AND	A.NotRecurrence = B.NotRecurrence ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID = 1	THEN						'									AND	A.ADT_REF_ID = B.ADT_REF_ID ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID = 1	THEN					'									AND	A.ADT_PLACER_ID = B.ADT_PLACER_ID ' + CHAR(13) ELSE '' END +
 																				'WHERE		1 = 1 ' + CHAR(13) +
 						CASE WHEN @Not_Srcsys >1 THEN							'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 0 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @Srcsys >1 THEN								'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 1 ' + CHAR(13) ELSE '' END +
@@ -963,7 +985,9 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @L_PT_INFORMED_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_PT_INFORMED_DATE'', 0, A.L_PT_INFORMED_DATE, B.L_PT_INFORMED_DATE) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisOrganisationCode > 1	THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisOrganisationCode'', 0, A.FasterDiagnosisOrganisationCode, B.FasterDiagnosisOrganisationCode) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode > 1 THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisExclusionReasonCode'', 0, A.FasterDiagnosisExclusionReasonCode, B.FasterDiagnosisExclusionReasonCode) = 1 ' + CHAR(13) ELSE '' END +
-						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END
+						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID'', 0, A.ADT_REF_ID, B.ADT_REF_ID) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID'', 0, A.ADT_PLACER_ID, B.ADT_PLACER_ID) = 1 ' + CHAR(13) ELSE '' END
 
 						-- Debug dynamic SQL
 						PRINT @SQL
@@ -984,7 +1008,7 @@ Description:				A template stored procedure to match records from different sour
 						SELECT	@Srcsys = NULL,@Not_Srcsys = NULL, @Not_linkedcareID = NULL,@PatientPathwayID = NULL,@HospitalNumber = NULL,@NHSNumber = NULL,@L_CANCER_SITE = NULL,@N2_4_PRIORITY_TYPE = NULL,@N2_6_RECEIPT_DATE = NULL,@ADT_REF_ID_SameSys = NULL,@ADT_PLACER_ID_SameSys = NULL
 								,@N2_1_REFERRAL_SOURCE = NULL,@N2_12_CANCER_TYPE = NULL,@N2_13_CANCER_STATUS = NULL,@N2_9_FIRST_SEEN_DATE = NULL,@N1_3_ORG_CODE_SEEN = NULL,@L_OTHER_DIAG_DATE = NULL,@N_UPGRADE_DATE = NULL
 								,@N_UPGRADE_ORG_CODE = NULL,@N4_1_DIAGNOSIS_DATE = NULL,@L_DIAGNOSIS = NULL,@L_ORG_CODE_DIAGNOSIS = NULL,@N4_2_DIAGNOSIS_CODE = NULL, @N4_3_LATERALITY = NULL,@L_PT_INFORMED_DATE = NULL,@FasterDiagnosisOrganisationCode = NULL
-								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL
+								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL, @ADT_REF_ID = NULL, @ADT_PLACER_ID = NULL
 
 						SELECT	-- Required variables
 								@MatchIntention = 'Validation'
@@ -1033,6 +1057,8 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @FasterDiagnosisOrganisationCode = 1 THEN		'									AND	A.FasterDiagnosisOrganisationCode = B.FasterDiagnosisOrganisationCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode = 1 THEN	'									AND	A.FasterDiagnosisExclusionReasonCode = B.FasterDiagnosisExclusionReasonCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @NotRecurrence = 1	THEN					'									AND	A.NotRecurrence = B.NotRecurrence ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID = 1	THEN						'									AND	A.ADT_REF_ID = B.ADT_REF_ID ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID = 1	THEN					'									AND	A.ADT_PLACER_ID = B.ADT_PLACER_ID ' + CHAR(13) ELSE '' END +
 																				'WHERE		1 = 1 ' + CHAR(13) +
 						CASE WHEN @Not_Srcsys >1 THEN							'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 0 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @Srcsys >1 THEN								'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 1 ' + CHAR(13) ELSE '' END +
@@ -1062,7 +1088,9 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @L_PT_INFORMED_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_PT_INFORMED_DATE'', 0, A.L_PT_INFORMED_DATE, B.L_PT_INFORMED_DATE) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisOrganisationCode > 1	THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisOrganisationCode'', 0, A.FasterDiagnosisOrganisationCode, B.FasterDiagnosisOrganisationCode) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode > 1 THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisExclusionReasonCode'', 0, A.FasterDiagnosisExclusionReasonCode, B.FasterDiagnosisExclusionReasonCode) = 1 ' + CHAR(13) ELSE '' END +
-						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END
+						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID'', 0, A.ADT_REF_ID, B.ADT_REF_ID) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID'', 0, A.ADT_PLACER_ID, B.ADT_PLACER_ID) = 1 ' + CHAR(13) ELSE '' END
 
 						-- Debug dynamic SQL
 						PRINT @SQL
@@ -1083,7 +1111,7 @@ Description:				A template stored procedure to match records from different sour
 						SELECT	@Srcsys = NULL,@Not_Srcsys = NULL, @Not_linkedcareID = NULL,@PatientPathwayID = NULL,@HospitalNumber = NULL,@NHSNumber = NULL,@L_CANCER_SITE = NULL,@N2_4_PRIORITY_TYPE = NULL,@N2_6_RECEIPT_DATE = NULL,@ADT_REF_ID_SameSys = NULL,@ADT_PLACER_ID_SameSys = NULL
 								,@N2_1_REFERRAL_SOURCE = NULL,@N2_12_CANCER_TYPE = NULL,@N2_13_CANCER_STATUS = NULL,@N2_9_FIRST_SEEN_DATE = NULL,@N1_3_ORG_CODE_SEEN = NULL,@L_OTHER_DIAG_DATE = NULL,@N_UPGRADE_DATE = NULL
 								,@N_UPGRADE_ORG_CODE = NULL,@N4_1_DIAGNOSIS_DATE = NULL,@L_DIAGNOSIS = NULL,@L_ORG_CODE_DIAGNOSIS = NULL,@N4_2_DIAGNOSIS_CODE = NULL, @N4_3_LATERALITY = NULL,@L_PT_INFORMED_DATE = NULL,@FasterDiagnosisOrganisationCode = NULL
-								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL
+								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL, @ADT_REF_ID = NULL, @ADT_PLACER_ID = NULL
 
 						SELECT	-- Required variables
 								@MatchIntention = 'Validation'
@@ -1137,6 +1165,8 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @FasterDiagnosisOrganisationCode = 1 THEN		'									AND	A.FasterDiagnosisOrganisationCode = B.FasterDiagnosisOrganisationCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode = 1 THEN	'									AND	A.FasterDiagnosisExclusionReasonCode = B.FasterDiagnosisExclusionReasonCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @NotRecurrence = 1	THEN					'									AND	A.NotRecurrence = B.NotRecurrence ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID = 1	THEN						'									AND	A.ADT_REF_ID = B.ADT_REF_ID ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID = 1	THEN					'									AND	A.ADT_PLACER_ID = B.ADT_PLACER_ID ' + CHAR(13) ELSE '' END +
 																				'WHERE		1 = 1 ' + CHAR(13) +
 						CASE WHEN @Not_Srcsys >1 THEN							'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 0 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @Srcsys >1 THEN								'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 1 ' + CHAR(13) ELSE '' END +
@@ -1166,7 +1196,9 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @L_PT_INFORMED_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_PT_INFORMED_DATE'', 0, A.L_PT_INFORMED_DATE, B.L_PT_INFORMED_DATE) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisOrganisationCode > 1	THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisOrganisationCode'', 0, A.FasterDiagnosisOrganisationCode, B.FasterDiagnosisOrganisationCode) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode > 1 THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisExclusionReasonCode'', 0, A.FasterDiagnosisExclusionReasonCode, B.FasterDiagnosisExclusionReasonCode) = 1 ' + CHAR(13) ELSE '' END +
-						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END
+						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID'', 0, A.ADT_REF_ID, B.ADT_REF_ID) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID'', 0, A.ADT_PLACER_ID, B.ADT_PLACER_ID) = 1 ' + CHAR(13) ELSE '' END
 
 						-- Debug dynamic SQL
 						PRINT @SQL
@@ -1187,7 +1219,7 @@ Description:				A template stored procedure to match records from different sour
 						SELECT	@Srcsys = NULL,@Not_Srcsys = NULL, @Not_linkedcareID = NULL,@PatientPathwayID = NULL,@HospitalNumber = NULL,@NHSNumber = NULL,@L_CANCER_SITE = NULL,@N2_4_PRIORITY_TYPE = NULL,@N2_6_RECEIPT_DATE = NULL,@ADT_REF_ID_SameSys = NULL,@ADT_PLACER_ID_SameSys = NULL
 								,@N2_1_REFERRAL_SOURCE = NULL,@N2_12_CANCER_TYPE = NULL,@N2_13_CANCER_STATUS = NULL,@N2_9_FIRST_SEEN_DATE = NULL,@N1_3_ORG_CODE_SEEN = NULL,@L_OTHER_DIAG_DATE = NULL,@N_UPGRADE_DATE = NULL
 								,@N_UPGRADE_ORG_CODE = NULL,@N4_1_DIAGNOSIS_DATE = NULL,@L_DIAGNOSIS = NULL,@L_ORG_CODE_DIAGNOSIS = NULL,@N4_2_DIAGNOSIS_CODE = NULL, @N4_3_LATERALITY = NULL,@L_PT_INFORMED_DATE = NULL,@FasterDiagnosisOrganisationCode = NULL
-								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL
+								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL, @ADT_REF_ID = NULL, @ADT_PLACER_ID = NULL
 
 						SELECT	-- Required variables
 								@MatchIntention = 'Validation'
@@ -1241,6 +1273,8 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @FasterDiagnosisOrganisationCode = 1 THEN		'									AND	A.FasterDiagnosisOrganisationCode = B.FasterDiagnosisOrganisationCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode = 1 THEN	'									AND	A.FasterDiagnosisExclusionReasonCode = B.FasterDiagnosisExclusionReasonCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @NotRecurrence = 1	THEN					'									AND	A.NotRecurrence = B.NotRecurrence ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID = 1	THEN						'									AND	A.ADT_REF_ID = B.ADT_REF_ID ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID = 1	THEN					'									AND	A.ADT_PLACER_ID = B.ADT_PLACER_ID ' + CHAR(13) ELSE '' END +
 																				'WHERE		1 = 1 ' + CHAR(13) +
 						CASE WHEN @Not_Srcsys >1 THEN							'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 0 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @Srcsys >1 THEN								'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 1 ' + CHAR(13) ELSE '' END +
@@ -1270,7 +1304,9 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @L_PT_INFORMED_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_PT_INFORMED_DATE'', 0, A.L_PT_INFORMED_DATE, B.L_PT_INFORMED_DATE) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisOrganisationCode > 1	THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisOrganisationCode'', 0, A.FasterDiagnosisOrganisationCode, B.FasterDiagnosisOrganisationCode) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode > 1 THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisExclusionReasonCode'', 0, A.FasterDiagnosisExclusionReasonCode, B.FasterDiagnosisExclusionReasonCode) = 1 ' + CHAR(13) ELSE '' END +
-						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END
+						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID'', 0, A.ADT_REF_ID, B.ADT_REF_ID) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID'', 0, A.ADT_PLACER_ID, B.ADT_PLACER_ID) = 1 ' + CHAR(13) ELSE '' END
 
 						-- Debug dynamic SQL
 						PRINT @SQL
@@ -1291,7 +1327,7 @@ Description:				A template stored procedure to match records from different sour
 						SELECT	@Srcsys = NULL,@Not_Srcsys = NULL, @Not_linkedcareID = NULL,@PatientPathwayID = NULL,@HospitalNumber = NULL,@NHSNumber = NULL,@L_CANCER_SITE = NULL,@N2_4_PRIORITY_TYPE = NULL,@N2_6_RECEIPT_DATE = NULL,@ADT_REF_ID_SameSys = NULL,@ADT_PLACER_ID_SameSys = NULL
 								,@N2_1_REFERRAL_SOURCE = NULL,@N2_12_CANCER_TYPE = NULL,@N2_13_CANCER_STATUS = NULL,@N2_9_FIRST_SEEN_DATE = NULL,@N1_3_ORG_CODE_SEEN = NULL,@L_OTHER_DIAG_DATE = NULL,@N_UPGRADE_DATE = NULL
 								,@N_UPGRADE_ORG_CODE = NULL,@N4_1_DIAGNOSIS_DATE = NULL,@L_DIAGNOSIS = NULL,@L_ORG_CODE_DIAGNOSIS = NULL,@N4_2_DIAGNOSIS_CODE = NULL, @N4_3_LATERALITY = NULL,@L_PT_INFORMED_DATE = NULL,@FasterDiagnosisOrganisationCode = NULL
-								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL
+								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL, @ADT_REF_ID = NULL, @ADT_PLACER_ID = NULL
 
 						SELECT	-- Required variables
 								@MatchIntention = 'Validation'
@@ -1344,6 +1380,8 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @FasterDiagnosisOrganisationCode = 1 THEN		'									AND	A.FasterDiagnosisOrganisationCode = B.FasterDiagnosisOrganisationCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode = 1 THEN	'									AND	A.FasterDiagnosisExclusionReasonCode = B.FasterDiagnosisExclusionReasonCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @NotRecurrence = 1	THEN					'									AND	A.NotRecurrence = B.NotRecurrence ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID = 1	THEN						'									AND	A.ADT_REF_ID = B.ADT_REF_ID ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID = 1	THEN					'									AND	A.ADT_PLACER_ID = B.ADT_PLACER_ID ' + CHAR(13) ELSE '' END +
 																				'WHERE		1 = 1 ' + CHAR(13) +
 						CASE WHEN @Not_Srcsys >1 THEN							'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 0 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @Srcsys >1 THEN								'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 1 ' + CHAR(13) ELSE '' END +
@@ -1373,7 +1411,9 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @L_PT_INFORMED_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_PT_INFORMED_DATE'', 0, A.L_PT_INFORMED_DATE, B.L_PT_INFORMED_DATE) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisOrganisationCode > 1	THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisOrganisationCode'', 0, A.FasterDiagnosisOrganisationCode, B.FasterDiagnosisOrganisationCode) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode > 1 THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisExclusionReasonCode'', 0, A.FasterDiagnosisExclusionReasonCode, B.FasterDiagnosisExclusionReasonCode) = 1 ' + CHAR(13) ELSE '' END +
-						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END
+						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID'', 0, A.ADT_REF_ID, B.ADT_REF_ID) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID'', 0, A.ADT_PLACER_ID, B.ADT_PLACER_ID) = 1 ' + CHAR(13) ELSE '' END
 
 						-- Debug dynamic SQL
 						PRINT @SQL
@@ -1394,7 +1434,7 @@ Description:				A template stored procedure to match records from different sour
 						SELECT	@Srcsys = NULL,@Not_Srcsys = NULL, @Not_linkedcareID = NULL,@PatientPathwayID = NULL,@HospitalNumber = NULL,@NHSNumber = NULL,@L_CANCER_SITE = NULL,@N2_4_PRIORITY_TYPE = NULL,@N2_6_RECEIPT_DATE = NULL,@ADT_REF_ID_SameSys = NULL,@ADT_PLACER_ID_SameSys = NULL
 								,@N2_1_REFERRAL_SOURCE = NULL,@N2_12_CANCER_TYPE = NULL,@N2_13_CANCER_STATUS = NULL,@N2_9_FIRST_SEEN_DATE = NULL,@N1_3_ORG_CODE_SEEN = NULL,@L_OTHER_DIAG_DATE = NULL,@N_UPGRADE_DATE = NULL
 								,@N_UPGRADE_ORG_CODE = NULL,@N4_1_DIAGNOSIS_DATE = NULL,@L_DIAGNOSIS = NULL,@L_ORG_CODE_DIAGNOSIS = NULL,@N4_2_DIAGNOSIS_CODE = NULL, @N4_3_LATERALITY = NULL,@L_PT_INFORMED_DATE = NULL,@FasterDiagnosisOrganisationCode = NULL
-								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL
+								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL, @ADT_REF_ID = NULL, @ADT_PLACER_ID = NULL
 
 						SELECT	-- Required variables
 								@MatchIntention = 'Validation'
@@ -1447,6 +1487,8 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @FasterDiagnosisOrganisationCode = 1 THEN		'									AND	A.FasterDiagnosisOrganisationCode = B.FasterDiagnosisOrganisationCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode = 1 THEN	'									AND	A.FasterDiagnosisExclusionReasonCode = B.FasterDiagnosisExclusionReasonCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @NotRecurrence = 1	THEN					'									AND	A.NotRecurrence = B.NotRecurrence ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID = 1	THEN						'									AND	A.ADT_REF_ID = B.ADT_REF_ID ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID = 1	THEN					'									AND	A.ADT_PLACER_ID = B.ADT_PLACER_ID ' + CHAR(13) ELSE '' END +
 																				'WHERE		1 = 1 ' + CHAR(13) +
 						CASE WHEN @Not_Srcsys >1 THEN							'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 0 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @Srcsys >1 THEN								'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 1 ' + CHAR(13) ELSE '' END +
@@ -1476,7 +1518,9 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @L_PT_INFORMED_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_PT_INFORMED_DATE'', 0, A.L_PT_INFORMED_DATE, B.L_PT_INFORMED_DATE) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisOrganisationCode > 1	THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisOrganisationCode'', 0, A.FasterDiagnosisOrganisationCode, B.FasterDiagnosisOrganisationCode) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode > 1 THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisExclusionReasonCode'', 0, A.FasterDiagnosisExclusionReasonCode, B.FasterDiagnosisExclusionReasonCode) = 1 ' + CHAR(13) ELSE '' END +
-						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END
+						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID'', 0, A.ADT_REF_ID, B.ADT_REF_ID) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID'', 0, A.ADT_PLACER_ID, B.ADT_PLACER_ID) = 1 ' + CHAR(13) ELSE '' END
 
 						-- Debug dynamic SQL
 						PRINT @SQL
@@ -1497,7 +1541,7 @@ Description:				A template stored procedure to match records from different sour
 						SELECT	@Srcsys = NULL,@Not_Srcsys = NULL, @Not_linkedcareID = NULL,@PatientPathwayID = NULL,@HospitalNumber = NULL,@NHSNumber = NULL,@L_CANCER_SITE = NULL,@N2_4_PRIORITY_TYPE = NULL,@N2_6_RECEIPT_DATE = NULL,@ADT_REF_ID_SameSys = NULL,@ADT_PLACER_ID_SameSys = NULL
 								,@N2_1_REFERRAL_SOURCE = NULL,@N2_12_CANCER_TYPE = NULL,@N2_13_CANCER_STATUS = NULL,@N2_9_FIRST_SEEN_DATE = NULL,@N1_3_ORG_CODE_SEEN = NULL,@L_OTHER_DIAG_DATE = NULL,@N_UPGRADE_DATE = NULL
 								,@N_UPGRADE_ORG_CODE = NULL,@N4_1_DIAGNOSIS_DATE = NULL,@L_DIAGNOSIS = NULL,@L_ORG_CODE_DIAGNOSIS = NULL,@N4_2_DIAGNOSIS_CODE = NULL, @N4_3_LATERALITY = NULL,@L_PT_INFORMED_DATE = NULL,@FasterDiagnosisOrganisationCode = NULL
-								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL
+								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL, @ADT_REF_ID = NULL, @ADT_PLACER_ID = NULL
 
 						SELECT	-- Required variables
 								@MatchIntention = 'Validation'
@@ -1550,6 +1594,8 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @FasterDiagnosisOrganisationCode = 1 THEN		'									AND	A.FasterDiagnosisOrganisationCode = B.FasterDiagnosisOrganisationCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode = 1 THEN	'									AND	A.FasterDiagnosisExclusionReasonCode = B.FasterDiagnosisExclusionReasonCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @NotRecurrence = 1	THEN					'									AND	A.NotRecurrence = B.NotRecurrence ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID = 1	THEN						'									AND	A.ADT_REF_ID = B.ADT_REF_ID ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID = 1	THEN					'									AND	A.ADT_PLACER_ID = B.ADT_PLACER_ID ' + CHAR(13) ELSE '' END +
 																				'WHERE		1 = 1 ' + CHAR(13) +
 						CASE WHEN @Not_Srcsys >1 THEN							'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 0 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @Srcsys >1 THEN								'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 1 ' + CHAR(13) ELSE '' END +
@@ -1579,7 +1625,9 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @L_PT_INFORMED_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_PT_INFORMED_DATE'', 0, A.L_PT_INFORMED_DATE, B.L_PT_INFORMED_DATE) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisOrganisationCode > 1	THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisOrganisationCode'', 0, A.FasterDiagnosisOrganisationCode, B.FasterDiagnosisOrganisationCode) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode > 1 THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisExclusionReasonCode'', 0, A.FasterDiagnosisExclusionReasonCode, B.FasterDiagnosisExclusionReasonCode) = 1 ' + CHAR(13) ELSE '' END +
-						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END
+						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID'', 0, A.ADT_REF_ID, B.ADT_REF_ID) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID'', 0, A.ADT_PLACER_ID, B.ADT_PLACER_ID) = 1 ' + CHAR(13) ELSE '' END
 
 						-- Debug dynamic SQL
 						PRINT @SQL
@@ -1600,7 +1648,7 @@ Description:				A template stored procedure to match records from different sour
 						SELECT	@Srcsys = NULL,@Not_Srcsys = NULL, @Not_linkedcareID = NULL,@PatientPathwayID = NULL,@HospitalNumber = NULL,@NHSNumber = NULL,@L_CANCER_SITE = NULL,@N2_4_PRIORITY_TYPE = NULL,@N2_6_RECEIPT_DATE = NULL,@ADT_REF_ID_SameSys = NULL,@ADT_PLACER_ID_SameSys = NULL
 								,@N2_1_REFERRAL_SOURCE = NULL,@N2_12_CANCER_TYPE = NULL,@N2_13_CANCER_STATUS = NULL,@N2_9_FIRST_SEEN_DATE = NULL,@N1_3_ORG_CODE_SEEN = NULL,@L_OTHER_DIAG_DATE = NULL,@N_UPGRADE_DATE = NULL
 								,@N_UPGRADE_ORG_CODE = NULL,@N4_1_DIAGNOSIS_DATE = NULL,@L_DIAGNOSIS = NULL,@L_ORG_CODE_DIAGNOSIS = NULL,@N4_2_DIAGNOSIS_CODE = NULL, @N4_3_LATERALITY = NULL,@L_PT_INFORMED_DATE = NULL,@FasterDiagnosisOrganisationCode = NULL
-								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL
+								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL, @ADT_REF_ID = NULL, @ADT_PLACER_ID = NULL
 
 						SELECT	-- Required variables
 								@MatchIntention = 'Validation'
@@ -1653,6 +1701,8 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @FasterDiagnosisOrganisationCode = 1 THEN		'									AND	A.FasterDiagnosisOrganisationCode = B.FasterDiagnosisOrganisationCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode = 1 THEN	'									AND	A.FasterDiagnosisExclusionReasonCode = B.FasterDiagnosisExclusionReasonCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @NotRecurrence = 1	THEN					'									AND	A.NotRecurrence = B.NotRecurrence ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID = 1	THEN						'									AND	A.ADT_REF_ID = B.ADT_REF_ID ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID = 1	THEN					'									AND	A.ADT_PLACER_ID = B.ADT_PLACER_ID ' + CHAR(13) ELSE '' END +
 																				'WHERE		1 = 1 ' + CHAR(13) +
 						CASE WHEN @Not_Srcsys >1 THEN							'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 0 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @Srcsys >1 THEN								'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 1 ' + CHAR(13) ELSE '' END +
@@ -1682,7 +1732,9 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @L_PT_INFORMED_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_PT_INFORMED_DATE'', 0, A.L_PT_INFORMED_DATE, B.L_PT_INFORMED_DATE) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisOrganisationCode > 1	THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisOrganisationCode'', 0, A.FasterDiagnosisOrganisationCode, B.FasterDiagnosisOrganisationCode) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode > 1 THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisExclusionReasonCode'', 0, A.FasterDiagnosisExclusionReasonCode, B.FasterDiagnosisExclusionReasonCode) = 1 ' + CHAR(13) ELSE '' END +
-						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END
+						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID'', 0, A.ADT_REF_ID, B.ADT_REF_ID) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID'', 0, A.ADT_PLACER_ID, B.ADT_PLACER_ID) = 1 ' + CHAR(13) ELSE '' END
 
 						-- Debug dynamic SQL
 						PRINT @SQL
@@ -1703,7 +1755,7 @@ Description:				A template stored procedure to match records from different sour
 						SELECT	@Srcsys = NULL,@Not_Srcsys = NULL, @Not_linkedcareID = NULL,@PatientPathwayID = NULL,@HospitalNumber = NULL,@NHSNumber = NULL,@L_CANCER_SITE = NULL,@N2_4_PRIORITY_TYPE = NULL,@N2_6_RECEIPT_DATE = NULL,@ADT_REF_ID_SameSys = NULL,@ADT_PLACER_ID_SameSys = NULL
 								,@N2_1_REFERRAL_SOURCE = NULL,@N2_12_CANCER_TYPE = NULL,@N2_13_CANCER_STATUS = NULL,@N2_9_FIRST_SEEN_DATE = NULL,@N1_3_ORG_CODE_SEEN = NULL,@L_OTHER_DIAG_DATE = NULL,@N_UPGRADE_DATE = NULL
 								,@N_UPGRADE_ORG_CODE = NULL,@N4_1_DIAGNOSIS_DATE = NULL,@L_DIAGNOSIS = NULL,@L_ORG_CODE_DIAGNOSIS = NULL,@N4_2_DIAGNOSIS_CODE = NULL, @N4_3_LATERALITY = NULL,@L_PT_INFORMED_DATE = NULL,@FasterDiagnosisOrganisationCode = NULL
-								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL
+								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL, @ADT_REF_ID = NULL, @ADT_PLACER_ID = NULL
 
 						SELECT	-- Required variables
 								@MatchIntention = 'Validation'
@@ -1756,6 +1808,8 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @FasterDiagnosisOrganisationCode = 1 THEN		'									AND	A.FasterDiagnosisOrganisationCode = B.FasterDiagnosisOrganisationCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode = 1 THEN	'									AND	A.FasterDiagnosisExclusionReasonCode = B.FasterDiagnosisExclusionReasonCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @NotRecurrence = 1	THEN					'									AND	A.NotRecurrence = B.NotRecurrence ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID = 1	THEN						'									AND	A.ADT_REF_ID = B.ADT_REF_ID ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID = 1	THEN					'									AND	A.ADT_PLACER_ID = B.ADT_PLACER_ID ' + CHAR(13) ELSE '' END +
 																				'WHERE		1 = 1 ' + CHAR(13) +
 						CASE WHEN @Not_Srcsys >1 THEN							'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 0 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @Srcsys >1 THEN								'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 1 ' + CHAR(13) ELSE '' END +
@@ -1785,7 +1839,9 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @L_PT_INFORMED_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_PT_INFORMED_DATE'', 0, A.L_PT_INFORMED_DATE, B.L_PT_INFORMED_DATE) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisOrganisationCode > 1	THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisOrganisationCode'', 0, A.FasterDiagnosisOrganisationCode, B.FasterDiagnosisOrganisationCode) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode > 1 THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisExclusionReasonCode'', 0, A.FasterDiagnosisExclusionReasonCode, B.FasterDiagnosisExclusionReasonCode) = 1 ' + CHAR(13) ELSE '' END +
-						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END
+						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID'', 0, A.ADT_REF_ID, B.ADT_REF_ID) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID'', 0, A.ADT_PLACER_ID, B.ADT_PLACER_ID) = 1 ' + CHAR(13) ELSE '' END
 
 						-- Debug dynamic SQL
 						PRINT @SQL
@@ -1806,7 +1862,7 @@ Description:				A template stored procedure to match records from different sour
 						SELECT	@Srcsys = NULL,@Not_Srcsys = NULL, @Not_linkedcareID = NULL,@PatientPathwayID = NULL,@HospitalNumber = NULL,@NHSNumber = NULL,@L_CANCER_SITE = NULL,@N2_4_PRIORITY_TYPE = NULL,@N2_6_RECEIPT_DATE = NULL,@ADT_REF_ID_SameSys = NULL,@ADT_PLACER_ID_SameSys = NULL
 								,@N2_1_REFERRAL_SOURCE = NULL,@N2_12_CANCER_TYPE = NULL,@N2_13_CANCER_STATUS = NULL,@N2_9_FIRST_SEEN_DATE = NULL,@N1_3_ORG_CODE_SEEN = NULL,@L_OTHER_DIAG_DATE = NULL,@N_UPGRADE_DATE = NULL
 								,@N_UPGRADE_ORG_CODE = NULL,@N4_1_DIAGNOSIS_DATE = NULL,@L_DIAGNOSIS = NULL,@L_ORG_CODE_DIAGNOSIS = NULL,@N4_2_DIAGNOSIS_CODE = NULL, @N4_3_LATERALITY = NULL,@L_PT_INFORMED_DATE = NULL,@FasterDiagnosisOrganisationCode = NULL
-								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL
+								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL, @ADT_REF_ID = NULL, @ADT_PLACER_ID = NULL
 
 						SELECT	-- Required variables
 								@MatchIntention = 'Validation'
@@ -1859,6 +1915,8 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @FasterDiagnosisOrganisationCode = 1 THEN		'									AND	A.FasterDiagnosisOrganisationCode = B.FasterDiagnosisOrganisationCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode = 1 THEN	'									AND	A.FasterDiagnosisExclusionReasonCode = B.FasterDiagnosisExclusionReasonCode ' + CHAR(13) ELSE '' END +
 						CASE WHEN @NotRecurrence = 1	THEN					'									AND	A.NotRecurrence = B.NotRecurrence ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID = 1	THEN						'									AND	A.ADT_REF_ID = B.ADT_REF_ID ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID = 1	THEN					'									AND	A.ADT_PLACER_ID = B.ADT_PLACER_ID ' + CHAR(13) ELSE '' END +
 																				'WHERE		1 = 1 ' + CHAR(13) +
 						CASE WHEN @Not_Srcsys >1 THEN							'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 0 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @Srcsys >1 THEN								'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 1 ' + CHAR(13) ELSE '' END +
@@ -1888,7 +1946,11 @@ Description:				A template stored procedure to match records from different sour
 						CASE WHEN @L_PT_INFORMED_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_PT_INFORMED_DATE'', 0, A.L_PT_INFORMED_DATE, B.L_PT_INFORMED_DATE) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisOrganisationCode > 1	THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisOrganisationCode'', 0, A.FasterDiagnosisOrganisationCode, B.FasterDiagnosisOrganisationCode) = 1 ' + CHAR(13) ELSE '' END +
 						CASE WHEN @FasterDiagnosisExclusionReasonCode > 1 THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisExclusionReasonCode'', 0, A.FasterDiagnosisExclusionReasonCode, B.FasterDiagnosisExclusionReasonCode) = 1 ' + CHAR(13) ELSE '' END +
-						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END
+						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID'', 0, A.ADT_REF_ID, B.ADT_REF_ID) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID'', 0, A.ADT_PLACER_ID, B.ADT_PLACER_ID) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID'', 0, A.ADT_REF_ID, B.ADT_REF_ID) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID'', 0, A.ADT_PLACER_ID, B.ADT_PLACER_ID) = 1 ' + CHAR(13) ELSE '' END
 
 						-- Debug dynamic SQL
 						PRINT @SQL
@@ -1909,7 +1971,7 @@ Description:				A template stored procedure to match records from different sour
 						--SELECT	@Srcsys = NULL,@Not_Srcsys = NULL, @Not_linkedcareID = NULL,@PatientPathwayID = NULL,@HospitalNumber = NULL,@NHSNumber = NULL,@L_CANCER_SITE = NULL,@N2_4_PRIORITY_TYPE = NULL,@N2_6_RECEIPT_DATE = NULL,@ADT_REF_ID_SameSys = NULL,@ADT_PLACER_ID_SameSys = NULL
 						--		,@N2_1_REFERRAL_SOURCE = NULL,@N2_12_CANCER_TYPE = NULL,@N2_13_CANCER_STATUS = NULL,@N2_9_FIRST_SEEN_DATE = NULL,@N1_3_ORG_CODE_SEEN = NULL,@L_OTHER_DIAG_DATE = NULL,@N_UPGRADE_DATE = NULL
 						--		,@N_UPGRADE_ORG_CODE = NULL,@N4_1_DIAGNOSIS_DATE = NULL,@L_DIAGNOSIS = NULL,@L_ORG_CODE_DIAGNOSIS = NULL,@N4_2_DIAGNOSIS_CODE = NULL, @N4_3_LATERALITY = NULL,@L_PT_INFORMED_DATE = NULL,@FasterDiagnosisOrganisationCode = NULL
-						--		,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL
+						--		,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL,         ,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL, @ADT_REF_ID = NULL, @ADT_PLACER_ID = NULL
 
 						--SELECT	-- Required variables
 						--		@MatchIntention = 'Validation'
@@ -1964,6 +2026,8 @@ Description:				A template stored procedure to match records from different sour
 						--CASE WHEN @FasterDiagnosisOrganisationCode = 1 THEN		'									AND	A.FasterDiagnosisOrganisationCode = B.FasterDiagnosisOrganisationCode ' + CHAR(13) ELSE '' END +
 						--CASE WHEN @FasterDiagnosisExclusionReasonCode = 1 THEN	'									AND	A.FasterDiagnosisExclusionReasonCode = B.FasterDiagnosisExclusionReasonCode ' + CHAR(13) ELSE '' END +
 						--CASE WHEN @NotRecurrence = 1	THEN					'									AND	A.NotRecurrence = B.NotRecurrence ' + CHAR(13) ELSE '' END +
+						--CASE WHEN @ADT_REF_ID = 1	THEN						'									AND	A.ADT_REF_ID = B.ADT_REF_ID ' + CHAR(13) ELSE '' END +
+						--CASE WHEN @ADT_PLACER_ID = 1	THEN					'									AND	A.ADT_PLACER_ID = B.ADT_PLACER_ID ' + CHAR(13) ELSE '' END +
 						--														'WHERE		1 = 1 ' + CHAR(13) +
 						--CASE WHEN @Not_Srcsys >1 THEN							'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 0 ' + CHAR(13) ELSE '' END +
 						--CASE WHEN @Srcsys >1 THEN								'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 1 ' + CHAR(13) ELSE '' END +
@@ -1993,7 +2057,9 @@ Description:				A template stored procedure to match records from different sour
 						--CASE WHEN @L_PT_INFORMED_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_PT_INFORMED_DATE'', 0, A.L_PT_INFORMED_DATE, B.L_PT_INFORMED_DATE) = 1 ' + CHAR(13) ELSE '' END +
 						--CASE WHEN @FasterDiagnosisOrganisationCode > 1	THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisOrganisationCode'', 0, A.FasterDiagnosisOrganisationCode, B.FasterDiagnosisOrganisationCode) = 1 ' + CHAR(13) ELSE '' END +
 						--CASE WHEN @FasterDiagnosisExclusionReasonCode > 1 THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisExclusionReasonCode'', 0, A.FasterDiagnosisExclusionReasonCode, B.FasterDiagnosisExclusionReasonCode) = 1 ' + CHAR(13) ELSE '' END +
-						--CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END
+						--CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END +
+						--CASE WHEN @ADT_REF_ID > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID'', 0, A.ADT_REF_ID, B.ADT_REF_ID) = 1 ' + CHAR(13) ELSE '' END +
+						--CASE WHEN @ADT_PLACER_ID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID'', 0, A.ADT_PLACER_ID, B.ADT_PLACER_ID) = 1 ' + CHAR(13) ELSE '' END
 
 						---- Debug dynamic SQL
 						--PRINT @SQL
@@ -2014,7 +2080,7 @@ Description:				A template stored procedure to match records from different sour
 						--SELECT	@Srcsys = NULL,@Not_Srcsys = NULL, @Not_linkedcareID = NULL,@PatientPathwayID = NULL,@HospitalNumber = NULL,@NHSNumber = NULL,@L_CANCER_SITE = NULL,@N2_4_PRIORITY_TYPE = NULL,@N2_6_RECEIPT_DATE = NULL,@ADT_REF_ID_SameSys = NULL,@ADT_PLACER_ID_SameSys = NULL
 						--		,@N2_1_REFERRAL_SOURCE = NULL,@N2_12_CANCER_TYPE = NULL,@N2_13_CANCER_STATUS = NULL,@N2_9_FIRST_SEEN_DATE = NULL,@N1_3_ORG_CODE_SEEN = NULL,@L_OTHER_DIAG_DATE = NULL,@N_UPGRADE_DATE = NULL
 						--		,@N_UPGRADE_ORG_CODE = NULL,@N4_1_DIAGNOSIS_DATE = NULL,@L_DIAGNOSIS = NULL,@L_ORG_CODE_DIAGNOSIS = NULL,@N4_2_DIAGNOSIS_CODE = NULL, @N4_3_LATERALITY = NULL,@L_PT_INFORMED_DATE = NULL,@FasterDiagnosisOrganisationCode = NULL
-						--		,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL
+						--		,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL,         ,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL, @ADT_REF_ID = NULL, @ADT_PLACER_ID = NULL
 
 						--SELECT	-- Required variables
 						--		@MatchIntention = 'Validation'
@@ -2069,6 +2135,8 @@ Description:				A template stored procedure to match records from different sour
 						--CASE WHEN @FasterDiagnosisOrganisationCode = 1 THEN		'									AND	A.FasterDiagnosisOrganisationCode = B.FasterDiagnosisOrganisationCode ' + CHAR(13) ELSE '' END +
 						--CASE WHEN @FasterDiagnosisExclusionReasonCode = 1 THEN	'									AND	A.FasterDiagnosisExclusionReasonCode = B.FasterDiagnosisExclusionReasonCode ' + CHAR(13) ELSE '' END +
 						--CASE WHEN @NotRecurrence = 1	THEN					'									AND	A.NotRecurrence = B.NotRecurrence ' + CHAR(13) ELSE '' END +
+						--CASE WHEN @ADT_REF_ID = 1	THEN						'									AND	A.ADT_REF_ID = B.ADT_REF_ID ' + CHAR(13) ELSE '' END +
+						--CASE WHEN @ADT_PLACER_ID = 1	THEN					'									AND	A.ADT_PLACER_ID = B.ADT_PLACER_ID ' + CHAR(13) ELSE '' END +
 						--														'WHERE		1 = 1 ' + CHAR(13) +
 						--CASE WHEN @Not_Srcsys >1 THEN							'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 0 ' + CHAR(13) ELSE '' END +
 						--CASE WHEN @Srcsys >1 THEN								'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 1 ' + CHAR(13) ELSE '' END +
@@ -2098,7 +2166,9 @@ Description:				A template stored procedure to match records from different sour
 						--CASE WHEN @L_PT_INFORMED_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_PT_INFORMED_DATE'', 0, A.L_PT_INFORMED_DATE, B.L_PT_INFORMED_DATE) = 1 ' + CHAR(13) ELSE '' END +
 						--CASE WHEN @FasterDiagnosisOrganisationCode > 1	THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisOrganisationCode'', 0, A.FasterDiagnosisOrganisationCode, B.FasterDiagnosisOrganisationCode) = 1 ' + CHAR(13) ELSE '' END +
 						--CASE WHEN @FasterDiagnosisExclusionReasonCode > 1 THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisExclusionReasonCode'', 0, A.FasterDiagnosisExclusionReasonCode, B.FasterDiagnosisExclusionReasonCode) = 1 ' + CHAR(13) ELSE '' END +
-						--CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END
+						--CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END +
+						--CASE WHEN @ADT_REF_ID > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID'', 0, A.ADT_REF_ID, B.ADT_REF_ID) = 1 ' + CHAR(13) ELSE '' END +
+						--CASE WHEN @ADT_PLACER_ID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID'', 0, A.ADT_PLACER_ID, B.ADT_PLACER_ID) = 1 ' + CHAR(13) ELSE '' END
 
 						---- Debug dynamic SQL
 						--PRINT @SQL
@@ -2119,7 +2189,7 @@ Description:				A template stored procedure to match records from different sour
 						--SELECT	@Srcsys = NULL,@Not_Srcsys = NULL, @Not_linkedcareID = NULL,@PatientPathwayID = NULL,@HospitalNumber = NULL,@NHSNumber = NULL,@L_CANCER_SITE = NULL,@N2_4_PRIORITY_TYPE = NULL,@N2_6_RECEIPT_DATE = NULL,@ADT_REF_ID_SameSys = NULL,@ADT_PLACER_ID_SameSys = NULL
 						--		,@N2_1_REFERRAL_SOURCE = NULL,@N2_12_CANCER_TYPE = NULL,@N2_13_CANCER_STATUS = NULL,@N2_9_FIRST_SEEN_DATE = NULL,@N1_3_ORG_CODE_SEEN = NULL,@L_OTHER_DIAG_DATE = NULL,@N_UPGRADE_DATE = NULL
 						--		,@N_UPGRADE_ORG_CODE = NULL,@N4_1_DIAGNOSIS_DATE = NULL,@L_DIAGNOSIS = NULL,@L_ORG_CODE_DIAGNOSIS = NULL,@N4_2_DIAGNOSIS_CODE = NULL, @N4_3_LATERALITY = NULL,@L_PT_INFORMED_DATE = NULL,@FasterDiagnosisOrganisationCode = NULL
-						--		,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL
+						--		,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL,         ,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL, @ADT_REF_ID = NULL, @ADT_PLACER_ID = NULL
 
 						--SELECT	-- Required variables
 						--		@MatchIntention = 'Validation'
@@ -2175,6 +2245,8 @@ Description:				A template stored procedure to match records from different sour
 						--CASE WHEN @FasterDiagnosisOrganisationCode = 1 THEN		'									AND	A.FasterDiagnosisOrganisationCode = B.FasterDiagnosisOrganisationCode ' + CHAR(13) ELSE '' END +
 						--CASE WHEN @FasterDiagnosisExclusionReasonCode = 1 THEN	'									AND	A.FasterDiagnosisExclusionReasonCode = B.FasterDiagnosisExclusionReasonCode ' + CHAR(13) ELSE '' END +
 						--CASE WHEN @NotRecurrence = 1	THEN					'									AND	A.NotRecurrence = B.NotRecurrence ' + CHAR(13) ELSE '' END +
+						--CASE WHEN @ADT_REF_ID = 1	THEN						'									AND	A.ADT_REF_ID = B.ADT_REF_ID ' + CHAR(13) ELSE '' END +
+						--CASE WHEN @ADT_PLACER_ID = 1	THEN					'									AND	A.ADT_PLACER_ID = B.ADT_PLACER_ID ' + CHAR(13) ELSE '' END +
 						--														'WHERE		1 = 1 ' + CHAR(13) +
 						--CASE WHEN @Not_Srcsys >1 THEN							'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 0 ' + CHAR(13) ELSE '' END +
 						--CASE WHEN @Srcsys >1 THEN								'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 1 ' + CHAR(13) ELSE '' END +
@@ -2204,7 +2276,9 @@ Description:				A template stored procedure to match records from different sour
 						--CASE WHEN @L_PT_INFORMED_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_PT_INFORMED_DATE'', 0, A.L_PT_INFORMED_DATE, B.L_PT_INFORMED_DATE) = 1 ' + CHAR(13) ELSE '' END +
 						--CASE WHEN @FasterDiagnosisOrganisationCode > 1	THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisOrganisationCode'', 0, A.FasterDiagnosisOrganisationCode, B.FasterDiagnosisOrganisationCode) = 1 ' + CHAR(13) ELSE '' END +
 						--CASE WHEN @FasterDiagnosisExclusionReasonCode > 1 THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisExclusionReasonCode'', 0, A.FasterDiagnosisExclusionReasonCode, B.FasterDiagnosisExclusionReasonCode) = 1 ' + CHAR(13) ELSE '' END +
-						--CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END
+						--CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END +
+						--CASE WHEN @ADT_REF_ID > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID'', 0, A.ADT_REF_ID, B.ADT_REF_ID) = 1 ' + CHAR(13) ELSE '' END +
+						--CASE WHEN @ADT_PLACER_ID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID'', 0, A.ADT_PLACER_ID, B.ADT_PLACER_ID) = 1 ' + CHAR(13) ELSE '' END
 
 						---- Debug dynamic SQL
 						--PRINT @SQL
@@ -2225,7 +2299,7 @@ Description:				A template stored procedure to match records from different sour
 						--SELECT	@Srcsys = NULL,@Not_Srcsys = NULL, @Not_linkedcareID = NULL,@PatientPathwayID = NULL,@HospitalNumber = NULL,@NHSNumber = NULL,@L_CANCER_SITE = NULL,@N2_4_PRIORITY_TYPE = NULL,@N2_6_RECEIPT_DATE = NULL,@ADT_REF_ID_SameSys = NULL,@ADT_PLACER_ID_SameSys = NULL
 						--		,@N2_1_REFERRAL_SOURCE = NULL,@N2_12_CANCER_TYPE = NULL,@N2_13_CANCER_STATUS = NULL,@N2_9_FIRST_SEEN_DATE = NULL,@N1_3_ORG_CODE_SEEN = NULL,@L_OTHER_DIAG_DATE = NULL,@N_UPGRADE_DATE = NULL
 						--		,@N_UPGRADE_ORG_CODE = NULL,@N4_1_DIAGNOSIS_DATE = NULL,@L_DIAGNOSIS = NULL,@L_ORG_CODE_DIAGNOSIS = NULL,@N4_2_DIAGNOSIS_CODE = NULL, @N4_3_LATERALITY = NULL,@L_PT_INFORMED_DATE = NULL,@FasterDiagnosisOrganisationCode = NULL
-						--		,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL
+						--		,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL,         ,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL, @ADT_REF_ID = NULL, @ADT_PLACER_ID = NULL
 
 						--SELECT	-- Required variables
 						--		@MatchIntention = 'Validation'
@@ -2281,6 +2355,8 @@ Description:				A template stored procedure to match records from different sour
 						--CASE WHEN @FasterDiagnosisOrganisationCode = 1 THEN		'									AND	A.FasterDiagnosisOrganisationCode = B.FasterDiagnosisOrganisationCode ' + CHAR(13) ELSE '' END +
 						--CASE WHEN @FasterDiagnosisExclusionReasonCode = 1 THEN	'									AND	A.FasterDiagnosisExclusionReasonCode = B.FasterDiagnosisExclusionReasonCode ' + CHAR(13) ELSE '' END +
 						--CASE WHEN @NotRecurrence = 1	THEN					'									AND	A.NotRecurrence = B.NotRecurrence ' + CHAR(13) ELSE '' END +
+						--CASE WHEN @ADT_REF_ID = 1	THEN						'									AND	A.ADT_REF_ID = B.ADT_REF_ID ' + CHAR(13) ELSE '' END +
+						--CASE WHEN @ADT_PLACER_ID = 1	THEN					'									AND	A.ADT_PLACER_ID = B.ADT_PLACER_ID ' + CHAR(13) ELSE '' END +
 						--														'WHERE		1 = 1 ' + CHAR(13) +
 						--CASE WHEN @Not_Srcsys >1 THEN							'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 0 ' + CHAR(13) ELSE '' END +
 						--CASE WHEN @Srcsys >1 THEN								'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 1 ' + CHAR(13) ELSE '' END +
@@ -2310,7 +2386,9 @@ Description:				A template stored procedure to match records from different sour
 						--CASE WHEN @L_PT_INFORMED_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_PT_INFORMED_DATE'', 0, A.L_PT_INFORMED_DATE, B.L_PT_INFORMED_DATE) = 1 ' + CHAR(13) ELSE '' END +
 						--CASE WHEN @FasterDiagnosisOrganisationCode > 1	THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisOrganisationCode'', 0, A.FasterDiagnosisOrganisationCode, B.FasterDiagnosisOrganisationCode) = 1 ' + CHAR(13) ELSE '' END +
 						--CASE WHEN @FasterDiagnosisExclusionReasonCode > 1 THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisExclusionReasonCode'', 0, A.FasterDiagnosisExclusionReasonCode, B.FasterDiagnosisExclusionReasonCode) = 1 ' + CHAR(13) ELSE '' END +
-						--CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END
+						--CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END +
+						--CASE WHEN @ADT_REF_ID > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID'', 0, A.ADT_REF_ID, B.ADT_REF_ID) = 1 ' + CHAR(13) ELSE '' END +
+						--CASE WHEN @ADT_PLACER_ID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID'', 0, A.ADT_PLACER_ID, B.ADT_PLACER_ID) = 1 ' + CHAR(13) ELSE '' END
 
 						---- Debug dynamic SQL
 						--PRINT @SQL
@@ -2325,6 +2403,213 @@ Description:				A template stored procedure to match records from different sour
 				
 						/*########################################################################################################################################################################################################################*/
 
+						SELECT @CurrentDttm = GETDATE(); EXEC Merge_DM_MatchAudit.uspProcessAudit @IsUpdate = 1, @SessionID = @@SPID, @UserID = @CurrentUser, @ProcName = @ProcIdName, @Section = @CurrentSection, @StartDttm = NULL, @EndDttm = @CurrentDttm, @Success = 1, @ErrorMessage = NULL
+						SELECT @CurrentDttm = GETDATE(), @CurrentSection = 'Loop ' + CAST(@LoopCounter AS VARCHAR(255)) + ' - Match 19'; EXEC Merge_DM_MatchAudit.uspProcessAudit @IsUpdate = 0, @SessionID = @@SPID, @UserID = @CurrentUser, @ProcName = @ProcIdName, @Section = @CurrentSection, @StartDttm = @CurrentDttm, @EndDttm = NULL, @Success = NULL, @ErrorMessage = NULL
+	
+	
+						/* Match type 19 ##########################################################################################################################################################################################################*/
+
+						-- Refresh the match variables and set the columns we want to match
+						SELECT	@Srcsys = NULL,@Not_Srcsys = NULL, @Not_linkedcareID = NULL,@PatientPathwayID = NULL,@HospitalNumber = NULL,@NHSNumber = NULL,@L_CANCER_SITE = NULL,@N2_4_PRIORITY_TYPE = NULL,@N2_6_RECEIPT_DATE = NULL,@ADT_REF_ID_SameSys = NULL,@ADT_PLACER_ID_SameSys = NULL
+								,@N2_1_REFERRAL_SOURCE = NULL,@N2_12_CANCER_TYPE = NULL,@N2_13_CANCER_STATUS = NULL,@N2_9_FIRST_SEEN_DATE = NULL,@N1_3_ORG_CODE_SEEN = NULL,@L_OTHER_DIAG_DATE = NULL,@N_UPGRADE_DATE = NULL
+								,@N_UPGRADE_ORG_CODE = NULL,@N4_1_DIAGNOSIS_DATE = NULL,@L_DIAGNOSIS = NULL,@L_ORG_CODE_DIAGNOSIS = NULL,@N4_2_DIAGNOSIS_CODE = NULL, @N4_3_LATERALITY = NULL,@L_PT_INFORMED_DATE = NULL,@FasterDiagnosisOrganisationCode = NULL
+								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL, @ADT_REF_ID = NULL, @ADT_PLACER_ID = NULL
+
+						SELECT	-- Required variables
+								@MatchIntention = 'Algorithmic'
+								,@MatchType = 19
+								-- Only set the variables for columns you want to match
+								,@ADT_REF_ID	= Merge_DM_Match.tblMAIN_REFERRALS_fnCompare('ADT_REF_ID',1,NULL,NULL)
+
+						SET @SQL =												'SELECT		A.IsSCR ' + CHAR(13) +
+																				'			,A.SrcSys ' + CHAR(13) +
+																				'			,A.Src_UID ' + CHAR(13) +
+																				'			,B.IsSCR ' + CHAR(13) +
+																				'			,B.SrcSys ' + CHAR(13) +
+																				'			,B.Src_UID ' + CHAR(13) +
+																				'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
+																				'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
+																				'FROM		#tblMAIN_REFERRALS_Incremental A ' + CHAR(13) +
+																				'INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH B ' + CHAR(13) +
+																				'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + -- Don't self join
+						CASE WHEN @LoopCounter > 1 THEN							'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
+						CASE WHEN @Not_Srcsys = 1 THEN							'                                   AND	A.Srcsys != B.Srcsys ' + CHAR(13) ELSE '' END +  
+						CASE WHEN @Srcsys = 1 THEN								'                                   AND	A.Srcsys = B.Srcsys ' + CHAR(13) ELSE '' END +  
+						CASE WHEN @Not_linkedcareID = 1 THEN					'									AND	A.linkedCareID != B.linkedCareID ' + CHAR(13) ELSE '' END +
+						CASE WHEN @PatientPathwayID = 1 THEN					'									AND	A.PatientPathwayID = B.PatientPathwayID ' + CHAR(13) ELSE '' END +
+						CASE WHEN @HospitalNumber = 1	THEN					'									AND	A.HospitalNumber = B.HospitalNumber ' + CHAR(13) ELSE '' END +
+						CASE WHEN @NHSNumber = 1	THEN						'									AND	A.NHSNumber = B.NHSNumber ' + CHAR(13) ELSE '' END +
+						CASE WHEN @L_CANCER_SITE = 1 THEN						'									AND	A.L_CANCER_SITE = B.L_CANCER_SITE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N2_4_PRIORITY_TYPE = 1	THEN				'									AND	A.N2_4_PRIORITY_TYPE = B.N2_4_PRIORITY_TYPE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N2_6_RECEIPT_DATE = 1	THEN				'									AND	A.N2_6_RECEIPT_DATE = B.N2_6_RECEIPT_DATE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N2_5_DECISION_DATE = 1	THEN				'									AND	A.N2_5_DECISION_DATE = B.N2_5_DECISION_DATE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID_SameSys = 1 THEN					'									AND	A.ADT_REF_ID_SameSys = B.ADT_REF_ID_SameSys ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID_SameSys = 1	THEN			'									AND	A.ADT_PLACER_ID_SameSys = B.ADT_PLACER_ID_SameSys ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N2_1_REFERRAL_SOURCE = 1	THEN				'									AND	A.N2_1_REFERRAL_SOURCE = B.N2_1_REFERRAL_SOURCE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N2_12_CANCER_TYPE = 1 THEN					'									AND	A.N2_12_CANCER_TYPE = B.N2_12_CANCER_TYPE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N2_13_CANCER_STATUS = 1	THEN				'									AND	A.N2_13_CANCER_STATUS = B.N2_13_CANCER_STATUS ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N2_9_FIRST_SEEN_DATE = 1	THEN				'									AND	A.N2_9_FIRST_SEEN_DATE = B.N2_9_FIRST_SEEN_DATE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N1_3_ORG_CODE_SEEN = 1 THEN					'									AND	A.N1_3_ORG_CODE_SEEN = B.N1_3_ORG_CODE_SEEN ' + CHAR(13) ELSE '' END +
+						CASE WHEN @L_OTHER_DIAG_DATE = 1	THEN				'									AND	A.L_OTHER_DIAG_DATE = B.L_OTHER_DIAG_DATE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N_UPGRADE_DATE = 1	THEN					'									AND	A.N_UPGRADE_DATE = B.N_UPGRADE_DATE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N_UPGRADE_ORG_CODE = 1 THEN					'									AND	A.N_UPGRADE_ORG_CODE = B.N_UPGRADE_ORG_CODE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N4_1_DIAGNOSIS_DATE = 1	THEN				'									AND	A.N4_1_DIAGNOSIS_DATE = B.N4_1_DIAGNOSIS_DATE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @L_DIAGNOSIS = 1	THEN						'									AND	A.L_DIAGNOSIS = B.L_DIAGNOSIS ' + CHAR(13) ELSE '' END +
+						CASE WHEN @L_ORG_CODE_DIAGNOSIS = 1 THEN				'									AND	A.L_ORG_CODE_DIAGNOSIS = B.L_ORG_CODE_DIAGNOSIS ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N4_2_DIAGNOSIS_CODE = 1	THEN				'									AND	A.N4_2_DIAGNOSIS_CODE = B.N4_2_DIAGNOSIS_CODE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N4_3_LATERALITY = 1	THEN					'									AND	A.N4_3_LATERALITY = B.N4_3_LATERALITY ' + CHAR(13) ELSE '' END +
+						CASE WHEN @L_PT_INFORMED_DATE = 1	THEN				'									AND	A.L_PT_INFORMED_DATE = B.L_PT_INFORMED_DATE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @FasterDiagnosisOrganisationCode = 1 THEN		'									AND	A.FasterDiagnosisOrganisationCode = B.FasterDiagnosisOrganisationCode ' + CHAR(13) ELSE '' END +
+						CASE WHEN @FasterDiagnosisExclusionReasonCode = 1 THEN	'									AND	A.FasterDiagnosisExclusionReasonCode = B.FasterDiagnosisExclusionReasonCode ' + CHAR(13) ELSE '' END +
+						CASE WHEN @NotRecurrence = 1	THEN					'									AND	A.NotRecurrence = B.NotRecurrence ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID = 1	THEN						'									AND	A.ADT_REF_ID = B.ADT_REF_ID ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID = 1	THEN					'									AND	A.ADT_PLACER_ID = B.ADT_PLACER_ID ' + CHAR(13) ELSE '' END +
+																				'WHERE		1 = 1 ' + CHAR(13) +
+						CASE WHEN @Not_Srcsys >1 THEN							'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 0 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Srcsys >1 THEN								'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Not_linkedcareID > 1 THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''linkedCareID'', 0, A.linkedCareID, B.linkedCareID) = 0 ' + CHAR(13) ELSE '' END +						
+						CASE WHEN @PatientPathwayID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''PatientPathwayID'', 0, A.PatientPathwayID, B.PatientPathwayID) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @HospitalNumber > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''HospitalNumber'', 0, A.HospitalNumber, B.HospitalNumber) = 1 ' + CHAR(13) ELSE '' END + 
+						CASE WHEN @NHSNumber > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NHSNumber'', 0, A.NHSNumber, B.NHSNumber) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @L_CANCER_SITE > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_CANCER_SITE'', 0, A.L_CANCER_SITE, B.L_CANCER_SITE) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N2_4_PRIORITY_TYPE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N2_4_PRIORITY_TYPE'', 0, A.N2_4_PRIORITY_TYPE, B.N2_4_PRIORITY_TYPE) = 1 ' + CHAR(13) ELSE '' END + 
+						CASE WHEN @N2_6_RECEIPT_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N2_6_RECEIPT_DATE'', 0, A.N2_6_RECEIPT_DATE, B.N2_6_RECEIPT_DATE) = 1 ' + CHAR(13) ELSE '' END + 
+						CASE WHEN @N2_5_DECISION_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N2_5_DECISION_DATE'', 0, A.N2_5_DECISION_DATE, B.N2_5_DECISION_DATE) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID_SameSys > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID_SameSys'', 0, A.ADT_REF_ID_SameSys, B.ADT_REF_ID_SameSys) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID_SameSys > 1	THEN			'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID_SameSys'', 0, A.ADT_PLACER_ID_SameSys, B.ADT_PLACER_ID_SameSys) = 1 ' + CHAR(13) ELSE '' END + 
+						CASE WHEN @N2_1_REFERRAL_SOURCE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N2_1_REFERRAL_SOURCE'', 0, A.N2_1_REFERRAL_SOURCE, B.N2_1_REFERRAL_SOURCE) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N2_12_CANCER_TYPE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N2_12_CANCER_TYPE'', 0, A.N2_12_CANCER_TYPE, B.N2_12_CANCER_TYPE) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N2_13_CANCER_STATUS > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N2_13_CANCER_STATUS'', 0, A.N2_13_CANCER_STATUS, B.N2_13_CANCER_STATUS) = 1 ' + CHAR(13) ELSE '' END + 
+						CASE WHEN @N2_9_FIRST_SEEN_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N2_9_FIRST_SEEN_DATE'', 0, A.N2_9_FIRST_SEEN_DATE, B.N2_9_FIRST_SEEN_DATE) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N1_3_ORG_CODE_SEEN > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N1_3_ORG_CODE_SEEN'', 0, A.N1_3_ORG_CODE_SEEN, B.N1_3_ORG_CODE_SEEN) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @L_OTHER_DIAG_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_OTHER_DIAG_DATE'', 0, A.L_OTHER_DIAG_DATE, B.L_OTHER_DIAG_DATE) = 1 ' + CHAR(13) ELSE '' END + 
+						CASE WHEN @N_UPGRADE_DATE > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N_UPGRADE_DATE'', 0, A.N_UPGRADE_DATE, B.N_UPGRADE_DATE) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N_UPGRADE_ORG_CODE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N_UPGRADE_ORG_CODE'', 0, A.N_UPGRADE_ORG_CODE, B.N_UPGRADE_ORG_CODE) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N4_1_DIAGNOSIS_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N4_1_DIAGNOSIS_DATE'', 0, A.N4_1_DIAGNOSIS_DATE, B.N4_1_DIAGNOSIS_DATE) = 1 ' + CHAR(13) ELSE '' END + 
+						CASE WHEN @L_DIAGNOSIS > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_DIAGNOSIS'', 0, A.L_DIAGNOSIS, B.L_DIAGNOSIS) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @L_ORG_CODE_DIAGNOSIS > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_ORG_CODE_DIAGNOSIS'', 0, A.L_ORG_CODE_DIAGNOSIS, B.L_ORG_CODE_DIAGNOSIS) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N4_3_LATERALITY > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N4_3_LATERALITY'', 0, A.N4_3_LATERALITY, B.N4_3_LATERALITY) = 1 ' + CHAR(13) ELSE '' END + 
+						CASE WHEN @N4_2_DIAGNOSIS_CODE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N4_2_DIAGNOSIS_CODE'', 0, A.N4_2_DIAGNOSIS_CODE, B.N4_2_DIAGNOSIS_CODE) = 1 ' + CHAR(13) ELSE '' END + 
+						CASE WHEN @L_PT_INFORMED_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_PT_INFORMED_DATE'', 0, A.L_PT_INFORMED_DATE, B.L_PT_INFORMED_DATE) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @FasterDiagnosisOrganisationCode > 1	THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisOrganisationCode'', 0, A.FasterDiagnosisOrganisationCode, B.FasterDiagnosisOrganisationCode) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @FasterDiagnosisExclusionReasonCode > 1 THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisExclusionReasonCode'', 0, A.FasterDiagnosisExclusionReasonCode, B.FasterDiagnosisExclusionReasonCode) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID'', 0, A.ADT_REF_ID, B.ADT_REF_ID) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID'', 0, A.ADT_PLACER_ID, B.ADT_PLACER_ID) = 1 ' + CHAR(13) ELSE '' END
+
+						-- Debug dynamic SQL
+						PRINT @SQL
+		
+						-- Find all the matching entity pairs
+						--IF @LoopCounter = 1 -- consider whether we only want to do high cost matches on the first iteration (to avoid doing lots of matching between non-SCR records)
+						INSERT INTO	#tblMAIN_REFERRALS_Match_EntityPairs_All (IsSCR_A, SrcSys_A, Src_UID_A, IsSCR_B, SrcSys_B, Src_UID_B, MatchType, MatchIntention)
+						EXEC (@SQL)
+				
+						/*########################################################################################################################################################################################################################*/
+				
+				
+						SELECT @CurrentDttm = GETDATE(); EXEC Merge_DM_MatchAudit.uspProcessAudit @IsUpdate = 1, @SessionID = @@SPID, @UserID = @CurrentUser, @ProcName = @ProcIdName, @Section = @CurrentSection, @StartDttm = NULL, @EndDttm = @CurrentDttm, @Success = 1, @ErrorMessage = NULL
+						SELECT @CurrentDttm = GETDATE(), @CurrentSection = 'Loop ' + CAST(@LoopCounter AS VARCHAR(255)) + ' - Match 20'; EXEC Merge_DM_MatchAudit.uspProcessAudit @IsUpdate = 0, @SessionID = @@SPID, @UserID = @CurrentUser, @ProcName = @ProcIdName, @Section = @CurrentSection, @StartDttm = @CurrentDttm, @EndDttm = NULL, @Success = NULL, @ErrorMessage = NULL
+				
+						/* Match type 20 ##########################################################################################################################################################################################################*/
+
+						-- Refresh the match variables and set the columns we want to match
+						SELECT	@Srcsys = NULL,@Not_Srcsys = NULL, @Not_linkedcareID = NULL,@PatientPathwayID = NULL,@HospitalNumber = NULL,@NHSNumber = NULL,@L_CANCER_SITE = NULL,@N2_4_PRIORITY_TYPE = NULL,@N2_6_RECEIPT_DATE = NULL,@ADT_REF_ID_SameSys = NULL,@ADT_PLACER_ID_SameSys = NULL
+								,@N2_1_REFERRAL_SOURCE = NULL,@N2_12_CANCER_TYPE = NULL,@N2_13_CANCER_STATUS = NULL,@N2_9_FIRST_SEEN_DATE = NULL,@N1_3_ORG_CODE_SEEN = NULL,@L_OTHER_DIAG_DATE = NULL,@N_UPGRADE_DATE = NULL
+								,@N_UPGRADE_ORG_CODE = NULL,@N4_1_DIAGNOSIS_DATE = NULL,@L_DIAGNOSIS = NULL,@L_ORG_CODE_DIAGNOSIS = NULL,@N4_2_DIAGNOSIS_CODE = NULL, @N4_3_LATERALITY = NULL,@L_PT_INFORMED_DATE = NULL,@FasterDiagnosisOrganisationCode = NULL
+								,@FasterDiagnosisExclusionReasonCode = NULL, @N2_5_DECISION_DATE = NULL, @NotRecurrence = NULL, @ADT_REF_ID = NULL, @ADT_PLACER_ID = NULL
+
+						SELECT	-- Required variables
+								@MatchIntention = 'Validation'
+								,@MatchType = 20
+								-- Only set the variables for columns you want to match
+								,@ADT_PLACER_ID	= Merge_DM_Match.tblMAIN_REFERRALS_fnCompare('ADT_PLACER_ID',1,NULL,NULL)
+
+						SET @SQL =												'SELECT		A.IsSCR ' + CHAR(13) +
+																				'			,A.SrcSys ' + CHAR(13) +
+																				'			,A.Src_UID ' + CHAR(13) +
+																				'			,B.IsSCR ' + CHAR(13) +
+																				'			,B.SrcSys ' + CHAR(13) +
+																				'			,B.Src_UID ' + CHAR(13) +
+																				'			,' + CAST(@MatchType AS VARCHAR(255)) + ' AS MatchType ' + CHAR(13) +
+																				'			,''' + @MatchIntention + ''' AS MatchType ' + CHAR(13) +
+																				'FROM		#tblMAIN_REFERRALS_Incremental A ' + CHAR(13) +
+																				'INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_mvw_UH B ' + CHAR(13) +
+																				'									ON	CONCAT(CAST(1 - A.IsSCR AS VARCHAR(255)), ''|'', CAST(A.SrcSys AS VARCHAR(255)), ''|'', A.Src_UID) != CONCAT(CAST(1 - B.IsSCR AS VARCHAR(255)), ''|'', CAST(B.SrcSys AS VARCHAR(255)), ''|'', B.Src_UID) ' + -- Don't self join
+						CASE WHEN @LoopCounter > 1 THEN							'									AND	B.IsSCR = 0 ' + CHAR(13) ELSE '' END + -- the first iteration will find all relationships with new / updated SCR records as they are fed into match control / #incremental - all subsequent loops are about consequent relationships between non-SCR systems as they may not already be in match control
+						CASE WHEN @Not_Srcsys = 1 THEN							'                                   AND	A.Srcsys != B.Srcsys ' + CHAR(13) ELSE '' END +  
+						CASE WHEN @Srcsys = 1 THEN								'                                   AND	A.Srcsys = B.Srcsys ' + CHAR(13) ELSE '' END +  
+						CASE WHEN @Not_linkedcareID = 1 THEN					'									AND	A.linkedCareID != B.linkedCareID ' + CHAR(13) ELSE '' END +
+						CASE WHEN @PatientPathwayID = 1 THEN					'									AND	A.PatientPathwayID = B.PatientPathwayID ' + CHAR(13) ELSE '' END +
+						CASE WHEN @HospitalNumber = 1	THEN					'									AND	A.HospitalNumber = B.HospitalNumber ' + CHAR(13) ELSE '' END +
+						CASE WHEN @NHSNumber = 1	THEN						'									AND	A.NHSNumber = B.NHSNumber ' + CHAR(13) ELSE '' END +
+						CASE WHEN @L_CANCER_SITE = 1 THEN						'									AND	A.L_CANCER_SITE = B.L_CANCER_SITE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N2_4_PRIORITY_TYPE = 1	THEN				'									AND	A.N2_4_PRIORITY_TYPE = B.N2_4_PRIORITY_TYPE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N2_6_RECEIPT_DATE = 1	THEN				'									AND	A.N2_6_RECEIPT_DATE = B.N2_6_RECEIPT_DATE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N2_5_DECISION_DATE = 1	THEN				'									AND	A.N2_5_DECISION_DATE = B.N2_5_DECISION_DATE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID_SameSys = 1 THEN					'									AND	A.ADT_REF_ID_SameSys = B.ADT_REF_ID_SameSys ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID_SameSys = 1	THEN			'									AND	A.ADT_PLACER_ID_SameSys = B.ADT_PLACER_ID_SameSys ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N2_1_REFERRAL_SOURCE = 1	THEN				'									AND	A.N2_1_REFERRAL_SOURCE = B.N2_1_REFERRAL_SOURCE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N2_12_CANCER_TYPE = 1 THEN					'									AND	A.N2_12_CANCER_TYPE = B.N2_12_CANCER_TYPE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N2_13_CANCER_STATUS = 1	THEN				'									AND	A.N2_13_CANCER_STATUS = B.N2_13_CANCER_STATUS ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N2_9_FIRST_SEEN_DATE = 1	THEN				'									AND	A.N2_9_FIRST_SEEN_DATE = B.N2_9_FIRST_SEEN_DATE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N1_3_ORG_CODE_SEEN = 1 THEN					'									AND	A.N1_3_ORG_CODE_SEEN = B.N1_3_ORG_CODE_SEEN ' + CHAR(13) ELSE '' END +
+						CASE WHEN @L_OTHER_DIAG_DATE = 1	THEN				'									AND	A.L_OTHER_DIAG_DATE = B.L_OTHER_DIAG_DATE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N_UPGRADE_DATE = 1	THEN					'									AND	A.N_UPGRADE_DATE = B.N_UPGRADE_DATE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N_UPGRADE_ORG_CODE = 1 THEN					'									AND	A.N_UPGRADE_ORG_CODE = B.N_UPGRADE_ORG_CODE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N4_1_DIAGNOSIS_DATE = 1	THEN				'									AND	A.N4_1_DIAGNOSIS_DATE = B.N4_1_DIAGNOSIS_DATE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @L_DIAGNOSIS = 1	THEN						'									AND	A.L_DIAGNOSIS = B.L_DIAGNOSIS ' + CHAR(13) ELSE '' END +
+						CASE WHEN @L_ORG_CODE_DIAGNOSIS = 1 THEN				'									AND	A.L_ORG_CODE_DIAGNOSIS = B.L_ORG_CODE_DIAGNOSIS ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N4_2_DIAGNOSIS_CODE = 1	THEN				'									AND	A.N4_2_DIAGNOSIS_CODE = B.N4_2_DIAGNOSIS_CODE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N4_3_LATERALITY = 1	THEN					'									AND	A.N4_3_LATERALITY = B.N4_3_LATERALITY ' + CHAR(13) ELSE '' END +
+						CASE WHEN @L_PT_INFORMED_DATE = 1	THEN				'									AND	A.L_PT_INFORMED_DATE = B.L_PT_INFORMED_DATE ' + CHAR(13) ELSE '' END +
+						CASE WHEN @FasterDiagnosisOrganisationCode = 1 THEN		'									AND	A.FasterDiagnosisOrganisationCode = B.FasterDiagnosisOrganisationCode ' + CHAR(13) ELSE '' END +
+						CASE WHEN @FasterDiagnosisExclusionReasonCode = 1 THEN	'									AND	A.FasterDiagnosisExclusionReasonCode = B.FasterDiagnosisExclusionReasonCode ' + CHAR(13) ELSE '' END +
+						CASE WHEN @NotRecurrence = 1	THEN					'									AND	A.NotRecurrence = B.NotRecurrence ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID = 1	THEN						'									AND	A.ADT_REF_ID = B.ADT_REF_ID ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID = 1	THEN					'									AND	A.ADT_PLACER_ID = B.ADT_PLACER_ID ' + CHAR(13) ELSE '' END +
+																				'WHERE		1 = 1 ' + CHAR(13) +
+						CASE WHEN @Not_Srcsys >1 THEN							'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 0 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Srcsys >1 THEN								'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''Srcsys'', 0, A.Srcsys, B.Srcsys) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @Not_linkedcareID > 1 THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''linkedCareID'', 0, A.linkedCareID, B.linkedCareID) = 0 ' + CHAR(13) ELSE '' END +						
+						CASE WHEN @PatientPathwayID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''PatientPathwayID'', 0, A.PatientPathwayID, B.PatientPathwayID) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @HospitalNumber > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''HospitalNumber'', 0, A.HospitalNumber, B.HospitalNumber) = 1 ' + CHAR(13) ELSE '' END + 
+						CASE WHEN @NHSNumber > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NHSNumber'', 0, A.NHSNumber, B.NHSNumber) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @L_CANCER_SITE > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_CANCER_SITE'', 0, A.L_CANCER_SITE, B.L_CANCER_SITE) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N2_4_PRIORITY_TYPE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N2_4_PRIORITY_TYPE'', 0, A.N2_4_PRIORITY_TYPE, B.N2_4_PRIORITY_TYPE) = 1 ' + CHAR(13) ELSE '' END + 
+						CASE WHEN @N2_6_RECEIPT_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N2_6_RECEIPT_DATE'', 0, A.N2_6_RECEIPT_DATE, B.N2_6_RECEIPT_DATE) = 1 ' + CHAR(13) ELSE '' END + 
+						CASE WHEN @N2_5_DECISION_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N2_5_DECISION_DATE'', 0, A.N2_5_DECISION_DATE, B.N2_5_DECISION_DATE) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID_SameSys > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID_SameSys'', 0, A.ADT_REF_ID_SameSys, B.ADT_REF_ID_SameSys) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID_SameSys > 1	THEN			'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID_SameSys'', 0, A.ADT_PLACER_ID_SameSys, B.ADT_PLACER_ID_SameSys) = 1 ' + CHAR(13) ELSE '' END + 
+						CASE WHEN @N2_1_REFERRAL_SOURCE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N2_1_REFERRAL_SOURCE'', 0, A.N2_1_REFERRAL_SOURCE, B.N2_1_REFERRAL_SOURCE) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N2_12_CANCER_TYPE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N2_12_CANCER_TYPE'', 0, A.N2_12_CANCER_TYPE, B.N2_12_CANCER_TYPE) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N2_13_CANCER_STATUS > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N2_13_CANCER_STATUS'', 0, A.N2_13_CANCER_STATUS, B.N2_13_CANCER_STATUS) = 1 ' + CHAR(13) ELSE '' END + 
+						CASE WHEN @N2_9_FIRST_SEEN_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N2_9_FIRST_SEEN_DATE'', 0, A.N2_9_FIRST_SEEN_DATE, B.N2_9_FIRST_SEEN_DATE) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N1_3_ORG_CODE_SEEN > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N1_3_ORG_CODE_SEEN'', 0, A.N1_3_ORG_CODE_SEEN, B.N1_3_ORG_CODE_SEEN) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @L_OTHER_DIAG_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_OTHER_DIAG_DATE'', 0, A.L_OTHER_DIAG_DATE, B.L_OTHER_DIAG_DATE) = 1 ' + CHAR(13) ELSE '' END + 
+						CASE WHEN @N_UPGRADE_DATE > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N_UPGRADE_DATE'', 0, A.N_UPGRADE_DATE, B.N_UPGRADE_DATE) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N_UPGRADE_ORG_CODE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N_UPGRADE_ORG_CODE'', 0, A.N_UPGRADE_ORG_CODE, B.N_UPGRADE_ORG_CODE) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N4_1_DIAGNOSIS_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N4_1_DIAGNOSIS_DATE'', 0, A.N4_1_DIAGNOSIS_DATE, B.N4_1_DIAGNOSIS_DATE) = 1 ' + CHAR(13) ELSE '' END + 
+						CASE WHEN @L_DIAGNOSIS > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_DIAGNOSIS'', 0, A.L_DIAGNOSIS, B.L_DIAGNOSIS) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @L_ORG_CODE_DIAGNOSIS > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_ORG_CODE_DIAGNOSIS'', 0, A.L_ORG_CODE_DIAGNOSIS, B.L_ORG_CODE_DIAGNOSIS) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @N4_3_LATERALITY > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N4_3_LATERALITY'', 0, A.N4_3_LATERALITY, B.N4_3_LATERALITY) = 1 ' + CHAR(13) ELSE '' END + 
+						CASE WHEN @N4_2_DIAGNOSIS_CODE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''N4_2_DIAGNOSIS_CODE'', 0, A.N4_2_DIAGNOSIS_CODE, B.N4_2_DIAGNOSIS_CODE) = 1 ' + CHAR(13) ELSE '' END + 
+						CASE WHEN @L_PT_INFORMED_DATE > 1	THEN				'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''L_PT_INFORMED_DATE'', 0, A.L_PT_INFORMED_DATE, B.L_PT_INFORMED_DATE) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @FasterDiagnosisOrganisationCode > 1	THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisOrganisationCode'', 0, A.FasterDiagnosisOrganisationCode, B.FasterDiagnosisOrganisationCode) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @FasterDiagnosisExclusionReasonCode > 1 THEN	'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''FasterDiagnosisExclusionReasonCode'', 0, A.FasterDiagnosisExclusionReasonCode, B.FasterDiagnosisExclusionReasonCode) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @NotRecurrence > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''NotRecurrence'', 0, A.NotRecurrence, B.NotRecurrence) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_REF_ID > 1	THEN						'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_REF_ID'', 0, A.ADT_REF_ID, B.ADT_REF_ID) = 1 ' + CHAR(13) ELSE '' END +
+						CASE WHEN @ADT_PLACER_ID > 1	THEN					'AND		Merge_DM_Match.tblMAIN_REFERRALS_fnCompare(''ADT_PLACER_ID'', 0, A.ADT_PLACER_ID, B.ADT_PLACER_ID) = 1 ' + CHAR(13) ELSE '' END
+
+						-- Debug dynamic SQL
+						PRINT @SQL
+		
+						-- Find all the matching entity pairs
+						--IF @LoopCounter = 1 -- consider whether we only want to do high cost matches on the first iteration (to avoid doing lots of matching between non-SCR records)
+						INSERT INTO	#tblMAIN_REFERRALS_Match_EntityPairs_All (IsSCR_A, SrcSys_A, Src_UID_A, IsSCR_B, SrcSys_B, Src_UID_B, MatchType, MatchIntention)
+						EXEC (@SQL)
+				
+						/*########################################################################################################################################################################################################################*/
 						/**************************************************************************************************************************************************************************************************************************/
 						-- Post-match cleanup of #tblMAIN_REFERRALS_Match_EntityPairs_All and preparation of #Incremental for the next loop (if there is one)
 						/**************************************************************************************************************************************************************************************************************************/

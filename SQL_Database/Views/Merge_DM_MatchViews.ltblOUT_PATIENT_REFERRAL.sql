@@ -45,7 +45,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,NOGCA
 			,IsDeleted
 			,IsScreening
-	FROM  [WSHT_Deduplication]..ltblOUT_PATIENT_REFERRAL
+	FROM  [CancerRegister_WSHT]..ltblOUT_PATIENT_REFERRAL
 
 		UNION ALL 
 
@@ -57,5 +57,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,NOGCA
 			,IsDeleted
 			,IsScreening
-	FROM  [BSUH_Deduplication]..ltblOUT_PATIENT_REFERRAL
+	FROM  [CancerRegister_BSUH]..ltblOUT_PATIENT_REFERRAL
 GO

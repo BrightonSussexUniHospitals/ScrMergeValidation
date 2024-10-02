@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the ltblMDTMeetingTypeCOSD SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[ltblMDTMeetingTypeCOSD] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblMDTMeetingTypeCOSD 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblMDTMeetingTypeCOSD
+
+CREATE VIEW [Merge_DM_MatchViews].[ltblMDTMeetingTypeCOSD] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblMDTMeetingTypeCOSD 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblMDTMeetingTypeCOSD
 GO

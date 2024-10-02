@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the expNMBRA_OPERATION_TEMP SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[expNMBRA_OPERATION_TEMP] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.expNMBRA_OPERATION_TEMP 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.expNMBRA_OPERATION_TEMP
+
+CREATE VIEW [Merge_DM_MatchViews].[expNMBRA_OPERATION_TEMP] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.expNMBRA_OPERATION_TEMP 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.expNMBRA_OPERATION_TEMP
 GO

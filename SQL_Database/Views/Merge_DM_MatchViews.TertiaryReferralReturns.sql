@@ -44,7 +44,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,Comments = Comments COLLATE DATABASE_DEFAULT
 			,PayloadID
 			,AuditID
-	FROM	[WSHT_Deduplication]..TertiaryReferralReturns
+	FROM	[CancerRegister_WSHT]..TertiaryReferralReturns
 
 		UNION ALL 
 
@@ -55,5 +55,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,Comments = Comments COLLATE DATABASE_DEFAULT
 			,PayloadID
 			,AuditID
-	FROM	[BSUH_Deduplication]..TertiaryReferralReturns
+	FROM	[CancerRegister_BSUH]..TertiaryReferralReturns
 GO

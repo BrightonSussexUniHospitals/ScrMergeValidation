@@ -2084,6 +2084,45 @@ AS
 		AND			rmd.PreValue != 38
 		AND			rmd.MerValue = 38
 
+		-- Update any SCR CWT values that should have been changed because the referral is a minor and has been deleted
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		INNER JOIN	Merge_R_Compare.DedupeDroppedRefs_Work dropped_ref
+																		ON	rmd.PreSrcSysID = dropped_ref.SrcSys
+																		AND	rmd.PreCare_ID = dropped_ref.CARE_ID
+		LEFT JOIN	Merge_R_Compare.pre_scr_cwt pre_scr_cwt
+															ON	rmd.PreSrcSysID = pre_scr_cwt.OrigSrcSysID
+															AND	rmd.PreRecordID = pre_scr_cwt.OrigCWT_ID
+															AND	pre_scr_cwt.TREAT_ID IS NULL
+															AND	pre_scr_cwt.DeftTreatmentCode IS NULL
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('CwtPathwayTypeId2WW','CwtPathwayTypeId28','CwtPathwayTypeId62')
+		AND			(rmd.DiffType = 'Lost'			-- Lost because the referral was deleted
+		OR			(pre_scr_cwt.OrigCWT_ID IS NULL	-- Changed from a 1 (FDT) to a 2 (Sub) because there was a treatment on the minor referral
+		AND			rmd.PreValue = 1
+		AND			rmd.MerValue = 2)
+					)
+
+		-- Update any SCR CWT values that should have been changed because the treatment has been hung on a different CWT record
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		INNER JOIN	Merge_R_Compare.pre_scr_cwt pre_cwt_minor		-- to get the major care id
+										ON	rmd.PreSrcSysID = pre_cwt_minor.OrigSrcSysID
+										AND	rmd.PreCare_ID = pre_cwt_minor.OrigCARE_ID
+		INNER JOIN	Merge_R_Compare.pre_scr_cwt pre_cwt_major		-- to get the renumbered cwt IDs for all the CWT records in the major care id
+															ON	pre_cwt_minor.CARE_ID = pre_cwt_major.CARE_ID
+		INNER JOIN	CancerReporting_MERGE.SCR_Warehouse.SCR_CWT post_scr_cwt -- to see if any of the renumbered CWT IDs in the major care id have persisted somewhere
+															ON	pre_cwt_major.CWT_ID = post_scr_cwt.CWT_ID
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_CWT'
+		AND			rmc.ColumnName IN ('CwtPathwayTypeId2WW','CwtPathwayTypeId28','CwtPathwayTypeId62')
+		AND			rmd.DiffType = 'Lost'		
+		
 		-- Update any cwtFlag62 / cwtReason62 values that may have been changed because an underlying component of the calculation has changed
 		UPDATE		rmd
 		SET			rmd.HasDedupeChangeDiff = 1
@@ -2797,6 +2836,21 @@ AS
 		AND			rmc.ColumnName IN ('InappropriateRef')
 		AND			ISNULL(rmd.PreValue, 0) != 1
 		AND			ISNULL(rmd.MerValue, 0) != 1
+
+		-- Update any consultant values that should have been changed because the referral is part of the deduplication (could be either a minor record or have a column over-ride)
+		UPDATE		rmd
+		SET			rmd.HasDedupeChangeDiff = 1
+		FROM		Merge_R_Compare.ReportingMergeColumns_Work rmc
+		INNER JOIN	Merge_R_Compare.ReportingMergeDifferences_Work rmd
+																	ON	rmc.ColumnIx = rmd.ColumnIx
+		INNER JOIN	Merge_DM_Match.tblMAIN_REFERRALS_tblValidatedData_Unmapped vd_ref_u
+																	ON	rmd.PreSrcSysID = vd_ref_u.SrcSys
+																	AND	rmd.PreCare_ID = vd_ref_u.Src_UID
+																	AND	vd_ref_u.IsConfirmed = 1
+		WHERE		rmc.TableName = 'VwSCR_Warehouse_SCR_Referrals'
+		AND			rmc.ColumnName IN ('ConsultantName')
+
+
 
 
 

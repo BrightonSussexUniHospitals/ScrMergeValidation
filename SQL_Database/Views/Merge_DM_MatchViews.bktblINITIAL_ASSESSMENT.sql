@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the bktblINITIAL_ASSESSMENT SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[bktblINITIAL_ASSESSMENT] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.bktblINITIAL_ASSESSMENT 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.bktblINITIAL_ASSESSMENT
+
+CREATE VIEW [Merge_DM_MatchViews].[bktblINITIAL_ASSESSMENT] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.bktblINITIAL_ASSESSMENT 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.bktblINITIAL_ASSESSMENT
 GO

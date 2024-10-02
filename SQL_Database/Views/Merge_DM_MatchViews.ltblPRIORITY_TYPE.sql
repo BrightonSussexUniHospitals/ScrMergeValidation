@@ -43,7 +43,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,PRIORITY_DESC = PRIORITY_DESC COLLATE DATABASE_DEFAULT
 			,IsUrgent
 			,Is2WW
-	FROM  [WSHT_Deduplication]..ltblPRIORITY_TYPE
+	FROM  [CancerRegister_WSHT]..ltblPRIORITY_TYPE
 
 		UNION ALL 
 
@@ -53,5 +53,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,PRIORITY_DESC = PRIORITY_DESC COLLATE DATABASE_DEFAULT
 			,IsUrgent
 			,Is2WW
-	FROM  [BSUH_Deduplication]..ltblPRIORITY_TYPE
+	FROM  [CancerRegister_BSUH]..ltblPRIORITY_TYPE
 GO

@@ -50,7 +50,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,ReasonDeleted
 			,IsDeleted
 			,UpperCode = UpperCode COLLATE DATABASE_DEFAULT
-	FROM  [WSHT_Deduplication]..OrganisationSites
+	FROM  [CancerRegister_WSHT]..OrganisationSites
 
 		UNION ALL 
 
@@ -67,5 +67,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,ReasonDeleted
 			,IsDeleted
 			,UpperCode = UpperCode COLLATE DATABASE_DEFAULT
-	FROM  [BSUH_Deduplication]..OrganisationSites
+	FROM  [CancerRegister_BSUH]..OrganisationSites
 GO

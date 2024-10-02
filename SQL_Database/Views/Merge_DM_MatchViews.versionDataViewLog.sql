@@ -42,7 +42,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,ID
 			,DataViewVersion = DataViewVersion COLLATE DATABASE_DEFAULT
 			,SCRVersion = SCRVersion COLLATE DATABASE_DEFAULT
-	FROM	[WSHT_Deduplication]..versionDataViewLog
+	FROM	[CancerRegister_WSHT]..versionDataViewLog
 
 		UNION ALL 
 
@@ -51,5 +51,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,ID
 			,DataViewVersion = DataViewVersion COLLATE DATABASE_DEFAULT
 			,SCRVersion = SCRVersion COLLATE DATABASE_DEFAULT
-	FROM	[BSUH_Deduplication]..versionDataViewLog
+	FROM	[CancerRegister_BSUH]..versionDataViewLog
 GO

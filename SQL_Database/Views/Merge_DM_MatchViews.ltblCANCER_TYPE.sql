@@ -50,7 +50,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,IsTesticular
 			,IsChildrens
 			,[IsNonSiteSpecific] 
-	FROM  [WSHT_Deduplication]..ltblCANCER_TYPE
+	FROM  [CancerRegister_WSHT]..ltblCANCER_TYPE
 
 		UNION ALL 
 
@@ -67,5 +67,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,IsTesticular
 			,IsChildrens
 			,[IsNonSiteSpecific] 
-	FROM  [BSUH_Deduplication]..ltblCANCER_TYPE
+	FROM  [CancerRegister_BSUH]..ltblCANCER_TYPE
 GO

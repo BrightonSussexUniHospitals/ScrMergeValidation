@@ -46,7 +46,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,RequestReceivedDate
 			,ReasonDatesDifferent = ReasonDatesDifferent COLLATE DATABASE_DEFAULT
 			,ReceivingReasonID
-	FROM	[WSHT_Deduplication]..tblTERTIARY_REFERRALS_RECEIVED
+	FROM	[CancerRegister_WSHT]..tblTERTIARY_REFERRALS_RECEIVED
 
 		UNION ALL 
 
@@ -59,5 +59,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,RequestReceivedDate
 			,ReasonDatesDifferent = ReasonDatesDifferent COLLATE DATABASE_DEFAULT
 			,ReceivingReasonID
-	FROM	[BSUH_Deduplication]..tblTERTIARY_REFERRALS_RECEIVED
+	FROM	[CancerRegister_BSUH]..tblTERTIARY_REFERRALS_RECEIVED
 GO

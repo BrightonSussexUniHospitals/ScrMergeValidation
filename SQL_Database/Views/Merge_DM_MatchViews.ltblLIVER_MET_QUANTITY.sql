@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the ltblLIVER_MET_QUANTITY SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[ltblLIVER_MET_QUANTITY] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblLIVER_MET_QUANTITY 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblLIVER_MET_QUANTITY
+
+CREATE VIEW [Merge_DM_MatchViews].[ltblLIVER_MET_QUANTITY] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblLIVER_MET_QUANTITY 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblLIVER_MET_QUANTITY
 GO

@@ -46,7 +46,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,HANA_TX_PRE_CHEMO
 			,HANA_TX_PRE_RADIO
 			,HANA_TX_PRE_SURGERY
-	FROM  [WSHT_Deduplication]..ltblDEFINITIVE_TYPE
+	FROM  [CancerRegister_WSHT]..ltblDEFINITIVE_TYPE
 
 		UNION ALL 
 
@@ -59,5 +59,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,HANA_TX_PRE_CHEMO
 			,HANA_TX_PRE_RADIO
 			,HANA_TX_PRE_SURGERY
-	FROM  [BSUH_Deduplication]..ltblDEFINITIVE_TYPE
+	FROM  [CancerRegister_BSUH]..ltblDEFINITIVE_TYPE
 GO

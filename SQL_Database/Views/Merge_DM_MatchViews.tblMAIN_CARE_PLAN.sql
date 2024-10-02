@@ -128,7 +128,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,DENTAL_ASSESS_NECESSARY
 			,TertiaryReferralKey
 			,MDTDiscussionType
-	FROM  [WSHT_Deduplication]..tblMAIN_CARE_PLAN
+	FROM  [CancerRegister_WSHT]..tblMAIN_CARE_PLAN
 
 		UNION ALL 
 
@@ -223,5 +223,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,DENTAL_ASSESS_NECESSARY
 			,TertiaryReferralKey
 			,MDTDiscussionType
-	FROM  [BSUH_Deduplication]..tblMAIN_CARE_PLAN
+	FROM  [CancerRegister_BSUH]..tblMAIN_CARE_PLAN
 GO

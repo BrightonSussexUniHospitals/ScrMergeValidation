@@ -46,7 +46,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,IsRecurrenceOrMets
 			,PrimaryToTransformationProgressionExclusion
 			,TransformationProgression
-	FROM  [WSHT_Deduplication]..ltblCA_STATUS
+	FROM  [CancerRegister_WSHT]..ltblCA_STATUS
 
 		UNION ALL 
 
@@ -59,5 +59,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,IsRecurrenceOrMets
 			,PrimaryToTransformationProgressionExclusion
 			,TransformationProgression
-	FROM  [BSUH_Deduplication]..ltblCA_STATUS
+	FROM  [CancerRegister_BSUH]..ltblCA_STATUS
 GO

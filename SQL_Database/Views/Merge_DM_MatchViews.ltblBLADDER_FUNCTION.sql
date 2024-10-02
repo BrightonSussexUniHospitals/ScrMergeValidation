@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the ltblBLADDER_FUNCTION SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[ltblBLADDER_FUNCTION] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblBLADDER_FUNCTION 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblBLADDER_FUNCTION
+
+CREATE VIEW [Merge_DM_MatchViews].[ltblBLADDER_FUNCTION] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblBLADDER_FUNCTION 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblBLADDER_FUNCTION
 GO

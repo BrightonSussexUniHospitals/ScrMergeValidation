@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the ltblBRESLOW_THICKNESS SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[ltblBRESLOW_THICKNESS] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblBRESLOW_THICKNESS 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblBRESLOW_THICKNESS
+
+CREATE VIEW [Merge_DM_MatchViews].[ltblBRESLOW_THICKNESS] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblBRESLOW_THICKNESS 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblBRESLOW_THICKNESS
 GO

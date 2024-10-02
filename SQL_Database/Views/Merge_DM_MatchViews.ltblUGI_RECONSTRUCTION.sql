@@ -3,11 +3,18 @@ GO
 SET ANSI_NULLS ON
 GO
 -- Create a view to union the data for the ltblUGI_RECONSTRUCTION SCR table 
-CREATE VIEW [Merge_DM_MatchViews].[ltblUGI_RECONSTRUCTION] AS 
- 
-SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM BSUH_Deduplication.dbo.ltblUGI_RECONSTRUCTION 
- 
-UNION ALL 
- 
-SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM WSHT_Deduplication.dbo.ltblUGI_RECONSTRUCTION
+
+CREATE VIEW [Merge_DM_MatchViews].[ltblUGI_RECONSTRUCTION] AS 
+
+ 
+
+SELECT CAST(2 AS TINYINT) AS SrcSysID, * FROM CancerRegister_BSUH.dbo.ltblUGI_RECONSTRUCTION 
+
+ 
+
+UNION ALL 
+
+ 
+
+SELECT CAST(1 AS TINYINT) AS SrcSysID, * FROM CancerRegister_WSHT.dbo.ltblUGI_RECONSTRUCTION
 GO

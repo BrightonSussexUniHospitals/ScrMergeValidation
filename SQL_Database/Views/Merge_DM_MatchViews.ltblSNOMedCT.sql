@@ -48,7 +48,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,isDeleted
 			,IsBCC
 			,IsNeuroendocrine
-	FROM  [WSHT_Deduplication]..ltblSNOMedCT
+	FROM  [CancerRegister_WSHT]..ltblSNOMedCT
 
 		UNION ALL 
 
@@ -63,5 +63,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,isDeleted
 			,IsBCC
 			,IsNeuroendocrine
-	FROM  [BSUH_Deduplication]..ltblSNOMedCT
+	FROM  [CancerRegister_BSUH]..ltblSNOMedCT
 GO

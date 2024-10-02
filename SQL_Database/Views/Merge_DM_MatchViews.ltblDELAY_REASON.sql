@@ -44,7 +44,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,DELAY_FULL_DESC = DELAY_FULL_DESC COLLATE DATABASE_DEFAULT
 			,IS_DELETED
 			,CWTValue = CWTValue COLLATE DATABASE_DEFAULT
-	FROM  [WSHT_Deduplication]..ltblDELAY_REASON
+	FROM  [CancerRegister_WSHT]..ltblDELAY_REASON
 
 		UNION ALL 
 
@@ -55,5 +55,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,DELAY_FULL_DESC = DELAY_FULL_DESC COLLATE DATABASE_DEFAULT
 			,IS_DELETED
 			,CWTValue = CWTValue COLLATE DATABASE_DEFAULT
-	FROM  [BSUH_Deduplication]..ltblDELAY_REASON
+	FROM  [CancerRegister_BSUH]..ltblDELAY_REASON
 GO

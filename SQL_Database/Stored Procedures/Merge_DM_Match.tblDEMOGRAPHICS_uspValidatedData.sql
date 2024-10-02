@@ -947,6 +947,84 @@ Description:				A stored procedure to return the validated DM matching data for 
 																ON	vd.SrcSys = DeathStatus.SrcSys
 																AND	vd.Src_UID = DeathStatus.Src_UID
 
+				-- Strip out NHS numbers for records with duplicate temporary NHS numbers
+						-- Identify the records that need to be marked for rematching
+						IF OBJECT_ID('tempdb..#DupeNHS') IS NOT NULL DROP TABLE #DupeNHS
+						SELECT		N1_1_NHS_NUMBER
+						INTO		#DupeNHS
+						FROM		#ValidatedData
+						WHERE		IsValidatedMajor = 1
+						AND			IsConfirmed = 1
+						AND			LEFT(N1_1_NHS_NUMBER, 6) = '100000'
+						GROUP BY	N1_1_NHS_NUMBER
+						HAVING		COUNT(*) > 1
+
+						-- Find the associated major records
+						IF OBJECT_ID('tempdb..#DupeNhsMajors') IS NOT NULL DROP TABLE #DupeNhsMajors
+						SELECT		dem_vd.SrcSys_MajorExt
+									,dem_vd.Src_UID_MajorExt
+						INTO		#DupeNhsMajors
+						FROM		#ValidatedData dem_vd
+						INNER JOIN	#DupeNHS dupe
+													ON	dem_vd.N1_1_NHS_NUMBER = dupe.N1_1_NHS_NUMBER
+						WHERE		dem_vd.IsValidatedMajor = 1
+						AND			dem_vd.IsConfirmed = 1
+						GROUP BY	dem_vd.SrcSys_MajorExt
+									,dem_vd.Src_UID_MajorExt
+
+						-- Find the associated minor records
+						UPDATE		dem_vd
+						SET			NHS_NUMBER_STATUS = NULL
+						FROM		#ValidatedData dem_vd
+						INNER JOIN	#DupeNhsMajors dupe
+													ON	dem_vd.SrcSys_MajorExt = dupe.SrcSys_MajorExt
+													AND	dem_vd.Src_UID_MajorExt = dupe.Src_UID_MajorExt
+
+
+				-- Assume that any remaining duplicate NHS numbers want to major the most recently updated record (to avoid interface duplicate issues)
+						-- Identify the records that need to be marked for rematching
+						IF OBJECT_ID('tempdb..#DupeNHS2') IS NOT NULL DROP TABLE #DupeNHS2
+						SELECT		N1_1_NHS_NUMBER
+						INTO		#DupeNHS2
+						FROM		#ValidatedData
+						WHERE		IsValidatedMajor = 1
+						--AND			IsConfirmed = 1
+						AND			LEFT(N1_1_NHS_NUMBER, 6) != '100000'
+						GROUP BY	N1_1_NHS_NUMBER
+						HAVING		COUNT(*) > 1
+						
+						-- Find and prioritise the associated major records to establish a successor and victim majors (victims will become minors of the successor major)
+						IF OBJECT_ID('tempdb..#DupeNhsMajors2') IS NOT NULL DROP TABLE #DupeNhsMajors2
+						SELECT		dem_vd.SrcSys_MajorExt
+									,dem_vd.Src_UID_MajorExt
+									,dem_vd.SrcSys_Major
+									,dem_vd.Src_UID_Major
+									,dupe.N1_1_NHS_NUMBER
+									,dem_vd.LastUpdated
+									,ROW_NUMBER() OVER (PARTITION BY dupe.N1_1_NHS_NUMBER ORDER BY dem_vd.LastUpdated, CASE WHEN dem_vd.SrcSys_MajorExt = 3 THEN 1 ELSE 2 END, dem_vd.Src_UID_MajorExt DESC) AS LastUpdIx
+						INTO		#DupeNhsMajors2
+						FROM		#ValidatedData dem_vd
+						INNER JOIN	#DupeNHS2 dupe
+													ON	dem_vd.N1_1_NHS_NUMBER = dupe.N1_1_NHS_NUMBER
+						WHERE		dem_vd.IsValidatedMajor = 1
+						AND			dem_vd.IsConfirmed = 1
+
+						-- Repoint the associated minor records for the victims to have the successor as the major
+						UPDATE		dem_vd
+						SET			SrcSys_MajorExt		= successor.SrcSys_MajorExt
+									,Src_UID_MajorExt	= successor.Src_UID_MajorExt
+									,SrcSys_Major		= successor.SrcSys_Major
+									,Src_UID_Major		= successor.Src_UID_Major
+									,IsValidatedMajor	= CASE WHEN dupe.LastUpdIx = 1 THEN 1 ELSE 0 END
+
+						FROM		#ValidatedData dem_vd
+						INNER JOIN	#DupeNhsMajors2 dupe
+														ON	dem_vd.SrcSys_MajorExt = dupe.SrcSys_MajorExt
+														AND	dem_vd.Src_UID_MajorExt = dupe.Src_UID_MajorExt
+						INNER JOIN	#DupeNhsMajors2 successor
+															ON	dem_vd.N1_1_NHS_NUMBER = successor.N1_1_NHS_NUMBER
+															AND	successor.LastUpdIx = 1
+		
 		END
 
 

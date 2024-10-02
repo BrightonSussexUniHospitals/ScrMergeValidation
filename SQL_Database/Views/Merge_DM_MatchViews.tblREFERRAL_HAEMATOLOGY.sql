@@ -160,7 +160,7 @@ Description:				Create a local config view to point at the place where the SCR
 			,LabMyelodysplasiaOrgID
 			,RISSDate
 			,RISSOrg
-	FROM  [WSHT_Deduplication]..tblREFERRAL_HAEMATOLOGY
+	FROM  [CancerRegister_WSHT]..tblREFERRAL_HAEMATOLOGY
 
 		UNION ALL 
 
@@ -287,5 +287,5 @@ Description:				Create a local config view to point at the place where the SCR
 			,LabMyelodysplasiaOrgID
 			,RISSDate
 			,RISSOrg
-	FROM  [BSUH_Deduplication]..tblREFERRAL_HAEMATOLOGY
+	FROM  [CancerRegister_BSUH]..tblREFERRAL_HAEMATOLOGY
 GO
